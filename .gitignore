@@ -48,3 +48,10 @@ docs/_build
 
 # pyenv
 .python-version
+
+# pytest
+.pytest_cache
+
+# idea
+.vscode
+.idea
