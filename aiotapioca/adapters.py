@@ -122,7 +122,7 @@ class JSONAdapterMixin:
 
     async def get_error_message(self, data, response=None):
         if not data and response:
-            data = await self.response_to_native()
+            data = await self.response_to_native(response)
 
         if data:
             if "error" in data:
