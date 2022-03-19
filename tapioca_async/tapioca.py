@@ -1,6 +1,6 @@
 import copy
 
-import requests
+import aiohttp
 import webbrowser
 
 import json
@@ -35,7 +35,16 @@ class TapiocaClient:
         self._resource = resource
         self._refresh_token_default = refresh_token_by_default
         self._refresh_data = refresh_data
-        self._session = session or requests.Session()
+        self._session = session
+
+    async def __aenter__(self):
+        if self._session is None:
+            self._session = aiohttp.ClientSession()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        if self._session is not None:
+            await self._session.close()
 
     def _instatiate_api(self):
         serializer_class = None
