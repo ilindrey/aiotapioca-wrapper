@@ -69,7 +69,6 @@ class TapiocaAdapter:
     def serialize_data(self, data):
         if self.serializer:
             return self.serializer.serialize(data)
-
         return data
 
     def format_data_to_request(self, data):
@@ -81,8 +80,7 @@ class TapiocaAdapter:
     def get_iterator_list(self, response_data):
         raise NotImplementedError()
 
-    def get_iterator_next_request_kwargs(self, iterator_request_kwargs,
-                                         response_data, response):
+    def get_iterator_next_request_kwargs(self, iterator_request_kwargs, response_data, response):
         raise NotImplementedError()
 
     def is_authentication_expired(self, exception, *args, **kwargs):

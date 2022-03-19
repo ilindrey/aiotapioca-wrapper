@@ -1,5 +1,6 @@
 import copy
 
+import asyncio
 import aiohttp
 import webbrowser
 
@@ -232,30 +233,37 @@ class TapiocaClientExecutor(TapiocaClient):
     def refresh_data(self):
         return self._refresh_data
 
+    @staticmethod
+    async def _coro_wrap(func, *args, **kwargs):
+        if asyncio.iscoroutinefunction(func):
+            result = await func(*args, **kwargs)
+        else:
+            result = func(*args, **kwargs)
+        return result
+
     async def _make_request(self, request_method, refresh_token=None, *args, **kwargs):
         if 'url' not in kwargs:
             kwargs['url'] = self._data
 
-        request_kwargs = self._api.get_request_kwargs(
-            self._api_params, request_method, *args, **kwargs)
+        request_kwargs = self._api.get_request_kwargs(self._api_params, request_method, *args, **kwargs)
 
         response = await self._session.request(request_method, **request_kwargs)
 
         try:
-            data = await self._api.process_response(response)
+            data = await self._coro_wrap(self._api.process_response, response)
         except ResponseProcessException as e:
             client = self._wrap_in_tapioca(e.data, response=response, request_kwargs=request_kwargs)
 
-            error_message = await self._api.get_error_message(data=e.data, response=response)
+            error_message = await self._coro_wrap(self._api.get_error_message, data=e.data, response=response)
             tapioca_exception = e.tapioca_exception(message=error_message, client=client)
 
             should_refresh_token = (refresh_token is not False and self._refresh_token_default)
-            auth_expired = await self._api.is_authentication_expired(tapioca_exception)
+            auth_expired = await self._coro_wrap(self._api.is_authentication_expired, tapioca_exception)
 
             propagate_exception = True
 
             if should_refresh_token and auth_expired:
-                self._refresh_data = await self._api.refresh_authentication(self._api_params)
+                self._refresh_data = await self._coro_wrap(self._api.refresh_authentication, self._api_params)
                 if self._refresh_data:
                     propagate_exception = False
                     return await self._make_request(request_method, refresh_token=False, *args, **kwargs)
@@ -263,8 +271,7 @@ class TapiocaClientExecutor(TapiocaClient):
             if propagate_exception:
                 raise tapioca_exception
 
-        return self._wrap_in_tapioca(data, response=response,
-                                     request_kwargs=request_kwargs)
+        return self._wrap_in_tapioca(data, response=response, request_kwargs=request_kwargs)
 
     async def get(self, *args, **kwargs):
         return await self._make_request('GET', *args, **kwargs)
@@ -287,9 +294,8 @@ class TapiocaClientExecutor(TapiocaClient):
     def _get_iterator_list(self):
         return self._api.get_iterator_list(self._data)
 
-    def _get_iterator_next_request_kwargs(self):
-        return self._api.get_iterator_next_request_kwargs(
-            self._request_kwargs, self._data, self._response)
+    async def _get_iterator_next_request_kwargs(self):
+        return await self._coro_wrap(self._api.get_iterator_next_request_kwargs, self._request_kwargs, self._data, self._response)
 
     def _reached_max_limits(self, page_count, item_count, max_pages, max_items):
         reached_page_limit = max_pages is not None and max_pages <= page_count
@@ -313,7 +319,7 @@ class TapiocaClientExecutor(TapiocaClient):
 
             page_count += 1
 
-            next_request_kwargs = executor._get_iterator_next_request_kwargs()
+            next_request_kwargs = await executor._get_iterator_next_request_kwargs()
 
             if not next_request_kwargs:
                 break
