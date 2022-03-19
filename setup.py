@@ -20,17 +20,22 @@ Source code hosted on Github: https://github.com/vintasoftware/tapioca-wrapper
 Documentation hosted by Readthedocs: http://tapioca-wrapper.readthedocs.io/en/stable/
 """
 
-package = 'tapioca'
+package = 'tapioca_async'
 requirements = [
-    'requests[security]>=2.6',
+    'aiohttp>=3.0',
     'arrow>=0.6.0,<1',
     'six>=1',
     'xmltodict>=0.9.2'
 ]
 test_requirements = [
-    'responses>=0.5',
-    'mock>=1.3,<1.4'
+    "pytest>=7.0",
+    "pytest-asyncio>=0.18",
+    "aioresponses>=0.7",
 ]
+dev_requirements = [
+    *test_requirements,
+    "black>=22.0",
+    ]
 
 
 def get_version(package):
@@ -52,22 +57,20 @@ if sys.argv[-1] == 'publish':
 
 
 setup(
-    name='tapioca-wrapper',
+    name='aiotapioca-wrapper',
     version=get_version(package),
     description='Python API client generator',
     long_description=description,
-    author='Filipe Ximenes',
-    author_email='filipeximenes@gmail.com',
-    url='https://github.com/vintasoftware/tapioca-wrapper',
-    packages=[
-        'tapioca',
-    ],
-    package_dir={'tapioca': 'tapioca'},
+    author='Filipe Ximenes,Andrey Ilin',
+    author_email='andreyilin@fastmail.com',
+    url='https://github.com/ilindrey/aiotapioca-wrapper',
+    packages=[package],
+    package_dir={package: package},
     include_package_data=True,
     install_requires=requirements,
     license="MIT",
     zip_safe=False,
-    keywords='tapioca,wrapper,api',
+    keywords='async,tapioca,wrapper,api',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
@@ -75,6 +78,8 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
     ],
+    python_requires=">=3.6",
     test_suite='tests',
-    tests_require=test_requirements
+    tests_require=test_requirements,
+    extras_require={"dev": dev_requirements},
 )
