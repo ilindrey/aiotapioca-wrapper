@@ -1,8 +1,6 @@
 
-from tapioca.adapters import (
-    TapiocaAdapter, JSONAdapterMixin, XMLAdapterMixin,
-    generate_wrapper_from_adapter)
-from tapioca.serializers import SimpleSerializer
+from aiotapioca.adapters import TapiocaAdapter, JSONAdapterMixin, XMLAdapterMixin, generate_wrapper_from_adapter
+from aiotapioca.serializers import SimpleSerializer
 
 
 RESOURCE_MAPPING = {
