@@ -20,7 +20,7 @@ Source code hosted on Github: https://github.com/vintasoftware/tapioca-wrapper
 Documentation hosted by Readthedocs: http://tapioca-wrapper.readthedocs.io/en/stable/
 """
 
-package = 'tapioca_async'
+package = 'aiotapioca'
 requirements = [
     'aiohttp>=3.0',
     'arrow>=0.6.0,<1',
