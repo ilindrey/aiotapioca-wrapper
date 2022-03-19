@@ -3,7 +3,7 @@ import arrow
 from decimal import Decimal
 
 
-class BaseSerializer(object):
+class BaseSerializer:
 
     def deserialize(self, method_name, value, **kwargs):
         if hasattr(self, method_name):

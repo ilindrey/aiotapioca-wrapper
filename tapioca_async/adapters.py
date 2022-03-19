@@ -1,4 +1,3 @@
-# coding: utf-8
 
 import json
 import xmltodict
@@ -14,7 +13,7 @@ def generate_wrapper_from_adapter(adapter_class):
     return TapiocaInstantiator(adapter_class)
 
 
-class TapiocaAdapter(object):
+class TapiocaAdapter:
     serializer_class = SimpleSerializer
 
     def __init__(self, serializer_class=None, *args, **kwargs):
@@ -93,7 +92,7 @@ class TapiocaAdapter(object):
         raise NotImplementedError()
 
 
-class FormAdapterMixin(object):
+class FormAdapterMixin:
 
     def format_data_to_request(self, data):
         return data
@@ -102,7 +101,7 @@ class FormAdapterMixin(object):
         return {'text': response.text}
 
 
-class JSONAdapterMixin(object):
+class JSONAdapterMixin:
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
         arguments = super(JSONAdapterMixin, self).get_request_kwargs(
@@ -130,7 +129,7 @@ class JSONAdapterMixin(object):
 
 
 
-class XMLAdapterMixin(object):
+class XMLAdapterMixin:
 
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):

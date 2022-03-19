@@ -1,7 +1,3 @@
-# coding: utf-8
-
-from __future__ import unicode_literals
-
 import copy
 
 import requests
@@ -13,7 +9,7 @@ from collections import OrderedDict
 from .exceptions import ResponseProcessException
 
 
-class TapiocaInstantiator(object):
+class TapiocaInstantiator:
 
     def __init__(self, adapter_class):
         self.adapter_class = adapter_class
@@ -26,7 +22,7 @@ class TapiocaInstantiator(object):
             session=session)
 
 
-class TapiocaClient(object):
+class TapiocaClient:
 
     def __init__(self, api, data=None, response=None, request_kwargs=None,
                  api_params=None, resource=None, refresh_token_by_default=False,
