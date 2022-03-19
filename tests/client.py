@@ -25,7 +25,7 @@ RESOURCE_MAPPING = {
 }
 
 
-class TesterClientAdapter(JSONAdapterMixin, TapiocaAdapter):
+class SimpleClientAdapter(JSONAdapterMixin, TapiocaAdapter):
     serializer_class = None
     api_root = 'https://api.example.org'
     resource_mapping = RESOURCE_MAPPING
@@ -50,7 +50,7 @@ class TesterClientAdapter(JSONAdapterMixin, TapiocaAdapter):
             return {'url': url}
 
 
-TesterClient = generate_wrapper_from_adapter(TesterClientAdapter)
+SimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter)
 
 
 class CustomSerializer(SimpleSerializer):
@@ -59,14 +59,14 @@ class CustomSerializer(SimpleSerializer):
         return kwargs
 
 
-class SerializerClientAdapter(TesterClientAdapter):
+class SerializerClientAdapter(SimpleClientAdapter):
     serializer_class = CustomSerializer
 
 
 SerializerClient = generate_wrapper_from_adapter(SerializerClientAdapter)
 
 
-class TokenRefreshClientAdapter(TesterClientAdapter):
+class TokenRefreshClientAdapter(SimpleClientAdapter):
 
     def is_authentication_expired(self, exception, *args, **kwargs):
         return exception.status == 401
