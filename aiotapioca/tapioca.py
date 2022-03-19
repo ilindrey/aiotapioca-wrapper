@@ -4,10 +4,13 @@ import asyncio
 import aiohttp
 import webbrowser
 
+import logging
 import json
 from collections import OrderedDict
 
 from .exceptions import ResponseProcessException
+
+logger = logging.getLogger("coin32api_channels")
 
 
 class TapiocaInstantiator:
@@ -273,23 +276,67 @@ class TapiocaClientExecutor(TapiocaClient):
 
         return self._wrap_in_tapioca(data, response=response, request_kwargs=request_kwargs)
 
+    async def _send(self, request_method, *args, **kwargs):
+
+        if "semaphore" in kwargs and "semaphore_class" not in kwargs:
+            kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.get("semaphore", 10))
+
+        debug = kwargs.pop("debug") if "debug" in kwargs else False
+        semaphore = kwargs.pop("semaphore_class") if "semaphore_class" in kwargs else asyncio.Semaphore()
+
+        async with semaphore:
+            response = await self._make_request(request_method, *args, **kwargs)
+
+        if debug:
+            response_info = "status: {} - response data: {}".format(response.status, str(response.data)[:33])
+            logger.info(response_info)
+
+        return response
+
+    async def _send_batch(self, request_method, *args, **kwargs):
+
+        data = kwargs.pop("data") if "data" in kwargs else []
+
+        kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.get("semaphore", 10))
+
+        results = await asyncio.gather(
+            *[
+                self._send(request_method, *args, **{**kwargs, "data": row})
+                for row in data
+                ]
+            )
+
+        return results
+
     async def get(self, *args, **kwargs):
-        return await self._make_request('GET', *args, **kwargs)
+        return await self._send('GET', *args, **kwargs)
 
     async def post(self, *args, **kwargs):
-        return await self._make_request('POST', *args, **kwargs)
+        return await self._send('POST', *args, **kwargs)
 
     async def options(self, *args, **kwargs):
-        return await self._make_request('OPTIONS', *args, **kwargs)
+        return await self._send('OPTIONS', *args, **kwargs)
 
     async def put(self, *args, **kwargs):
-        return await self._make_request('PUT', *args, **kwargs)
+        return await self._send('PUT', *args, **kwargs)
 
     async def patch(self, *args, **kwargs):
-        return await self._make_request('PATCH', *args, **kwargs)
+        return await self._send('PATCH', *args, **kwargs)
 
     async def delete(self, *args, **kwargs):
-        return await self._make_request('DELETE', *args, **kwargs)
+        return await self._send('DELETE', *args, **kwargs)
+
+    async def post_batch(self, *args, **kwargs):
+        return await self._send_batch("POST", *args, **kwargs)
+
+    async def put_batch(self, *args, **kwargs):
+        return await self._send_batch("PUT", *args, **kwargs)
+
+    async def patch_batch(self, *args, **kwargs):
+        return await self._send_batch("PATCH", *args, **kwargs)
+
+    async def delete_batch(self, *args, **kwargs):
+        return await self._send_batch("DELETE", *args, **kwargs)
 
     def _get_iterator_list(self):
         return self._api.get_iterator_list(self._data)
