@@ -1,6 +1,7 @@
 
 import json
 import xmltodict
+from aiohttp.client_exceptions import ContentTypeError
 from collections.abc import Mapping
 
 from .tapioca import TapiocaInstantiator
@@ -55,11 +56,11 @@ class TapiocaAdapter:
     def get_error_message(self, data, response=None):
         return str(data)
 
-    def process_response(self, response):
+    async def process_response(self, response):
         if 500 <= response.status_code < 600:
             raise ResponseProcessException(ServerError, None)
 
-        data = self.response_to_native(response)
+        data = await self.response_to_native(response)
 
         if 400 <= response.status_code < 500:
             raise ResponseProcessException(ClientError, data)
@@ -95,16 +96,14 @@ class FormAdapterMixin:
     def format_data_to_request(self, data):
         return data
 
-    def response_to_native(self, response):
-        return {'text': response.text}
+    async def response_to_native(self, response):
+        return {'text': await response.text()}
 
 
 class JSONAdapterMixin:
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
-        arguments = super(JSONAdapterMixin, self).get_request_kwargs(
-            api_params, *args, **kwargs)
-
+        arguments = super(JSONAdapterMixin, self).get_request_kwargs(api_params, *args, **kwargs)
         if 'headers' not in arguments:
             arguments['headers'] = {}
         arguments['headers']['Content-Type'] = 'application/json'
@@ -114,25 +113,31 @@ class JSONAdapterMixin:
         if data:
             return json.dumps(data)
 
-    def response_to_native(self, response):
-        if response.content.strip():
-            return response.json()
+    async def response_to_native(self, response):
+        try:
+            return await response.json()
+        except ContentTypeError:
+            text = await response.text()
+            return json.loads(text)
 
-    def get_error_message(self, data, response=None):
-        if not data and response.content.strip():
-            data = json.loads(response.content.decode('utf-8'))
+    async def get_error_message(self, data, response=None):
+        if not data and response:
+            data = await self.response_to_native()
 
         if data:
-            return data.get('error', None)
+            if "error" in data:
+                return data.get('error', None)
+            elif "errors" in data:
+                return data.get("errors")
 
+        return data
 
 
 class XMLAdapterMixin:
 
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):
-            return xmltodict.unparse(
-                data, **self._xmltodict_unparse_kwargs).encode('utf-8')
+            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode('utf-8')
         try:
             return data.encode('utf-8')
         except Exception as e:
@@ -149,8 +154,7 @@ class XMLAdapterMixin:
                                         for k in kwargs.copy().keys()
                                         if k.startswith('xmltodict_parse__')}
 
-        arguments = super(XMLAdapterMixin, self).get_request_kwargs(
-            api_params, *args, **kwargs)
+        arguments = super(XMLAdapterMixin, self).get_request_kwargs(api_params, *args, **kwargs)
 
         if 'headers' not in arguments:
             arguments['headers'] = {}
@@ -161,8 +165,9 @@ class XMLAdapterMixin:
         if data:
             return self._input_branches_to_xml_bytestring(data)
 
-    def response_to_native(self, response):
-        if response.content.strip():
+    async def response_to_native(self, response):
+        if response:
+            text = await response.text()
             if 'xml' in response.headers['content-type']:
-                return xmltodict.parse(response.content, **self._xmltodict_parse_kwargs)
-            return {'text': response.text}
+                return xmltodict.parse(text, **self._xmltodict_parse_kwargs)
+            return {'text': text}
