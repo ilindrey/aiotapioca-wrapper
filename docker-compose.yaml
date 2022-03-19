@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  aiotapioca_wrapper:
+    build:
+      context: .
+    environment:
+      PYTHONPATH: "/app"
+    volumes:
+      - ./:/app/
+    tty: true
