@@ -10,6 +10,7 @@ from collections import OrderedDict
 
 from .exceptions import ResponseProcessException
 
+
 logger = logging.getLogger("coin32api_channels")
 
 
@@ -197,7 +198,7 @@ class TapiocaClient:
 class TapiocaClientExecutor(TapiocaClient):
 
     def __init__(self, api, *args, **kwargs):
-        super(TapiocaClientExecutor, self).__init__(api, *args, **kwargs)
+        super().__init__(api, *args, **kwargs)
 
     def __getitem__(self, key):
         raise Exception("This operation cannot be done on a" +

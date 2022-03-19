@@ -103,7 +103,7 @@ class FormAdapterMixin:
 class JSONAdapterMixin:
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
-        arguments = super(JSONAdapterMixin, self).get_request_kwargs(api_params, *args, **kwargs)
+        arguments = super().get_request_kwargs(api_params, *args, **kwargs)
         if 'headers' not in arguments:
             arguments['headers'] = {}
         arguments['headers']['Content-Type'] = 'application/json'
@@ -154,7 +154,7 @@ class XMLAdapterMixin:
                                         for k in kwargs.copy().keys()
                                         if k.startswith('xmltodict_parse__')}
 
-        arguments = super(XMLAdapterMixin, self).get_request_kwargs(api_params, *args, **kwargs)
+        arguments = super().get_request_kwargs(api_params, *args, **kwargs)
 
         if 'headers' not in arguments:
             arguments['headers'] = {}
