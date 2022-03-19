@@ -232,38 +232,33 @@ class TapiocaClientExecutor(TapiocaClient):
     def refresh_data(self):
         return self._refresh_data
 
-    def _make_request(self, request_method, refresh_token=None, *args, **kwargs):
+    async def _make_request(self, request_method, refresh_token=None, *args, **kwargs):
         if 'url' not in kwargs:
             kwargs['url'] = self._data
 
         request_kwargs = self._api.get_request_kwargs(
             self._api_params, request_method, *args, **kwargs)
 
-        response = self._session.request(request_method, **request_kwargs)
+        response = await self._session.request(request_method, **request_kwargs)
 
         try:
-            data = self._api.process_response(response)
+            data = await self._api.process_response(response)
         except ResponseProcessException as e:
-            client = self._wrap_in_tapioca(e.data, response=response,
-                                           request_kwargs=request_kwargs)
+            client = self._wrap_in_tapioca(e.data, response=response, request_kwargs=request_kwargs)
 
-            error_message = self._api.get_error_message(data=e.data,
-                                                        response=response)
-            tapioca_exception = e.tapioca_exception(message=error_message,
-                                                    client=client)
+            error_message = await self._api.get_error_message(data=e.data, response=response)
+            tapioca_exception = e.tapioca_exception(message=error_message, client=client)
 
-            should_refresh_token = (refresh_token is not False and
-                                    self._refresh_token_default)
-            auth_expired = self._api.is_authentication_expired(tapioca_exception)
+            should_refresh_token = (refresh_token is not False and self._refresh_token_default)
+            auth_expired = await self._api.is_authentication_expired(tapioca_exception)
 
             propagate_exception = True
 
             if should_refresh_token and auth_expired:
-                self._refresh_data = self._api.refresh_authentication(self._api_params)
+                self._refresh_data = await self._api.refresh_authentication(self._api_params)
                 if self._refresh_data:
                     propagate_exception = False
-                    return self._make_request(request_method,
-                                              refresh_token=False, *args, **kwargs)
+                    return await self._make_request(request_method, refresh_token=False, *args, **kwargs)
 
             if propagate_exception:
                 raise tapioca_exception
@@ -271,23 +266,23 @@ class TapiocaClientExecutor(TapiocaClient):
         return self._wrap_in_tapioca(data, response=response,
                                      request_kwargs=request_kwargs)
 
-    def get(self, *args, **kwargs):
-        return self._make_request('GET', *args, **kwargs)
+    async def get(self, *args, **kwargs):
+        return await self._make_request('GET', *args, **kwargs)
 
-    def post(self, *args, **kwargs):
-        return self._make_request('POST', *args, **kwargs)
+    async def post(self, *args, **kwargs):
+        return await self._make_request('POST', *args, **kwargs)
 
-    def options(self, *args, **kwargs):
-        return self._make_request('OPTIONS', *args, **kwargs)
+    async def options(self, *args, **kwargs):
+        return await self._make_request('OPTIONS', *args, **kwargs)
 
-    def put(self, *args, **kwargs):
-        return self._make_request('PUT', *args, **kwargs)
+    async def put(self, *args, **kwargs):
+        return await self._make_request('PUT', *args, **kwargs)
 
-    def patch(self, *args, **kwargs):
-        return self._make_request('PATCH', *args, **kwargs)
+    async def patch(self, *args, **kwargs):
+        return await self._make_request('PATCH', *args, **kwargs)
 
-    def delete(self, *args, **kwargs):
-        return self._make_request('DELETE', *args, **kwargs)
+    async def delete(self, *args, **kwargs):
+        return await self._make_request('DELETE', *args, **kwargs)
 
     def _get_iterator_list(self):
         return self._api.get_iterator_list(self._data)
