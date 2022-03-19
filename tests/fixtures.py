@@ -14,9 +14,20 @@ async def client():
 
 
 @pytest_asyncio.fixture
-async def client_with_serializer():
+async def client_serializer_class():
     async with SimpleClient(serializer_class=SimpleSerializer) as c:
         yield c
+
+
+@pytest_asyncio.fixture
+async def serializer_client():
+    async with SerializerClient() as c:
+        yield c
+
+
+@pytest.fixture()
+def serializer():
+    yield SimpleSerializer()
 
 
 @pytest.fixture()
