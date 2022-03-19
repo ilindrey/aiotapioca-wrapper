@@ -230,8 +230,8 @@ class TapiocaClientExecutor(TapiocaClient):
         return self._response
 
     @property
-    def status_code(self):
-        return self.response.status_code
+    def status(self):
+        return self.response.status
 
     @property
     def refresh_data(self):

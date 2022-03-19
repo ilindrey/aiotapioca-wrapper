@@ -57,12 +57,12 @@ class TapiocaAdapter:
         return str(data)
 
     async def process_response(self, response):
-        if 500 <= response.status_code < 600:
+        if 500 <= response.status < 600:
             raise ResponseProcessException(ServerError, None)
 
         data = await self.response_to_native(response)
 
-        if 400 <= response.status_code < 500:
+        if 400 <= response.status < 500:
             raise ResponseProcessException(ClientError, data)
 
         return data
