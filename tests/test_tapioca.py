@@ -1,6 +1,5 @@
 
 import pytest
-import json
 import pickle
 import xmltodict
 from collections import OrderedDict
@@ -8,7 +7,7 @@ from yarl import URL
 
 from aiotapioca.tapioca import TapiocaClient
 from aiotapioca.exceptions import ClientError, ServerError
-from .client import SimpleClient, FailTokenRefreshClient
+from .clients import SimpleClient, FailTokenRefreshClient
 from .fixtures import mocked, client, token_refresh_client, xml_client
 from .callbacks import callback_201, callback_401
 

@@ -4,7 +4,7 @@ import pytest_asyncio
 from aioresponses import aioresponses
 
 from aiotapioca.serializers import SimpleSerializer
-from .client import SimpleClient, SerializerClient, TokenRefreshClient, XMLClient
+from .clients import SimpleClient, SerializerClient, TokenRefreshClient, XMLClient
 
 
 @pytest_asyncio.fixture

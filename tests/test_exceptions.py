@@ -2,10 +2,9 @@
 import pytest
 import aiohttp
 
-
 from aiotapioca.exceptions import ClientError, ServerError, ResponseProcessException, TapiocaException
 from aiotapioca.tapioca import TapiocaClient
-from .client import SimpleClientAdapter
+from .clients import SimpleClientAdapter
 from .fixtures import mocked, client
 
 
