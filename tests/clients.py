@@ -1,60 +1,58 @@
-
-from aiotapioca.adapters import TapiocaAdapter, JSONAdapterMixin, XMLAdapterMixin, generate_wrapper_from_adapter
+from aiotapioca.adapters import (
+    TapiocaAdapter,
+    JSONAdapterMixin,
+    XMLAdapterMixin,
+    generate_wrapper_from_adapter,
+)
 from aiotapioca.serializers import SimpleSerializer
 
 
 RESOURCE_MAPPING = {
-    'test': {
-        'resource': 'test/',
-        'docs': 'http://www.example.org'
+    "test": {"resource": "test/", "docs": "http://www.example.org"},
+    "user": {"resource": "user/{id}/", "docs": "http://www.example.org/user"},
+    "resource": {
+        "resource": "resource/{number}/",
+        "docs": "http://www.example.org/resource",
+        "spam": "eggs",
+        "foo": "bar",
     },
-    'user': {
-        'resource': 'user/{id}/',
-        'docs': 'http://www.example.org/user'
-    },
-    'resource': {
-        'resource': 'resource/{number}/',
-        'docs': 'http://www.example.org/resource',
-        'spam': 'eggs',
-        'foo': 'bar'
-    },
-    'another_root': {
-        'resource': 'another-root/',
-        'docs': 'http://www.example.org/another-root'
+    "another_root": {
+        "resource": "another-root/",
+        "docs": "http://www.example.org/another-root",
     },
 }
 
 
 class SimpleClientAdapter(JSONAdapterMixin, TapiocaAdapter):
     serializer_class = None
-    api_root = 'https://api.example.org'
+    api_root = "https://api.example.org"
     resource_mapping = RESOURCE_MAPPING
 
     def get_api_root(self, api_params, **kwargs):
-        if kwargs.get('resource_name') == 'another_root':
-            return 'https://api.another.com/'
+        if kwargs.get("resource_name") == "another_root":
+            return "https://api.another.com/"
         else:
             return self.api_root
 
     def get_iterator_list(self, response_data):
-        return response_data['data']
+        return response_data["data"]
 
-    def get_iterator_next_request_kwargs(self, iterator_request_kwargs,
-                                         response_data, response):
-        paging = response_data.get('paging')
+    def get_iterator_next_request_kwargs(
+        self, iterator_request_kwargs, response_data, response
+    ):
+        paging = response_data.get("paging")
         if not paging:
             return
-        url = paging.get('next')
+        url = paging.get("next")
 
         if url:
-            return {'url': url}
+            return {"url": url}
 
 
 SimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter)
 
 
 class CustomSerializer(SimpleSerializer):
-
     def to_kwargs(self, data, **kwargs):
         return kwargs
 
@@ -67,13 +65,12 @@ SerializerClient = generate_wrapper_from_adapter(SerializerClientAdapter)
 
 
 class TokenRefreshClientAdapter(SimpleClientAdapter):
-
     def is_authentication_expired(self, exception, *args, **kwargs):
         return exception.status == 401
 
     def refresh_authentication(self, api_params, *args, **kwargs):
-        new_token = 'new_token'
-        api_params['token'] = new_token
+        new_token = "new_token"
+        api_params["token"] = new_token
         return new_token
 
 
@@ -81,7 +78,6 @@ TokenRefreshClient = generate_wrapper_from_adapter(TokenRefreshClientAdapter)
 
 
 class FailTokenRefreshClientAdapter(TokenRefreshClientAdapter):
-
     def refresh_authentication(self, api_params, *args, **kwargs):
         return None
 
@@ -90,7 +86,7 @@ FailTokenRefreshClient = generate_wrapper_from_adapter(FailTokenRefreshClientAda
 
 
 class XMLClientAdapter(XMLAdapterMixin, TapiocaAdapter):
-    api_root = 'https://api.example.org'
+    api_root = "https://api.example.org"
     resource_mapping = RESOURCE_MAPPING
 
 

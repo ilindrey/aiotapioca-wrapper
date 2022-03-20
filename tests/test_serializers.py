@@ -1,4 +1,3 @@
-
 import arrow
 import json
 import pytest
@@ -6,7 +5,13 @@ from decimal import Decimal
 from yarl import URL
 
 from aiotapioca.serializers import BaseSerializer, SimpleSerializer
-from .fixtures import mocked, client, client_serializer_class, serializer_client, serializer
+from .fixtures import (
+    mocked,
+    client,
+    client_serializer_class,
+    serializer_client,
+    serializer,
+)
 
 
 """
@@ -19,11 +24,15 @@ def test_passing_serializer_on_instatiation(client_serializer_class):
     assert isinstance(serializer, BaseSerializer)
 
 
-async def test_external_serializer_is_passed_along_clients(mocked, client_serializer_class):
-    mocked.get(client_serializer_class.test().data,
-               body='{"date": "2014-11-13T14:53:18.694072+00:00"}',
-               status=200,
-               content_type='application/json')
+async def test_external_serializer_is_passed_along_clients(
+    mocked, client_serializer_class
+):
+    mocked.get(
+        client_serializer_class.test().data,
+        body='{"date": "2014-11-13T14:53:18.694072+00:00"}',
+        status=200,
+        content_type="application/json",
+    )
     response = await client_serializer_class.test().get()
     assert response._api.serializer.__class__ == SimpleSerializer
 
@@ -34,38 +43,44 @@ def test_serializer_client_adapter_has_serializer(serializer_client):
 
 
 async def test_executor_dir_returns_serializer_methods(mocked, serializer_client):
-    mocked.get(serializer_client.test().data,
-               body='{"date": "2014-11-13T14:53:18.694072+00:00"}',
-               status=200,
-               content_type='application/json')
+    mocked.get(
+        serializer_client.test().data,
+        body='{"date": "2014-11-13T14:53:18.694072+00:00"}',
+        status=200,
+        content_type="application/json",
+    )
 
     response = await serializer_client.test().get()
 
     e_dir = dir(response())
 
-    assert 'to_datetime' in e_dir
-    assert 'to_decimal' in e_dir
+    assert "to_datetime" in e_dir
+    assert "to_decimal" in e_dir
 
 
 async def test_request_with_data_serialization(mocked, serializer_client):
-    mocked.post(serializer_client.test().data,
-                body='{}',
-                status=200,
-                content_type='application/json')
+    mocked.post(
+        serializer_client.test().data,
+        body="{}",
+        status=200,
+        content_type="application/json",
+    )
 
-    string_date = '2014-11-13T14:53:18.694072+00:00'
-    string_decimal = '1.45'
+    string_date = "2014-11-13T14:53:18.694072+00:00"
+    string_decimal = "1.45"
 
     data = {
-        'date': arrow.get(string_date).datetime,
-        'decimal': Decimal(string_decimal),
+        "date": arrow.get(string_date).datetime,
+        "decimal": Decimal(string_decimal),
     }
 
     await serializer_client.test().post(data=data)
 
-    request_body = mocked.requests[('POST', URL(serializer_client.test().data))][0].kwargs['data']
+    request_body = mocked.requests[("POST", URL(serializer_client.test().data))][
+        0
+    ].kwargs["data"]
 
-    assert json.loads(request_body) == {'date': string_date, 'decimal': string_decimal}
+    assert json.loads(request_body) == {"date": string_date, "decimal": string_decimal}
 
 
 """
@@ -74,20 +89,24 @@ test deserialization
 
 
 async def test_convert_to_decimal(mocked, serializer_client):
-    mocked.get(serializer_client.test().data,
-               body='{"decimal_value": "10.51"}',
-               status=200,
-               content_type='application/json')
+    mocked.get(
+        serializer_client.test().data,
+        body='{"decimal_value": "10.51"}',
+        status=200,
+        content_type="application/json",
+    )
 
     response = await serializer_client.test().get()
-    assert response.decimal_value().to_decimal() == Decimal('10.51')
+    assert response.decimal_value().to_decimal() == Decimal("10.51")
 
 
 async def test_convert_to_datetime(mocked, serializer_client):
-    mocked.add(serializer_client.test().data,
-               body='{"date": "2014-11-13T14:53:18.694072+00:00"}',
-               status=200,
-               content_type='application/json')
+    mocked.add(
+        serializer_client.test().data,
+        body='{"date": "2014-11-13T14:53:18.694072+00:00"}',
+        status=200,
+        content_type="application/json",
+    )
 
     response = await serializer_client.test().get()
     date = response.date().to_datetime()
@@ -100,10 +119,12 @@ async def test_convert_to_datetime(mocked, serializer_client):
 
 
 async def test_call_non_existent_conversion(mocked, serializer_client):
-    mocked.get(serializer_client.test().data,
-               body='{"any_data": "%#ˆ$&"}',
-               status=200,
-               content_type='application/json')
+    mocked.get(
+        serializer_client.test().data,
+        body='{"any_data": "%#ˆ$&"}',
+        status=200,
+        content_type="application/json",
+    )
 
     response = await serializer_client.test().get()
     with pytest.raises(NotImplementedError):
@@ -111,10 +132,12 @@ async def test_call_non_existent_conversion(mocked, serializer_client):
 
 
 async def test_call_conversion_with_no_serializer(mocked, client):
-    mocked.get(client.test().data,
-               body='{"any_data": "%#ˆ$&"}',
-               status=200,
-               content_type='application/json')
+    mocked.get(
+        client.test().data,
+        body='{"any_data": "%#ˆ$&"}',
+        status=200,
+        content_type="application/json",
+    )
 
     response = await client.test().get()
     with pytest.raises(NotImplementedError):
@@ -122,14 +145,18 @@ async def test_call_conversion_with_no_serializer(mocked, client):
 
 
 async def test_pass_kwargs(mocked, serializer_client):
-    mocked.get(serializer_client.test().data,
-               body='{"decimal_value": "10.51"}',
-               status=200,
-               content_type='application/json')
+    mocked.get(
+        serializer_client.test().data,
+        body='{"decimal_value": "10.51"}',
+        status=200,
+        content_type="application/json",
+    )
 
     response = await serializer_client.test().get()
 
-    assert response.decimal_value().to_kwargs(some_key='some value') == {'some_key': 'some value'}
+    assert response.decimal_value().to_kwargs(some_key="some value") == {
+        "some_key": "some value"
+    }
 
 
 """
@@ -144,7 +171,7 @@ def test_serialize_int(serializer):
 
 
 def test_serialize_str(serializer):
-    data = 'the str'
+    data = "the str"
     serialized = serializer.serialize(data)
     assert serialized == data
 
@@ -163,10 +190,10 @@ def test_serialize_none(serializer):
 
 def test_serialization_of_simple_dict(serializer):
     data = {
-        'key1': 'value1',
-        'key2': 'value2',
-        'key3': 'value3',
-        }
+        "key1": "value1",
+        "key2": "value2",
+        "key3": "value3",
+    }
     serialized = serializer.serialize(data)
     assert serialized == data
 
@@ -179,9 +206,9 @@ def test_serialization_of_simple_list(serializer):
 
 def test_serialization_of_nested_list_in_dict(serializer):
     data = {
-        'key1': [1, 2, 3, 4, 5],
-        'key2': [1],
-        'key3': [1, 2, 5],
+        "key1": [1, 2, 3, 4, 5],
+        "key2": [1],
+        "key3": [1, 2, 5],
     }
     serialized = serializer.serialize(data)
     assert serialized == data
@@ -189,22 +216,22 @@ def test_serialization_of_nested_list_in_dict(serializer):
 
 def test_multi_level_serializations(serializer):
     data = [
-        {'key1': [1, 2, 3, 4, 5]},
-        {'key2': [1]},
-        {'key3': [1, 2, 5]},
+        {"key1": [1, 2, 3, 4, 5]},
+        {"key2": [1]},
+        {"key3": [1, 2, 5]},
     ]
     serialized = serializer.serialize(data)
     assert serialized == data
 
 
 def test_decimal_serialization(serializer):
-    data = {'key': [Decimal('1.0'), Decimal('1.1'), Decimal('1.2')]}
+    data = {"key": [Decimal("1.0"), Decimal("1.1"), Decimal("1.2")]}
     serialized = serializer.serialize(data)
-    assert serialized == {'key': ['1.0', '1.1', '1.2']}
+    assert serialized == {"key": ["1.0", "1.1", "1.2"]}
 
 
 def test_datetime_serialization(serializer):
-    string_date = '2014-11-13T14:53:18.694072+00:00'
+    string_date = "2014-11-13T14:53:18.694072+00:00"
     data = [arrow.get(string_date).datetime]
     serialized = serializer.serialize(data)
     assert serialized == [string_date]

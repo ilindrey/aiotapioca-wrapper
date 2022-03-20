@@ -1,4 +1,3 @@
-
 from aioresponses import CallbackResult
 
 

@@ -1,6 +1,4 @@
-
 class ResponseProcessException(Exception):
-
     def __init__(self, tapioca_exception, data, *args, **kwargs):
         self.tapioca_exception = tapioca_exception
         self.data = data
@@ -8,7 +6,6 @@ class ResponseProcessException(Exception):
 
 
 class TapiocaException(Exception):
-
     def __init__(self, message, client):
         self.status = None
         self.client = client
@@ -21,12 +18,10 @@ class TapiocaException(Exception):
 
 
 class ClientError(TapiocaException):
-
-    def __init__(self, message='', client=None):
+    def __init__(self, message="", client=None):
         super().__init__(message, client=client)
 
 
 class ServerError(TapiocaException):
-
-    def __init__(self, message='', client=None):
+    def __init__(self, message="", client=None):
         super().__init__(message, client=client)

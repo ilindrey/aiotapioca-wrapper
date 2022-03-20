@@ -1,8 +1,12 @@
-
 import pytest
 import aiohttp
 
-from aiotapioca.exceptions import ClientError, ServerError, ResponseProcessException, TapiocaException
+from aiotapioca.exceptions import (
+    ClientError,
+    ServerError,
+    ResponseProcessException,
+    TapiocaException,
+)
 from aiotapioca.tapioca import TapiocaClient
 from .clients import SimpleClientAdapter
 from .fixtures import mocked, client
@@ -14,10 +18,12 @@ test TapiocaException
 
 
 async def test_exception_contain_tapioca_tester_client(mocked, client):
-    mocked.get(client.test().data,
-               body='{"data": {"key": "value"}}',
-               status=400,
-               content_type='application/json')
+    mocked.get(
+        client.test().data,
+        body='{"data": {"key": "value"}}',
+        status=400,
+        content_type="application/json",
+    )
     try:
         await client.test().get()
     except TapiocaException as e:
@@ -26,10 +32,7 @@ async def test_exception_contain_tapioca_tester_client(mocked, client):
 
 
 async def test_exception_contain_status_code(mocked, client):
-    mocked.get(client.test().data,
-               body='',
-               status=400,
-               content_type='application/json')
+    mocked.get(client.test().data, body="", status=400, content_type="application/json")
     try:
         await client.test().get()
     except TapiocaException as e:
@@ -38,10 +41,7 @@ async def test_exception_contain_status_code(mocked, client):
 
 
 async def test_exception_message(mocked, client):
-    mocked.get(client.test().data,
-               body='',
-               status=400,
-               content_type='application/json')
+    mocked.get(client.test().data, body="", status=400, content_type="application/json")
     try:
         await client.test().get()
     except TapiocaException as e:
@@ -55,10 +55,12 @@ test Exceptions
 
 
 async def test_adapter_raises_response_process_exception_on_400s(mocked, client):
-    mocked.get(client.test().data,
-               body='{"errors": "Server Error"}',
-               status=400,
-               content_type='application/json')
+    mocked.get(
+        client.test().data,
+        body='{"errors": "Server Error"}',
+        status=400,
+        content_type="application/json",
+    )
     async with aiohttp.ClientSession() as session:
         response = await session.get(client.test().data)
     with pytest.raises(ResponseProcessException):
@@ -66,10 +68,12 @@ async def test_adapter_raises_response_process_exception_on_400s(mocked, client)
 
 
 async def test_adapter_raises_response_process_exception_on_500s(mocked, client):
-    mocked.get(client.test().data,
-               body='{"errors": "Server Error"}',
-               status=500,
-               content_type='application/json')
+    mocked.get(
+        client.test().data,
+        body='{"errors": "Server Error"}',
+        status=500,
+        content_type="application/json",
+    )
     async with aiohttp.ClientSession() as session:
         response = await session.get(client.test().data)
     with pytest.raises(ResponseProcessException):
@@ -77,19 +81,18 @@ async def test_adapter_raises_response_process_exception_on_500s(mocked, client)
 
 
 async def test_raises_request_error(mocked, client):
-    mocked.get(client.test().data,
-               body='{"data": {"key": "value"}}',
-               status=400,
-               content_type='application/json')
+    mocked.get(
+        client.test().data,
+        body='{"data": {"key": "value"}}',
+        status=400,
+        content_type="application/json",
+    )
 
     with pytest.raises(ClientError):
         await client.test().get()
 
 
 async def test_raises_server_error(mocked, client):
-    mocked.get(client.test().data,
-               status=500,
-               content_type='application/json')
+    mocked.get(client.test().data, status=500, content_type="application/json")
     with pytest.raises(ServerError):
         await client.test().get()
-

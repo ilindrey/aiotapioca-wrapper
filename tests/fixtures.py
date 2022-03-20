@@ -1,4 +1,3 @@
-
 import pytest
 import pytest_asyncio
 from aioresponses import aioresponses
@@ -33,7 +32,7 @@ async def xml_client():
 
 @pytest_asyncio.fixture
 async def token_refresh_client():
-    async with TokenRefreshClient(token='token', refresh_token_by_default=True) as c:
+    async with TokenRefreshClient(token="token", refresh_token_by_default=True) as c:
         yield c
 
 

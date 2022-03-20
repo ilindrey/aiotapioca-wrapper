@@ -20,13 +20,8 @@ Source code hosted on Github: https://github.com/vintasoftware/tapioca-wrapper
 Documentation hosted by Readthedocs: http://tapioca-wrapper.readthedocs.io/en/stable/
 """
 
-package = 'aiotapioca'
-requirements = [
-    'aiohttp>=3.0',
-    'arrow>=0.6.0,<1',
-    'six>=1',
-    'xmltodict>=0.9.2'
-]
+package = "aiotapioca"
+requirements = ["aiohttp>=3.0", "arrow>=0.6.0,<1", "six>=1", "xmltodict>=0.9.2"]
 test_requirements = [
     "pytest>=7.0",
     "pytest-asyncio>=0.18",
@@ -35,21 +30,23 @@ test_requirements = [
 dev_requirements = [
     *test_requirements,
     "black>=22.0",
-    ]
+]
 
 
 def get_version(package):
     """
     Return package version as listed in `__version__` in `init.py`.
     """
-    init_py = open(os.path.join(package, '__init__.py')).read()
-    return re.search("^__version__ = ['\"]([^'\"]+)['\"]", init_py, re.MULTILINE).group(1)
+    init_py = open(os.path.join(package, "__init__.py")).read()
+    return re.search("^__version__ = ['\"]([^'\"]+)['\"]", init_py, re.MULTILINE).group(
+        1
+    )
 
 
 # python setup.py register
-if sys.argv[-1] == 'publish':
+if sys.argv[-1] == "publish":
     os.system("python setup.py sdist upload")
-    args = {'version': get_version(package)}
+    args = {"version": get_version(package)}
     print("You probably want to also tag the version now:")
     print("  git tag -a %(version)s -m 'version %(version)s'" % args)
     print("  git push --tags")
@@ -57,29 +54,29 @@ if sys.argv[-1] == 'publish':
 
 
 setup(
-    name='aiotapioca-wrapper',
+    name="aiotapioca-wrapper",
     version=get_version(package),
-    description='Python API client generator',
+    description="Python API client generator",
     long_description=description,
-    author='Filipe Ximenes,Andrey Ilin',
-    author_email='andreyilin@fastmail.com',
-    url='https://github.com/ilindrey/aiotapioca-wrapper',
+    author="Filipe Ximenes,Andrey Ilin",
+    author_email="andreyilin@fastmail.com",
+    url="https://github.com/ilindrey/aiotapioca-wrapper",
     packages=[package],
     package_dir={package: package},
     include_package_data=True,
     install_requires=requirements,
     license="MIT",
     zip_safe=False,
-    keywords='async,tapioca,wrapper,api',
+    keywords="async,tapioca,wrapper,api",
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 3',
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
     ],
     python_requires=">=3.6",
-    test_suite='tests',
+    test_suite="tests",
     tests_require=test_requirements,
     extras_require={"dev": dev_requirements},
 )
