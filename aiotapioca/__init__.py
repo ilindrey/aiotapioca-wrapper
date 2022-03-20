@@ -1,8 +1,7 @@
-from __future__ import unicode_literals
 
-__author__ = "Filipe Ximenes"
-__email__ = "filipeximenes@gmail.com"
-__version__ = "2.1.0"
+__author__ = "Filipe Ximenes, Andrey Ilin"
+__email__ = "andreyilin@fastmail.com"
+__version__ = "3.0.0"
 
 
 from .adapters import (
