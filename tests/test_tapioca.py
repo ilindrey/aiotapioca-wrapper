@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import pickle
 import xmltodict
@@ -344,6 +346,98 @@ async def test_delete_request(mocked, client):
     response = await client.test().delete()
 
     assert response().data, {"data": {"key": "value"}}
+
+
+async def test_post_batch(mocked, client):
+    data = [
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+    ]
+
+    for row in data:
+        mocked.post(
+            client.test().data,
+            body=json.dumps(row),
+            status=200,
+            content_type="application/json",
+        )
+
+    results = await client.test().post_batch(data=data)
+
+    for response, data_row in zip(results, data):
+        assert response().data == data_row
+
+    assert len(results) == len(data)
+
+
+async def test_put_batch(mocked, client):
+    data = [
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+    ]
+
+    for row in data:
+        mocked.put(
+            client.test().data,
+            body=json.dumps(row),
+            status=200,
+            content_type="application/json",
+        )
+
+    results = await client.test().put_batch(data=data)
+
+    for response, data_row in zip(results, data):
+        assert response().data == data_row
+
+    assert len(results) == len(data)
+
+
+async def test_patch_batch(mocked, client):
+    data = [
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+    ]
+
+    for row in data:
+        mocked.patch(
+            client.test().data,
+            body=json.dumps(row),
+            status=200,
+            content_type="application/json",
+        )
+
+    results = await client.test().patch_batch(data=data)
+
+    for response, data_row in zip(results, data):
+        assert response().data == data_row
+
+    assert len(results) == len(data)
+
+
+async def test_delete_batch(mocked, client):
+    data = [
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+        {"data": [{"key": "value"}]},
+    ]
+
+    for row in data:
+        mocked.delete(
+            client.test().data,
+            body=json.dumps(row),
+            status=200,
+            content_type="application/json",
+        )
+
+    results = await client.test().delete_batch(data=data)
+
+    for response, data_row in zip(results, data):
+        assert response().data == data_row
+
+    assert len(results) == len(data)
 
 
 async def test_carries_request_kwargs_over_calls(mocked, client):
