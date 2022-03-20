@@ -1,4 +1,4 @@
-# Tapioca-Wrapper
+# AioTapioca-Wrapper
 
 [![Join the chat at https://gitter.im/vintasoftware/tapioca-wrapper](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/vintasoftware/tapioca-wrapper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/vintasoftware/tapioca-wrapper.svg?branch=master)](https://travis-ci.org/vintasoftware/tapioca-wrapper)
@@ -6,6 +6,9 @@
 [![Current version at PyPI](https://img.shields.io/pypi/v/tapioca-wrapper.svg)](https://pypi.python.org/pypi/tapioca-wrapper)
 ![Supported Python Versions](https://img.shields.io/pypi/pyversions/tapioca-wrapper.svg)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/vintasoftware/tapioca-wrapper/master/LICENSE)
+[![Codestyle](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+It's an async fork of [tapioca-wrapper](https://github.com/vintasoftware/tapioca-wrapper) library.
 
 ![](docs/static/logo.png)
 
