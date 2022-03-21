@@ -21,12 +21,14 @@ class TapiocaAdapter:
         else:
             self.serializer = self.get_serializer()
 
-    def _get_to_native_method(self, method_name, value):
+    def _get_to_native_method(self, method_name, value, **default_kwargs):
         if not self.serializer:
             raise NotImplementedError("This client does not have a serializer")
 
         def to_native_wrapper(**kwargs):
-            return self._value_to_native(method_name, value, **kwargs)
+            params = default_kwargs or {}
+            params.update(kwargs)
+            return self._value_to_native(method_name, value, **params)
 
         return to_native_wrapper
 
@@ -45,7 +47,6 @@ class TapiocaAdapter:
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
         serialized = self.serialize_data(kwargs.get("data"))
-
         kwargs.update(
             {
                 "data": self.format_data_to_request(serialized),

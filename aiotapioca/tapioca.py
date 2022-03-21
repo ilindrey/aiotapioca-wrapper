@@ -70,11 +70,13 @@ class TapiocaClient:
 
     def _wrap_in_tapioca(self, data, *args, **kwargs):
         request_kwargs = kwargs.pop("request_kwargs", self._request_kwargs)
+        resource = kwargs.pop("resource", self._resource)
         return TapiocaClient(
             self._instatiate_api(),
             data=data,
             api_params=self._api_params,
             request_kwargs=request_kwargs,
+            resource=resource,
             refresh_token_by_default=self._refresh_token_default,
             refresh_data=self._refresh_data,
             session=self._session,
@@ -84,11 +86,13 @@ class TapiocaClient:
 
     def _wrap_in_tapioca_executor(self, data, *args, **kwargs):
         request_kwargs = kwargs.pop("request_kwargs", self._request_kwargs)
+        resource = kwargs.pop("resource", self._resource)
         return TapiocaClientExecutor(
             self._instatiate_api(),
             data=data,
             api_params=self._api_params,
             request_kwargs=request_kwargs,
+            resource=resource,
             refresh_token_by_default=self._refresh_token_default,
             refresh_data=self._refresh_data,
             session=self._session,
@@ -238,7 +242,9 @@ class TapiocaClientExecutor(TapiocaClient):
         if name.startswith("__") and name.endswith("__"):
             raise AttributeError(name)
         if name.startswith("to_"):  # deserializing
-            return self._api._get_to_native_method(name, self._data)
+            method = self._resource.get(name)
+            kwargs = method.get("params", {}) if method else {}
+            return self._api._get_to_native_method(name, self._data, **kwargs)
         return self._wrap_in_tapioca_executor(getattr(self._data, name))
 
     def __call__(self, *args, **kwargs):

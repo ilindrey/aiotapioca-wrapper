@@ -45,3 +45,16 @@ class SimpleSerializer(BaseSerializer):
 
     def serialize_datetime(self, data):
         return arrow.get(data).isoformat()
+
+
+class PydanticSerializer(BaseSerializer):
+    def to_pydantic(self, data, model=None):
+        if not model:
+            raise ValueError(
+                "The model parameter is not specified in the resource mapping."
+            )
+        if isinstance(data, str):
+            serialized = model.parse_raw(data)
+        else:
+            serialized = model.parse_obj(data)
+        return serialized
