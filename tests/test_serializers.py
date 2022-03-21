@@ -3,12 +3,15 @@ import json
 import pytest
 from decimal import Decimal
 from yarl import URL
+from pydantic import BaseModel
 
 from aiotapioca.serializers import BaseSerializer, SimpleSerializer
+from .clients import CustomModel
 from .fixtures import (
     mocked,
     client,
     client_serializer_class,
+    pydantic_client,
     serializer_client,
     serializer,
 )
@@ -101,7 +104,7 @@ async def test_convert_to_decimal(mocked, serializer_client):
 
 
 async def test_convert_to_datetime(mocked, serializer_client):
-    mocked.add(
+    mocked.get(
         serializer_client.test().data,
         body='{"date": "2014-11-13T14:53:18.694072+00:00"}',
         status=200,
@@ -116,6 +119,63 @@ async def test_convert_to_datetime(mocked, serializer_client):
     assert date.hour == 14
     assert date.minute == 53
     assert date.second == 18
+
+
+async def test_convert_to_pydantic(mocked, pydantic_client):
+    response_body = (
+        '{"data": [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]}'
+    )
+
+    mocked.get(
+        pydantic_client.test().data,
+        body=response_body,
+        status=200,
+        content_type="application/json",
+    )
+
+    response = await pydantic_client.test_pydantic().get()
+    data = response().to_pydantic()
+
+    assert isinstance(data, BaseModel)
+    assert data.json() == response_body
+
+
+async def test_convert_to_pydantic_has_no_model_in_resource(mocked, pydantic_client):
+    response_body = (
+        '{"data": [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]}'
+    )
+
+    mocked.get(
+        pydantic_client.test().data,
+        body=response_body,
+        status=200,
+        content_type="application/json",
+    )
+
+    response = await pydantic_client.test().get()
+
+    with pytest.raises(ValueError):
+        response().to_pydantic()
+
+
+async def test_convert_to_pydantic_pass_model_as_param(mocked, pydantic_client):
+    response_body = (
+        '{"data": [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]}'
+    )
+
+    mocked.get(
+        pydantic_client.test().data,
+        body=response_body,
+        status=200,
+        content_type="application/json",
+    )
+
+    response = await pydantic_client.test().get()
+
+    data = response().to_pydantic(model=CustomModel)
+
+    assert isinstance(data, BaseModel)
+    assert data.json() == response_body
 
 
 async def test_call_non_existent_conversion(mocked, serializer_client):

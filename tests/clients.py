@@ -1,3 +1,5 @@
+from pydantic import BaseModel
+
 from aiotapioca.adapters import (
     TapiocaAdapter,
     JSONAdapterMixin,
@@ -7,8 +9,23 @@ from aiotapioca.adapters import (
 from aiotapioca.serializers import SimpleSerializer
 
 
+class Detail(BaseModel):
+    key1: str
+    key2: int
+
+
+class CustomModel(BaseModel):
+    data: list[Detail]
+
+
+test = {
+    "resource": "test/",
+    "docs": "http://www.example.org",
+}
+
 RESOURCE_MAPPING = {
-    "test": {"resource": "test/", "docs": "http://www.example.org"},
+    "test": test,
+    "test_pydantic": {**test, "to_pydantic": {"params": {"model": CustomModel}}},
     "user": {"resource": "user/{id}/", "docs": "http://www.example.org/user"},
     "resource": {
         "resource": "resource/{number}/",

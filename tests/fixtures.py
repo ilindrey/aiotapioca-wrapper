@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 from aioresponses import aioresponses
 
-from aiotapioca.serializers import SimpleSerializer
+from aiotapioca.serializers import SimpleSerializer, PydanticSerializer
 from .clients import SimpleClient, SerializerClient, TokenRefreshClient, XMLClient
 
 
@@ -21,6 +21,12 @@ async def client_serializer_class():
 @pytest_asyncio.fixture
 async def serializer_client():
     async with SerializerClient() as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def pydantic_client():
+    async with SimpleClient(serializer_class=PydanticSerializer) as c:
         yield c
 
 
