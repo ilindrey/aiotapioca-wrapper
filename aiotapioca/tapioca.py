@@ -1,17 +1,11 @@
 import copy
-
 import asyncio
 import aiohttp
 import webbrowser
-
-import logging
 import json
 from collections import OrderedDict
 
 from .exceptions import ResponseProcessException
-
-
-logger = logging.getLogger("coin32api_channels")
 
 
 class TapiocaInstantiator:
@@ -343,9 +337,9 @@ class TapiocaClientExecutor(TapiocaClient):
 
         if debug:
             response_info = "status: {} - response data: {}".format(
-                response.status, str(response.data)[:33]
+                response().status, str(response().data)[:33]
             )
-            logger.info(response_info)
+            print(response_info)
 
         return response
 

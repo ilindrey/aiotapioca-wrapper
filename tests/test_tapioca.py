@@ -309,6 +309,32 @@ async def test_access_response_field(mocked, client):
     assert response_data.data == {"key": "value"}
 
 
+async def test_get_request_debug_flag(mocked, client):
+    mocked.get(
+        client.test().data,
+        body='{"data": {"key": "value"}}',
+        status=201,
+        content_type="application/json",
+    )
+
+    response = await client.test().get(debug=True)
+
+    assert response().data == {"data": {"key": "value"}}
+
+
+async def test_post_request(mocked, client):
+    mocked.post(
+        client.test().data,
+        body='{"data": {"key": "value"}}',
+        status=201,
+        content_type="application/json",
+    )
+
+    response = await client.test().post(debug=True)
+
+    assert response().data == {"data": {"key": "value"}}
+
+
 async def test_put_request(mocked, client):
     mocked.put(
         client.test().data,
@@ -317,7 +343,7 @@ async def test_put_request(mocked, client):
         content_type="application/json",
     )
 
-    response = await client.test().put()
+    response = await client.test().put(debug=True)
 
     assert response().data == {"data": {"key": "value"}}
 
@@ -330,7 +356,7 @@ async def test_patch_request(mocked, client):
         content_type="application/json",
     )
 
-    response = await client.test().patch()
+    response = await client.test().patch(debug=True)
 
     assert response().data == {"data": {"key": "value"}}
 
@@ -343,7 +369,7 @@ async def test_delete_request(mocked, client):
         content_type="application/json",
     )
 
-    response = await client.test().delete()
+    response = await client.test().delete(debug=True)
 
     assert response().data, {"data": {"key": "value"}}
 
@@ -363,7 +389,7 @@ async def test_post_batch(mocked, client):
             content_type="application/json",
         )
 
-    results = await client.test().post_batch(data=data)
+    results = await client.test().post_batch(data=data, debug=True)
 
     for response, data_row in zip(results, data):
         assert response().data == data_row
@@ -386,7 +412,7 @@ async def test_put_batch(mocked, client):
             content_type="application/json",
         )
 
-    results = await client.test().put_batch(data=data)
+    results = await client.test().put_batch(data=data, debug=True)
 
     for response, data_row in zip(results, data):
         assert response().data == data_row
@@ -409,7 +435,7 @@ async def test_patch_batch(mocked, client):
             content_type="application/json",
         )
 
-    results = await client.test().patch_batch(data=data)
+    results = await client.test().patch_batch(data=data, debug=True)
 
     for response, data_row in zip(results, data):
         assert response().data == data_row
@@ -432,7 +458,7 @@ async def test_delete_batch(mocked, client):
             content_type="application/json",
         )
 
-    results = await client.test().delete_batch(data=data)
+    results = await client.test().delete_batch(data=data, debug=True)
 
     for response, data_row in zip(results, data):
         assert response().data == data_row
