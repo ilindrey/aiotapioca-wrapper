@@ -51,7 +51,10 @@ class PydanticSerializer(BaseSerializer):
     def to_pydantic(self, data, model=None):
         if not model:
             raise ValueError(
-                "The model parameter is not specified in the resource mapping."
+                """
+                The model parameter is not specified in the resource mapping
+                or is not passed as a function parameter.
+                """
             )
         if isinstance(data, str):
             serialized = model.parse_raw(data)
