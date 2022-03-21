@@ -12,12 +12,14 @@ import os
 import sys
 
 description = """
+It's an asynchronous fork of https://github.com/vintasoftware/tapioca-wrapper library.
+
 Tapioca provides an easy way to make explorable Python API wrappers.
 APIs wrapped by Tapioca follow a simple interaction pattern that works uniformly so developers don't need to learn how to use a new coding interface/style for each service API.
 
 Source code hosted on Github: https://github.com/ilindrey/aiotapioca-wrapper
 
-Documentation hosted by Readthedocs: http://tapioca-wrapper.readthedocs.io/en/stable/
+Documentation hosted by Readthedocs (original library, it's not asynchronous): http://tapioca-wrapper.readthedocs.io/en/stable/
 """
 
 package = "aiotapioca"

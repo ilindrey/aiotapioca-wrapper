@@ -8,7 +8,7 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/vintasoftware/tapioca-wrapper/master/LICENSE)
 [![Codestyle](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-It's an async fork of [tapioca-wrapper](https://github.com/vintasoftware/tapioca-wrapper) library.
+It's an asynchronous fork of [tapioca-wrapper](https://github.com/vintasoftware/tapioca-wrapper) library.
 
 ![](docs/static/logo.png)
 
