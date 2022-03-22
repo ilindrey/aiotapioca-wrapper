@@ -300,7 +300,9 @@ class TapiocaClientExecutor(TapiocaClient):
             repeat_number=repeat_number,
             **kwargs
         )
-        request_kwargs = self._api.get_request_kwargs(self._api_params, *args, **kwargs)
+        request_kwargs = self._api.get_request_kwargs(
+            self._api_params, request_method, *args, **kwargs
+        )
 
         response = await self._session.request(request_method, **request_kwargs)
 
