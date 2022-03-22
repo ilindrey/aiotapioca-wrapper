@@ -8,4 +8,18 @@ from .adapters import (
     TapiocaAdapter,
     FormAdapterMixin,
     JSONAdapterMixin,
+    XMLAdapterMixin,
+)
+from .serializers import BaseSerializer, SimpleSerializer, PydanticSerializer
+
+
+__all__ = (
+    "generate_wrapper_from_adapter",
+    "TapiocaAdapter",
+    "FormAdapterMixin",
+    "JSONAdapterMixin",
+    "XMLAdapterMixin",
+    "BaseSerializer",
+    "SimpleSerializer",
+    "PydanticSerializer",
 )
