@@ -108,3 +108,13 @@ class XMLClientAdapter(XMLAdapterMixin, TapiocaAdapter):
 
 
 XMLClient = generate_wrapper_from_adapter(XMLClientAdapter)
+
+
+class RetryRequestClientAdapter(SimpleClientAdapter):
+    def retry_request(self, tapioca_exception, error_message, repeat_number, **kwargs):
+        if tapioca_exception.status == 400 and repeat_number <= 11:
+            return True
+        return False
+
+
+RetryRequestClient = generate_wrapper_from_adapter(RetryRequestClientAdapter)

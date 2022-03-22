@@ -3,7 +3,13 @@ import pytest_asyncio
 from aioresponses import aioresponses
 
 from aiotapioca import SimpleSerializer, PydanticSerializer
-from .clients import SimpleClient, SerializerClient, TokenRefreshClient, XMLClient
+from .clients import (
+    SimpleClient,
+    SerializerClient,
+    TokenRefreshClient,
+    XMLClient,
+    RetryRequestClient,
+)
 
 
 @pytest_asyncio.fixture
@@ -39,6 +45,12 @@ async def xml_client():
 @pytest_asyncio.fixture
 async def token_refresh_client():
     async with TokenRefreshClient(token="token", refresh_token_by_default=True) as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def retry_request_client():
+    async with RetryRequestClient() as c:
         yield c
 
 

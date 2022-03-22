@@ -9,8 +9,16 @@ from yarl import URL
 from aiotapioca.tapioca import TapiocaClient
 from aiotapioca.exceptions import ClientError, ServerError
 from .clients import SimpleClient, FailTokenRefreshClient
-from .fixtures import mocked, client, token_refresh_client, xml_client
 from .callbacks import callback_201, callback_401
+from .fixtures import (
+    mocked,
+    client,
+    token_refresh_client,
+    xml_client,
+    token_refresh_client,
+    retry_request_client,
+)
+
 
 """
 test TapiocaClient
@@ -309,161 +317,170 @@ async def test_access_response_field(mocked, client):
     assert response_data.data == {"key": "value"}
 
 
-async def test_get_request_debug_flag(mocked, client):
-    mocked.get(
-        client.test().data,
-        body='{"data": {"key": "value"}}',
-        status=201,
-        content_type="application/json",
-    )
+async def test_get_request(mocked, client):
+    for debug in (True, False):
+        mocked.get(
+            client.test().data,
+            body='{"data": {"key": "value"}}',
+            status=201,
+            content_type="application/json",
+        )
 
-    response = await client.test().get(debug=True)
+        response = await client.test().get(debug=debug)
 
-    assert response().data == {"data": {"key": "value"}}
+        assert response().data == {"data": {"key": "value"}}
 
 
 async def test_post_request(mocked, client):
-    mocked.post(
-        client.test().data,
-        body='{"data": {"key": "value"}}',
-        status=201,
-        content_type="application/json",
-    )
+    for debug in (True, False):
+        mocked.post(
+            client.test().data,
+            body='{"data": {"key": "value"}}',
+            status=201,
+            content_type="application/json",
+        )
 
-    response = await client.test().post(debug=True)
+        response = await client.test().post(debug=debug)
 
-    assert response().data == {"data": {"key": "value"}}
+        assert response().data == {"data": {"key": "value"}}
 
 
 async def test_put_request(mocked, client):
-    mocked.put(
-        client.test().data,
-        body='{"data": {"key": "value"}}',
-        status=201,
-        content_type="application/json",
-    )
+    for debug in (True, False):
+        mocked.put(
+            client.test().data,
+            body='{"data": {"key": "value"}}',
+            status=201,
+            content_type="application/json",
+        )
 
-    response = await client.test().put(debug=True)
+        response = await client.test().put(debug=debug)
 
-    assert response().data == {"data": {"key": "value"}}
+        assert response().data == {"data": {"key": "value"}}
 
 
 async def test_patch_request(mocked, client):
-    mocked.patch(
-        client.test().data,
-        body='{"data": {"key": "value"}}',
-        status=201,
-        content_type="application/json",
-    )
+    for debug in (True, False):
+        mocked.patch(
+            client.test().data,
+            body='{"data": {"key": "value"}}',
+            status=201,
+            content_type="application/json",
+        )
 
-    response = await client.test().patch(debug=True)
+        response = await client.test().patch(debug=debug)
 
-    assert response().data == {"data": {"key": "value"}}
+        assert response().data == {"data": {"key": "value"}}
 
 
 async def test_delete_request(mocked, client):
-    mocked.delete(
-        client.test().data,
-        body='{"data": {"key": "value"}}',
-        status=201,
-        content_type="application/json",
-    )
+    for debug in (True, False):
+        mocked.delete(
+            client.test().data,
+            body='{"data": {"key": "value"}}',
+            status=201,
+            content_type="application/json",
+        )
 
-    response = await client.test().delete(debug=True)
+        response = await client.test().delete(debug=debug)
 
-    assert response().data, {"data": {"key": "value"}}
+        assert response().data, {"data": {"key": "value"}}
 
 
 async def test_post_batch(mocked, client):
-    data = [
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-    ]
+    for debug in (True, False):
+        data = [
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+        ]
 
-    for row in data:
-        mocked.post(
-            client.test().data,
-            body=json.dumps(row),
-            status=200,
-            content_type="application/json",
-        )
+        for row in data:
+            mocked.post(
+                client.test().data,
+                body=json.dumps(row),
+                status=200,
+                content_type="application/json",
+            )
 
-    results = await client.test().post_batch(data=data, debug=True)
+        results = await client.test().post_batch(data=data, debug=debug)
 
-    for response, data_row in zip(results, data):
-        assert response().data == data_row
+        for response, data_row in zip(results, data):
+            assert response().data == data_row
 
-    assert len(results) == len(data)
+        assert len(results) == len(data)
 
 
 async def test_put_batch(mocked, client):
-    data = [
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-    ]
+    for debug in (True, False):
+        data = [
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+        ]
 
-    for row in data:
-        mocked.put(
-            client.test().data,
-            body=json.dumps(row),
-            status=200,
-            content_type="application/json",
-        )
+        for row in data:
+            mocked.put(
+                client.test().data,
+                body=json.dumps(row),
+                status=200,
+                content_type="application/json",
+            )
 
-    results = await client.test().put_batch(data=data, debug=True)
+        results = await client.test().put_batch(data=data, debug=debug)
 
-    for response, data_row in zip(results, data):
-        assert response().data == data_row
+        for response, data_row in zip(results, data):
+            assert response().data == data_row
 
-    assert len(results) == len(data)
+        assert len(results) == len(data)
 
 
 async def test_patch_batch(mocked, client):
-    data = [
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-    ]
+    for debug in (True, False):
+        data = [
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+        ]
 
-    for row in data:
-        mocked.patch(
-            client.test().data,
-            body=json.dumps(row),
-            status=200,
-            content_type="application/json",
-        )
+        for row in data:
+            mocked.patch(
+                client.test().data,
+                body=json.dumps(row),
+                status=200,
+                content_type="application/json",
+            )
 
-    results = await client.test().patch_batch(data=data, debug=True)
+        results = await client.test().patch_batch(data=data, debug=debug)
 
-    for response, data_row in zip(results, data):
-        assert response().data == data_row
+        for response, data_row in zip(results, data):
+            assert response().data == data_row
 
-    assert len(results) == len(data)
+        assert len(results) == len(data)
 
 
 async def test_delete_batch(mocked, client):
-    data = [
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-        {"data": [{"key": "value"}]},
-    ]
+    for debug in (True, False):
+        data = [
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+            {"data": [{"key": "value"}]},
+        ]
 
-    for row in data:
-        mocked.delete(
-            client.test().data,
-            body=json.dumps(row),
-            status=200,
-            content_type="application/json",
-        )
+        for row in data:
+            mocked.delete(
+                client.test().data,
+                body=json.dumps(row),
+                status=200,
+                content_type="application/json",
+            )
 
-    results = await client.test().delete_batch(data=data, debug=True)
+        results = await client.test().delete_batch(data=data, debug=debug)
 
-    for response, data_row in zip(results, data):
-        assert response().data == data_row
+        for response, data_row in zip(results, data):
+            assert response().data == data_row
 
-    assert len(results) == len(data)
+        assert len(results) == len(data)
 
 
 async def test_carries_request_kwargs_over_calls(mocked, client):
@@ -495,7 +512,7 @@ async def test_thrown_tapioca_exception_with_client_error_data(mocked, client):
     assert "bad request test" in client_exception.value.args
 
 
-async def test_thrown_tapioca_exception_with_servererror_data(mocked, client):
+async def test_thrown_tapioca_exception_with_server_error_data(mocked, client):
     mocked.get(
         client.test().data,
         body='{"error": "server error test"}',
@@ -505,6 +522,57 @@ async def test_thrown_tapioca_exception_with_servererror_data(mocked, client):
     with pytest.raises(ServerError) as server_exception:
         await client.test().get()
     assert "server error test" in server_exception.value.args
+
+
+async def test_retry_request(mocked, retry_request_client):
+    for _ in range(10):
+        mocked.get(
+            retry_request_client.test().data,
+            body='{"error": "bad request test"}',
+            status=400,
+            content_type="application/json",
+        )
+
+    mocked.get(
+        retry_request_client.test().data,
+        body='{"data": "success!"}',
+        status=200,
+        content_type="application/json",
+    )
+
+    response = await retry_request_client.test().get()
+
+    assert response.data().data == "success!"
+
+    for _ in range(3):
+        mocked.get(
+            retry_request_client.test().data,
+            body='{"error": "bad request test"}',
+            status=400,
+            content_type="application/json",
+        )
+
+    mocked.get(
+        retry_request_client.test().data,
+        body='{"data": "success!"}',
+        status=200,
+        content_type="application/json",
+    )
+
+    response = await retry_request_client.test().get()
+
+    assert response.data().data == "success!"
+
+    for _ in range(3):
+        mocked.get(
+            retry_request_client.test().data,
+            body='{"error": "bad request test"}',
+            status=403,
+            content_type="application/json",
+        )
+
+    with pytest.raises(ClientError):
+        await retry_request_client.test().get()
 
 
 """
