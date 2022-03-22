@@ -270,25 +270,59 @@ class TapiocaClientExecutor(TapiocaClient):
             result = func(*args, **kwargs)
         return result
 
-    async def _make_request(self, request_method, refresh_token=None, *args, **kwargs):
+    def _context(self, **kwargs):
+        context = dict(
+            client=self,
+            api=self._api,
+            data=self._data,
+            response=self._response,
+            api_params=self._api_params,
+            request_kwargs=self._request_kwargs,
+            resource=self._resource,
+            refresh_token_default=self._refresh_token_default,
+            refresh_data=self._refresh_data,
+            session=self._session,
+        )
+        context.update(kwargs)
+        return context
+
+    async def _make_request(
+        self, request_method, refresh_token=None, repeat_number=0, *args, **kwargs
+    ):
         if "url" not in kwargs:
             kwargs["url"] = self._data
 
-        request_kwargs = self._api.get_request_kwargs(
-            self._api_params, request_method, *args, **kwargs
+        context = self._context(
+            request_method=request_method,
+            refresh_token=refresh_token,
+            repeat_number=repeat_number,
+            **kwargs
         )
+        request_kwargs = self._api.get_request_kwargs(self._api_params, *args, **kwargs)
 
         response = await self._session.request(request_method, **request_kwargs)
 
         try:
-            data = await self._coro_wrap(self._api.process_response, response)
+            context.update(dict(response=response, request_kwargs=request_kwargs))
+            data = await self._coro_wrap(self._api.process_response, **context)
         except ResponseProcessException as e:
+            repeat_number += 1
+
             client = self._wrap_in_tapioca(
                 e.data, response=response, request_kwargs=request_kwargs
             )
 
+            context.update(
+                dict(
+                    client=client,
+                    response=response,
+                    request_kwargs=request_kwargs,
+                    repeat_number=repeat_number,
+                )
+            )
+
             error_message = await self._coro_wrap(
-                self._api.get_error_message, data=e.data, response=response
+                self._api.get_error_message, **{**context, "data": e.data}
             )
             tapioca_exception = e.tapioca_exception(
                 message=error_message, client=client
@@ -298,23 +332,40 @@ class TapiocaClientExecutor(TapiocaClient):
                 refresh_token is not False and self._refresh_token_default
             )
             auth_expired = await self._coro_wrap(
-                self._api.is_authentication_expired, tapioca_exception
+                self._api.is_authentication_expired, tapioca_exception, **context
             )
 
             propagate_exception = True
 
             if should_refresh_token and auth_expired:
                 self._refresh_data = await self._coro_wrap(
-                    self._api.refresh_authentication, self._api_params
+                    self._api.refresh_authentication, **context
                 )
                 if self._refresh_data:
                     propagate_exception = False
                     return await self._make_request(
-                        request_method, refresh_token=False, *args, **kwargs
+                        request_method,
+                        refresh_token=False,
+                        repeat_number=repeat_number,
+                        *args,
+                        **kwargs
                     )
 
+            # code based on
+            # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
+            if self._api.retry_request(tapioca_exception, error_message, **context):
+                return await self._make_request(
+                    request_method,
+                    refresh_token=False,
+                    repeat_number=repeat_number,
+                    *args,
+                    **kwargs
+                )
+
             if propagate_exception:
-                raise tapioca_exception
+                # code based on
+                # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
+                self._api.error_handling(tapioca_exception, error_message, **context)
 
         return self._wrap_in_tapioca(
             data, response=response, request_kwargs=request_kwargs
@@ -393,10 +444,7 @@ class TapiocaClientExecutor(TapiocaClient):
 
     async def _get_iterator_next_request_kwargs(self):
         return await self._coro_wrap(
-            self._api.get_iterator_next_request_kwargs,
-            self._request_kwargs,
-            self._data,
-            self._response,
+            self._api.get_iterator_next_request_kwargs, **self._context()
         )
 
     def _reached_max_limits(self, page_count, item_count, max_pages, max_items):

@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 
-from aiotapioca.adapters import (
+from aiotapioca import (
+    generate_wrapper_from_adapter,
     TapiocaAdapter,
     JSONAdapterMixin,
     XMLAdapterMixin,
-    generate_wrapper_from_adapter,
+    SimpleSerializer,
 )
-from aiotapioca.serializers import SimpleSerializer
 
 
 class Detail(BaseModel):
@@ -55,9 +55,9 @@ class SimpleClientAdapter(JSONAdapterMixin, TapiocaAdapter):
         return response_data["data"]
 
     def get_iterator_next_request_kwargs(
-        self, iterator_request_kwargs, response_data, response
+        self, request_kwargs, data, response, **kwargs
     ):
-        paging = response_data.get("paging")
+        paging = data.get("paging")
         if not paging:
             return
         url = paging.get("next")

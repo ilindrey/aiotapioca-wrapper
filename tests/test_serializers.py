@@ -5,7 +5,7 @@ from decimal import Decimal
 from yarl import URL
 from pydantic import BaseModel
 
-from aiotapioca.serializers import BaseSerializer, SimpleSerializer
+from aiotapioca import BaseSerializer, SimpleSerializer
 from .clients import CustomModel
 from .fixtures import (
     mocked,

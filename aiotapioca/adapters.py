@@ -39,6 +39,11 @@ class TapiocaAdapter:
         if self.serializer_class:
             return self.serializer_class()
 
+    def serialize_data(self, data):
+        if self.serializer:
+            return self.serializer.serialize(data)
+        return data
+
     def get_api_root(self, api_params, **kwargs):
         return self.api_root
 
@@ -54,36 +59,32 @@ class TapiocaAdapter:
         )
         return kwargs
 
-    def get_error_message(self, data, response=None):
-        return str(data)
+    async def process_response(self, response, **kwargs):
 
-    async def process_response(self, response):
         if 500 <= response.status < 600:
             raise ResponseProcessException(ServerError, None)
 
-        data = await self.response_to_native(response)
+        data = await self.response_to_native(response, **kwargs)
 
         if 400 <= response.status < 500:
             raise ResponseProcessException(ClientError, data)
 
         return data
 
-    def serialize_data(self, data):
-        if self.serializer:
-            return self.serializer.serialize(data)
-        return data
+    def get_error_message(self, data, response=None, **kwargs):
+        return str(data)
 
     def format_data_to_request(self, data):
         raise NotImplementedError()
 
-    def response_to_native(self, response):
+    def response_to_native(self, response, **kwargs):
         raise NotImplementedError()
 
     def get_iterator_list(self, response_data):
         raise NotImplementedError()
 
     def get_iterator_next_request_kwargs(
-        self, iterator_request_kwargs, response_data, response
+        self, request_kwargs, data, response, **kwargs
     ):
         raise NotImplementedError()
 
@@ -92,6 +93,25 @@ class TapiocaAdapter:
 
     def refresh_authentication(self, api_params, *args, **kwargs):
         raise NotImplementedError()
+
+    def retry_request(self, tapioca_exception, error_message, repeat_number, **kwargs):
+        """
+        Conditions for repeating a request.
+        If it returns True, the request will be repeated.
+        Code based on:
+        https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/adapters.py#L218
+        """
+        return False
+
+    def error_handling(self, tapioca_exception, error_message, repeat_number, **kwargs):
+        """
+        Wrapper for throwing custom exceptions. When,
+        for example, the server responds with 200,
+        and errors are passed inside json.
+        Code based on:
+        https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/adapters.py#L165
+        """
+        raise tapioca_exception
 
 
 class FormAdapterMixin:
@@ -114,16 +134,16 @@ class JSONAdapterMixin:
         if data:
             return json.dumps(data)
 
-    async def response_to_native(self, response):
+    async def response_to_native(self, response, **kwargs):
         try:
             return await response.json()
         except ContentTypeError:
             text = await response.text()
             return json.loads(text)
 
-    async def get_error_message(self, data, response=None):
+    async def get_error_message(self, data, response=None, **kwargs):
         if not data and response:
-            data = await self.response_to_native(response)
+            data = await self.response_to_native(response, **kwargs)
 
         if data:
             if "error" in data:
@@ -173,7 +193,7 @@ class XMLAdapterMixin:
         if data:
             return self._input_branches_to_xml_bytestring(data)
 
-    async def response_to_native(self, response):
+    async def response_to_native(self, response, **kwargs):
         if response:
             text = await response.text()
             if "xml" in response.headers["content-type"]:
