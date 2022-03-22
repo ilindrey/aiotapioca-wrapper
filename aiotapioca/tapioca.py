@@ -94,6 +94,22 @@ class TapiocaClient:
             **kwargs
         )
 
+    def _context(self, **kwargs):
+        context = dict(
+            client=self,
+            api=self._api,
+            data=self._data,
+            response=self._response,
+            api_params=self._api_params,
+            request_kwargs=self._request_kwargs,
+            resource=self._resource,
+            refresh_token_default=self._refresh_token_default,
+            refresh_data=self._refresh_data,
+            session=self._session,
+        )
+        context.update(kwargs)
+        return context
+
     def _get_doc(self):
         resources = copy.copy(self._resource)
         docs = (
@@ -114,7 +130,9 @@ class TapiocaClient:
         url_params = self._api_params.get("default_url_params", {})
         url_params.update(kwargs)
         if self._resource and url_params:
-            data = self._api.fill_resource_template_url(self._data, url_params)
+            data = self._api.fill_resource_template_url(
+                **self._context(url_params=url_params, template=self._data)
+            )
 
         return self._wrap_in_tapioca_executor(
             data, resource=self._resource, response=self._response
@@ -270,22 +288,6 @@ class TapiocaClientExecutor(TapiocaClient):
             result = func(*args, **kwargs)
         return result
 
-    def _context(self, **kwargs):
-        context = dict(
-            client=self,
-            api=self._api,
-            data=self._data,
-            response=self._response,
-            api_params=self._api_params,
-            request_kwargs=self._request_kwargs,
-            resource=self._resource,
-            refresh_token_default=self._refresh_token_default,
-            refresh_data=self._refresh_data,
-            session=self._session,
-        )
-        context.update(kwargs)
-        return context
-
     async def _make_request(
         self, request_method, refresh_token=None, repeat_number=0, *args, **kwargs
     ):
@@ -440,7 +442,7 @@ class TapiocaClientExecutor(TapiocaClient):
         return await self._send_batch("DELETE", *args, **kwargs)
 
     def _get_iterator_list(self):
-        return self._api.get_iterator_list(self._data)
+        return self._api.get_iterator_list(**self._context())
 
     async def _get_iterator_next_request_kwargs(self):
         return await self._coro_wrap(

@@ -289,19 +289,6 @@ def test_when_executor_has_no_response(client):
         assert "has no response" == str(exception)
 
 
-async def test_get_request(mocked, client):
-    mocked.get(
-        client.test().data,
-        body='{"data": {"key": "value"}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    assert response().data == {"data": {"key": "value"}}
-
-
 async def test_access_response_field(mocked, client):
     mocked.get(
         client.test().data,
@@ -322,7 +309,7 @@ async def test_get_request(mocked, client):
         mocked.get(
             client.test().data,
             body='{"data": {"key": "value"}}',
-            status=201,
+            status=200,
             content_type="application/json",
         )
 

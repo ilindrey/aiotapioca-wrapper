@@ -47,11 +47,12 @@ class TapiocaAdapter:
     def get_api_root(self, api_params, **kwargs):
         return self.api_root
 
-    def fill_resource_template_url(self, template, params):
-        return template.format(**params)
+    def fill_resource_template_url(self, template, url_params, **kwargs):
+        return template.format(**url_params)
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
         serialized = self.serialize_data(kwargs.get("data"))
+
         kwargs.update(
             {
                 "data": self.format_data_to_request(serialized),
@@ -80,7 +81,7 @@ class TapiocaAdapter:
     def response_to_native(self, response, **kwargs):
         raise NotImplementedError()
 
-    def get_iterator_list(self, response_data):
+    def get_iterator_list(self, data, **kwargs):
         raise NotImplementedError()
 
     def get_iterator_next_request_kwargs(
@@ -118,7 +119,7 @@ class FormAdapterMixin:
     def format_data_to_request(self, data):
         return data
 
-    async def response_to_native(self, response):
+    async def response_to_native(self, response, **kwargs):
         return {"text": await response.text()}
 
 
@@ -130,7 +131,7 @@ class JSONAdapterMixin:
         arguments["headers"]["Content-Type"] = "application/json"
         return arguments
 
-    def format_data_to_request(self, data):
+    def format_data_to_request(self, data, **kwargs):
         if data:
             return json.dumps(data)
 

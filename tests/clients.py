@@ -51,8 +51,8 @@ class SimpleClientAdapter(JSONAdapterMixin, TapiocaAdapter):
         else:
             return self.api_root
 
-    def get_iterator_list(self, response_data):
-        return response_data["data"]
+    def get_iterator_list(self, data, **kwargs):
+        return data["data"]
 
     def get_iterator_next_request_kwargs(
         self, request_kwargs, data, response, **kwargs
