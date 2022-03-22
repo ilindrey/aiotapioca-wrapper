@@ -48,7 +48,10 @@ class TapiocaAdapter:
         return self.api_root
 
     def fill_resource_template_url(self, template, url_params, **kwargs):
-        return template.format(**url_params)
+        if isinstance(template, str):
+            return template.format(**url_params)
+        else:
+            return template
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
         serialized = self.serialize_data(kwargs.get("data"))
