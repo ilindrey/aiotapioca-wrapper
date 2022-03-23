@@ -691,7 +691,7 @@ async def test_simple_pages_max_pages_ans_max_items_zero_iterator(mocked, client
     await assert_page_response(response, total_pages=0, max_pages=0, max_items=0)
 
 
-async def test_pages_iterator_with_error_408(mocked, client):
+async def test_pages_iterator_with_client_error(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
@@ -745,7 +745,61 @@ async def test_pages_iterator_with_error_408(mocked, client):
     assert iterations_count == 2
 
 
-async def test_pages_iterator_with_error_204(mocked, client):
+async def test_pages_iterator_with_server_error(mocked, client):
+    next_url = "http://api.example.org/next_batch"
+
+    mocked.get(
+        client.test().data,
+        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+        status=200,
+        content_type="application/json",
+    )
+
+    mocked.get(
+        next_url,
+        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+        status=200,
+        content_type="application/json",
+    )
+
+    mocked.get(
+        next_url,
+        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+        status=504,
+        content_type="application/json",
+    )
+
+    mocked.get(
+        next_url,
+        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+        status=200,
+        content_type="application/json",
+    )
+
+    response = await client.test().get()
+    result_response = {
+        response: {
+            "data": [{"key": "value"}],
+            "paging": {"next": "http://api.example.org/next_batch"},
+        },
+        response.data: [{"key": "value"}],
+        response.paging: {"next": "http://api.example.org/next_batch"},
+        response.paging.next: "http://api.example.org/next_batch",
+    }
+    for resp, data in result_response.items():
+        assert_response(resp, data)
+
+    iterations_count = 0
+    with pytest.raises(ServerError):
+        async for item in response().pages():
+            result_page = {item: {"key": "value"}, item.key: "value"}
+            for resp, data in result_page.items():
+                assert_response(resp, data)
+            iterations_count += 1
+    assert iterations_count == 2
+
+
+async def test_pages_iterator_with_error_on_single_page(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
