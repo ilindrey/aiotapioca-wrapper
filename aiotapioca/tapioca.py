@@ -376,7 +376,7 @@ class TapiocaClientExecutor(TapiocaClient):
     async def _send(self, request_method, *args, **kwargs):
 
         if "semaphore" in kwargs and "semaphore_class" not in kwargs:
-            kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.get("semaphore", 10))
+            kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.pop("semaphore", 10))
 
         debug = kwargs.pop("debug") if "debug" in kwargs else False
         semaphore = (
