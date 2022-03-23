@@ -424,8 +424,10 @@ async def test_retry_request(mocked, retry_request_client):
 
 
 async def test_requests(mocked, client):
+    debugs = (True, False)
+    semaphores = (3, None)
     type_requests = ("get", "post", "put", "patch", "delete")
-    for debug, type_request in zip((True, False), type_requests):
+    for debug, semaphore, type_request in zip(debugs, semaphores, type_requests):
 
         executor = client.test()
 
@@ -441,7 +443,11 @@ async def test_requests(mocked, client):
             content_type="application/json",
         )
 
-        response = await executor_method(debug=debug)
+        kwargs = dict(debug=debug)
+        if semaphore:
+            kwargs.update({"semaphore": semaphore})
+
+        response = await executor_method(**kwargs)
 
         result_response = {
             response: {"data": {"key": "value"}},
@@ -459,8 +465,10 @@ async def test_batch_requests(mocked, client):
         {"data": {"key": "value"}},
         {"data": {"key": "value"}},
     ]
+    debugs = (True, False)
+    semaphores = (3, None)
     type_requests = ("post", "put", "patch", "delete")
-    for debug, type_request in zip((True, False), type_requests):
+    for debug, semaphore, type_request in zip(debugs, semaphores, type_requests):
 
         executor = client.test()
         mocked_method = getattr(mocked, type_request)
@@ -474,7 +482,11 @@ async def test_batch_requests(mocked, client):
                 content_type="application/json",
             )
 
-        results = await executor_method(data=response_data, debug=debug)
+        kwargs = dict(data=response_data, debug=debug)
+        if semaphore:
+            kwargs.update({"semaphore": semaphore})
+
+        results = await executor_method(**kwargs)
 
         for i, response in enumerate(results):
             result_response = {
