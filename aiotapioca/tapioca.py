@@ -400,7 +400,7 @@ class TapiocaClientExecutor(TapiocaClient):
 
         data = kwargs.pop("data") if "data" in kwargs else []
 
-        kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.get("semaphore", 10))
+        kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.pop("semaphore", 10))
 
         results = await asyncio.gather(
             *[
