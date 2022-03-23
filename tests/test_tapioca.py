@@ -14,7 +14,7 @@ from .clients import SimpleClient, FailTokenRefreshClient
 from .callbacks import callback_201, callback_401
 
 
-def _assert_response(response, data, status=200, refresh_data=None):
+def assert_response(response, data, status=200, refresh_data=None):
     executor = response()
     assert type(response) == TapiocaClient
     assert type(executor) == TapiocaClientExecutor
@@ -23,6 +23,29 @@ def _assert_response(response, data, status=200, refresh_data=None):
     assert isinstance(executor.response, ClientResponse)
     assert executor.status == status
 
+
+async def assert_page_response(
+    response, total_pages=1, max_pages=None, max_items=None
+):
+    result_response = {
+        response: {
+            "data": [{"key": "value"}],
+            "paging": {"next": "http://api.example.org/next_batch"},
+        },
+        response.data: [{"key": "value"}],
+        response.paging: {"next": "http://api.example.org/next_batch"},
+        response.paging.next: "http://api.example.org/next_batch",
+    }
+    for resp, data in result_response.items():
+        assert_response(resp, data)
+
+    iterations_count = 0
+    async for item in response().pages(max_pages=max_pages, max_items=max_items):
+        result_page = {item: {"key": "value"}, item.key: "value"}
+        for resp, data in result_page.items():
+            assert_response(resp, data)
+        iterations_count += 1
+    assert iterations_count == total_pages
 
 """
 test TapiocaClient
@@ -427,7 +450,7 @@ async def test_requests(mocked, client):
         }
 
         for response, data in result_response.items():
-            _assert_response(response, data, status)
+            assert_response(response, data, status)
 
 
 async def test_batch_requests(mocked, client):
@@ -460,7 +483,7 @@ async def test_batch_requests(mocked, client):
                 response.data.key: response_data[i]["data"]["key"],
             }
             for resp, data in result_response.items():
-                _assert_response(resp, data, 201)
+                assert_response(resp, data, 201)
 
         assert len(results) == len(response_data)
 
@@ -470,28 +493,6 @@ test iterator features
 """
 
 
-async def _assert_page_response(
-    response, total_pages=1, max_pages=None, max_items=None
-):
-    result_response = {
-        response: {
-            "data": [{"key": "value"}],
-            "paging": {"next": "http://api.example.org/next_batch"},
-        },
-        response.data: [{"key": "value"}],
-        response.paging: {"next": "http://api.example.org/next_batch"},
-        response.paging.next: "http://api.example.org/next_batch",
-    }
-    for resp, data in result_response.items():
-        _assert_response(resp, data)
-
-    iterations_count = 0
-    async for item in response().pages(max_pages=max_pages, max_items=max_items):
-        result_page = {item: {"key": "value"}, item.key: "value"}
-        for resp, data in result_page.items():
-            _assert_response(resp, data)
-        iterations_count += 1
-    assert iterations_count == total_pages
 
 
 async def test_simple_pages_iterator(mocked, client):
@@ -513,7 +514,7 @@ async def test_simple_pages_iterator(mocked, client):
 
     response = await client.test().get()
 
-    await _assert_page_response(response, total_pages=2)
+    await assert_page_response(response, total_pages=2)
 
 
 async def test_simple_pages_with_max_pages_iterator(mocked, client):
@@ -550,7 +551,7 @@ async def test_simple_pages_with_max_pages_iterator(mocked, client):
 
     response = await client.test().get()
 
-    await _assert_page_response(response, total_pages=7, max_pages=3)
+    await assert_page_response(response, total_pages=7, max_pages=3)
 
 
 async def test_simple_pages_with_max_items_iterator(mocked, client):
@@ -587,7 +588,7 @@ async def test_simple_pages_with_max_items_iterator(mocked, client):
 
     response = await client.test().get()
 
-    await _assert_page_response(response, total_pages=3, max_items=3)
+    await assert_page_response(response, total_pages=3, max_items=3)
 
 
 async def test_simple_pages_with_max_pages_and_max_items_iterator(mocked, client):
@@ -609,7 +610,7 @@ async def test_simple_pages_with_max_pages_and_max_items_iterator(mocked, client
 
     response = await client.test().get()
 
-    await _assert_page_response(response, total_pages=3, max_pages=2, max_items=3)
+    await assert_page_response(response, total_pages=3, max_pages=2, max_items=3)
 
 
 async def test_simple_pages_max_pages_zero_iterator(mocked, client):
@@ -631,7 +632,7 @@ async def test_simple_pages_max_pages_zero_iterator(mocked, client):
 
     response = await client.test().get()
 
-    await _assert_page_response(response, total_pages=0, max_pages=0)
+    await assert_page_response(response, total_pages=0, max_pages=0)
 
 
 async def test_simple_pages_max_items_zero_iterator(mocked, client):
@@ -653,7 +654,7 @@ async def test_simple_pages_max_items_zero_iterator(mocked, client):
 
     response = await client.test().get()
 
-    await _assert_page_response(response, total_pages=0, max_items=0)
+    await assert_page_response(response, total_pages=0, max_items=0)
 
 
 async def test_simple_pages_max_pages_ans_max_items_zero_iterator(mocked, client):
@@ -675,7 +676,7 @@ async def test_simple_pages_max_pages_ans_max_items_zero_iterator(mocked, client
 
     response = await client.test().get()
 
-    await _assert_page_response(response, total_pages=0, max_pages=0, max_items=0)
+    await assert_page_response(response, total_pages=0, max_pages=0, max_items=0)
 
 
 async def test_pages_iterator_with_error_408(mocked, client):
@@ -720,14 +721,14 @@ async def test_pages_iterator_with_error_408(mocked, client):
         response.paging.next: "http://api.example.org/next_batch",
     }
     for resp, data in result_response.items():
-        _assert_response(resp, data)
+        assert_response(resp, data)
 
     iterations_count = 0
     with pytest.raises(ClientError):
         async for item in response().pages():
             result_page = {item: {"key": "value"}, item.key: "value"}
             for resp, data in result_page.items():
-                _assert_response(resp, data)
+                assert_response(resp, data)
             iterations_count += 1
     assert iterations_count == 2
 
@@ -774,7 +775,7 @@ async def test_pages_iterator_with_error_204(mocked, client):
         response.paging.next: "http://api.example.org/next_batch",
     }
     for resp, data in result_response.items():
-        _assert_response(resp, data)
+        assert_response(resp, data)
 
     iterations_count = 0
     async for item in response().pages():
@@ -785,7 +786,7 @@ async def test_pages_iterator_with_error_204(mocked, client):
             status = 200
             result_page = {item: {"key": "value"}, item.key: "value"}
         for resp, data in result_page.items():
-            _assert_response(resp, data, status)
+            assert_response(resp, data, status)
         iterations_count += 1
     assert iterations_count == 4
 
