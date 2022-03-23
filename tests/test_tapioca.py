@@ -12,14 +12,6 @@ from aiotapioca.tapioca import TapiocaClient, TapiocaClientExecutor
 from aiotapioca.exceptions import ClientError, ServerError
 from .clients import SimpleClient, FailTokenRefreshClient
 from .callbacks import callback_201, callback_401
-from .fixtures import (
-    mocked,
-    client,
-    token_refresh_client,
-    xml_client,
-    token_refresh_client,
-    retry_request_client,
-)
 
 
 def _assert_response(response, data, status=200, refresh_data=None):

@@ -7,14 +7,6 @@ from pydantic import BaseModel
 
 from aiotapioca import BaseSerializer, SimpleSerializer
 from .clients import CustomModel
-from .fixtures import (
-    mocked,
-    client,
-    client_serializer_class,
-    pydantic_client,
-    serializer_client,
-    serializer,
-)
 
 
 """

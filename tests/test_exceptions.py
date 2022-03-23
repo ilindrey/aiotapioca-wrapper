@@ -9,7 +9,6 @@ from aiotapioca.exceptions import (
 )
 from aiotapioca.tapioca import TapiocaClient
 from .clients import SimpleClientAdapter
-from .fixtures import mocked, client
 
 
 """
