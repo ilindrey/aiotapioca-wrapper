@@ -63,14 +63,13 @@ class TapiocaClient:
         return self._api.__class__(serializer_class=serializer_class)
 
     def _wrap_in_tapioca(self, data, *args, **kwargs):
-        request_kwargs = kwargs.pop("request_kwargs", self._request_kwargs)
-        resource = kwargs.pop("resource", self._resource)
         return TapiocaClient(
             self._instatiate_api(),
             data=data,
             api_params=self._api_params,
-            request_kwargs=request_kwargs,
-            resource=resource,
+            request_kwargs=kwargs.pop("request_kwargs", self._request_kwargs),
+            response=kwargs.pop("response", self._response),
+            resource=kwargs.pop("resource", self._resource),
             refresh_token_by_default=self._refresh_token_default,
             refresh_data=self._refresh_data,
             session=self._session,
@@ -79,14 +78,13 @@ class TapiocaClient:
         )
 
     def _wrap_in_tapioca_executor(self, data, *args, **kwargs):
-        request_kwargs = kwargs.pop("request_kwargs", self._request_kwargs)
-        resource = kwargs.pop("resource", self._resource)
         return TapiocaClientExecutor(
             self._instatiate_api(),
             data=data,
             api_params=self._api_params,
-            request_kwargs=request_kwargs,
-            resource=resource,
+            request_kwargs=kwargs.pop("request_kwargs", self._request_kwargs),
+            response=kwargs.pop("response", self._response),
+            resource=kwargs.pop("resource", self._resource),
             refresh_token_by_default=self._refresh_token_default,
             refresh_data=self._refresh_data,
             session=self._session,
@@ -451,7 +449,8 @@ class TapiocaClientExecutor(TapiocaClient):
             self._api.get_iterator_next_request_kwargs, **self._context()
         )
 
-    def _reached_max_limits(self, page_count, item_count, max_pages, max_items):
+    @staticmethod
+    def _reached_max_limits(page_count, item_count, max_pages, max_items):
         reached_page_limit = max_pages is not None and max_pages <= page_count
         reached_item_limit = max_items is not None and max_items <= item_count
         return reached_page_limit or reached_item_limit
@@ -463,14 +462,16 @@ class TapiocaClientExecutor(TapiocaClient):
         item_count = 0
 
         while iterator_list:
-            if self._reached_max_limits(page_count, item_count, max_pages, max_items):
+            if executor._reached_max_limits(
+                page_count, item_count, max_pages, max_items
+            ):
                 break
             for item in iterator_list:
-                if self._reached_max_limits(
+                if executor._reached_max_limits(
                     page_count, item_count, max_pages, max_items
                 ):
                     break
-                yield self._wrap_in_tapioca(item)
+                yield executor._wrap_in_tapioca(item)
                 item_count += 1
 
             page_count += 1
@@ -480,7 +481,7 @@ class TapiocaClientExecutor(TapiocaClient):
             if not next_request_kwargs:
                 break
 
-            response = await self.get(**next_request_kwargs)
+            response = await executor.get(**next_request_kwargs)
             executor = response()
             iterator_list = executor._get_iterator_list()
 
