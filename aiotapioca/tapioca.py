@@ -12,17 +12,10 @@ class TapiocaInstantiator:
     def __init__(self, adapter_class):
         self.adapter_class = adapter_class
 
-    def __call__(
-        self,
-        serializer_class=None,
-        session=None,
-        refresh_token_by_default=False,
-        **kwargs
-    ):
+    def __call__(self, serializer_class=None, session=None, **kwargs):
         return TapiocaClient(
             self.adapter_class(serializer_class=serializer_class),
             api_params=kwargs,
-            refresh_token_by_default=refresh_token_by_default,
             session=session,
         )
 
@@ -36,7 +29,6 @@ class TapiocaClient:
         request_kwargs=None,
         api_params=None,
         resource=None,
-        refresh_token_by_default=False,
         refresh_data=None,
         session=None,
         *args,
@@ -48,7 +40,6 @@ class TapiocaClient:
         self._api_params = api_params or {}
         self._request_kwargs = request_kwargs
         self._resource = resource
-        self._refresh_token_by_default = refresh_token_by_default
         self._refresh_data = refresh_data
         self._session = session
 
@@ -84,7 +75,6 @@ class TapiocaClient:
             request_kwargs=self._request_kwargs,
             response=self._response,
             resource=self._resource,
-            refresh_token_by_default=self._refresh_token_by_default,
             refresh_data=self._refresh_data,
             session=self._session,
         )
@@ -314,7 +304,9 @@ class TapiocaClientExecutor(TapiocaClient):
             )
 
             should_refresh_token = (
-                refresh_token is not False and self._refresh_token_by_default is True
+                self._api.refresh_token is True
+                or self._api_params.get("refresh_token") is True
+                or refresh_token is True
             )
             auth_expired = await self._coro_wrap(
                 self._api.is_authentication_expired, tapioca_exception, **context
