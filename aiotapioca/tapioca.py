@@ -364,8 +364,9 @@ class TapiocaClientExecutor(TapiocaClient):
             response = await self._make_request(request_method, *args, **kwargs)
 
         if debug:
-            response_info = "status: {} - response data: {}".format(
-                response().status, str(response().data)[:33]
+            executor = response()
+            response_info = "status: {} | url: {} - response data: {}".format(
+                executor.status, executor.response.url, str(executor.data)[:33]
             )
             print(response_info)
 
