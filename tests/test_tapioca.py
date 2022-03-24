@@ -10,7 +10,7 @@ from yarl import URL
 
 from aiotapioca.tapioca import TapiocaClient, TapiocaClientExecutor
 from aiotapioca.exceptions import ClientError, ServerError
-from .clients import SimpleClient, FailTokenRefreshClient
+from .clients import SimpleClient, TokenRefreshClient, FailTokenRefreshClient
 from .callbacks import callback_201, callback_401
 
 
@@ -855,94 +855,6 @@ async def test_pages_iterator_with_error_on_single_page(mocked, client):
 
 
 """
-test token refreshing
-"""
-
-
-async def test_not_token_refresh_client_propagates_client_error(mocked, client):
-    no_refresh_client = client
-
-    mocked.post(
-        no_refresh_client.test().data,
-        callback=callback_401,
-        content_type="application/json",
-    )
-
-    with pytest.raises(ClientError):
-        await no_refresh_client.test().post()
-
-
-async def test_disable_token_refreshing(mocked, token_refresh_client):
-    mocked.post(
-        token_refresh_client.test().data,
-        callback=callback_401,
-        content_type="application/json",
-    )
-
-    with pytest.raises(ClientError):
-        await token_refresh_client.test().post(refresh_token=False)
-
-
-async def test_token_expired_automatically_refresh_authentication(
-    mocked, token_refresh_client
-):
-    mocked.post(
-        token_refresh_client.test().data,
-        callback=callback_401,
-        content_type="application/json",
-    )
-
-    mocked.post(
-        token_refresh_client.test().data,
-        callback=callback_201,
-        content_type="application/json",
-    )
-
-    response = await token_refresh_client.test().post()
-
-    # refresh_authentication method should be able to update api_params
-    assert response._api_params["token"] == "new_token"
-
-
-async def test_stores_refresh_authentication_method_response_for_further_access(
-    mocked, token_refresh_client
-):
-    mocked.post(
-        token_refresh_client.test().data,
-        callback=callback_401,
-        content_type="application/json",
-    )
-
-    mocked.post(
-        token_refresh_client.test().data,
-        callback=callback_201,
-        content_type="application/json",
-    )
-
-    response = await token_refresh_client.test().post()
-
-    # refresh_authentication method should be able to update api_params
-    assert response().refresh_data == "new_token"
-
-
-async def test_raises_error_if_refresh_authentication_method_returns_falsy_value(
-    mocked,
-):
-    async with FailTokenRefreshClient(
-        token="token", refresh_token_by_default=True
-    ) as fail_client:
-
-        mocked.post(
-            fail_client.test().data,
-            callback=callback_401,
-            content_type="application/json",
-        )
-
-        with pytest.raises(ClientError):
-            await fail_client.test().post()
-
-
-"""
 test XML requests
 """
 
@@ -1061,3 +973,162 @@ async def test_xml_post_dict_returns_dict_if_response_xml(mocked, xml_client):
     response = await xml_client.test().post(data=data)
 
     assert response().data == xmltodict.parse(xml_body)
+
+
+"""
+test token refreshing
+"""
+
+
+async def test_not_token_refresh_client_propagates_client_error(mocked, client):
+    no_refresh_client = client
+
+    mocked.post(
+        no_refresh_client.test().data,
+        callback=callback_401,
+        content_type="application/json",
+    )
+
+    with pytest.raises(ClientError):
+        await no_refresh_client.test().post()
+
+
+async def test_disable_token_refreshing(mocked, refresh_token_possible_false_values):
+
+    async with TokenRefreshClient(token="token") as token_refreshing_client:
+        mocked.post(
+            token_refreshing_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+
+        with pytest.raises(ClientError):
+            await token_refreshing_client.test().post()
+
+    for refresh_token in refresh_token_possible_false_values:
+        async with TokenRefreshClient(
+            token="token", refresh_token=refresh_token
+        ) as token_refreshing_client:
+            mocked.post(
+                token_refreshing_client.test().data,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            with pytest.raises(ClientError):
+                await token_refreshing_client.test().post()
+
+        async with TokenRefreshClient(token="token") as token_refreshing_client:
+            mocked.post(
+                token_refreshing_client.test().data,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            with pytest.raises(ClientError):
+                await token_refreshing_client.test().post(refresh_token=refresh_token)
+
+
+async def test_token_expired_automatically_refresh_authentication(mocked):
+
+    async with TokenRefreshClient(token="token") as token_refresh_client:
+
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_201,
+            content_type="application/json",
+        )
+
+        response = await token_refresh_client.test().post(refresh_token=True)
+
+        # refresh_authentication method should be able to update api_params
+        assert response._api_params["token"] == "new_token"
+
+    async with TokenRefreshClient(
+        token="token", refresh_token=True
+    ) as token_refresh_client:
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_201,
+            content_type="application/json",
+        )
+
+        response = await token_refresh_client.test().post()
+
+        # refresh_authentication method should be able to update api_params
+        assert response._api_params["token"] == "new_token"
+
+
+async def test_token_expired_automatically_refresh_authentication_by_default(
+    mocked, token_refresh_by_default_client
+):
+
+    mocked.post(
+        token_refresh_by_default_client.test().data,
+        callback=callback_401,
+        content_type="application/json",
+    )
+
+    mocked.post(
+        token_refresh_by_default_client.test().data,
+        callback=callback_201,
+        content_type="application/json",
+    )
+
+    response = await token_refresh_by_default_client.test().post()
+
+    # refresh_authentication method should be able to update api_params
+    assert response._api_params["token"] == "new_token"
+
+
+async def test_raises_error_if_refresh_authentication_method_returns_false_value(
+    mocked, refresh_token_possible_false_values
+):
+    async with FailTokenRefreshClient(token="token") as fail_client:
+
+        mocked.post(
+            fail_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+
+        with pytest.raises(ClientError):
+            await fail_client.test().post()
+
+    for refresh_token in (True, *refresh_token_possible_false_values):
+
+        async with FailTokenRefreshClient(
+            token="token", refresh_token=refresh_token
+        ) as fail_client:
+
+            mocked.post(
+                fail_client.test().data,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            with pytest.raises(ClientError):
+                await fail_client.test().post()
+
+        async with FailTokenRefreshClient(token="token") as fail_client:
+
+            mocked.post(
+                fail_client.test().data,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            with pytest.raises(ClientError):
+                await fail_client.test().post(refresh_token=refresh_token)

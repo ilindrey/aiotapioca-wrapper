@@ -81,27 +81,6 @@ class SerializerClientAdapter(SimpleClientAdapter):
 SerializerClient = generate_wrapper_from_adapter(SerializerClientAdapter)
 
 
-class TokenRefreshClientAdapter(SimpleClientAdapter):
-    def is_authentication_expired(self, exception, *args, **kwargs):
-        return exception.status == 401
-
-    def refresh_authentication(self, api_params, *args, **kwargs):
-        new_token = "new_token"
-        api_params["token"] = new_token
-        return new_token
-
-
-TokenRefreshClient = generate_wrapper_from_adapter(TokenRefreshClientAdapter)
-
-
-class FailTokenRefreshClientAdapter(TokenRefreshClientAdapter):
-    def refresh_authentication(self, api_params, *args, **kwargs):
-        return None
-
-
-FailTokenRefreshClient = generate_wrapper_from_adapter(FailTokenRefreshClientAdapter)
-
-
 class XMLClientAdapter(XMLAdapterMixin, TapiocaAdapter):
     api_root = "https://api.example.org"
     resource_mapping = RESOURCE_MAPPING
@@ -118,3 +97,38 @@ class RetryRequestClientAdapter(SimpleClientAdapter):
 
 
 RetryRequestClient = generate_wrapper_from_adapter(RetryRequestClientAdapter)
+
+
+"""
+refresh token
+"""
+
+
+class TokenRefreshClientAdapter(SimpleClientAdapter):
+    def is_authentication_expired(self, exception, *args, **kwargs):
+        return exception.status == 401
+
+    def refresh_authentication(self, api_params, *args, **kwargs):
+        new_token = "new_token"
+        api_params["token"] = new_token
+        return new_token
+
+
+TokenRefreshClient = generate_wrapper_from_adapter(TokenRefreshClientAdapter)
+
+
+class TokenRefreshByDefaultClientAdapter(TokenRefreshClientAdapter):
+    refresh_token = True
+
+
+TokenRefreshByDefaultClient = generate_wrapper_from_adapter(
+    TokenRefreshByDefaultClientAdapter
+)
+
+
+class FailTokenRefreshClientAdapter(TokenRefreshByDefaultClientAdapter):
+    def refresh_authentication(self, api_params, *args, **kwargs):
+        return None
+
+
+FailTokenRefreshClient = generate_wrapper_from_adapter(FailTokenRefreshClientAdapter)

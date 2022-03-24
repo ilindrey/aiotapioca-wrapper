@@ -6,10 +6,16 @@ from aiotapioca import SimpleSerializer, PydanticSerializer
 from .clients import (
     SimpleClient,
     SerializerClient,
-    TokenRefreshClient,
+    TokenRefreshByDefaultClient,
     XMLClient,
     RetryRequestClient,
 )
+
+
+@pytest.fixture()
+def mocked():
+    with aioresponses() as m:
+        yield m
 
 
 @pytest_asyncio.fixture
@@ -43,8 +49,8 @@ async def xml_client():
 
 
 @pytest_asyncio.fixture
-async def token_refresh_client():
-    async with TokenRefreshClient(token="token", refresh_token_by_default=True) as c:
+async def token_refresh_by_default_client():
+    async with TokenRefreshByDefaultClient(token="token") as c:
         yield c
 
 
@@ -60,6 +66,7 @@ def serializer():
 
 
 @pytest.fixture()
-def mocked():
-    with aioresponses() as m:
-        yield m
+def refresh_token_possible_false_values():
+    yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {
+        "key": "value"
+    }
