@@ -24,9 +24,7 @@ def assert_response(response, data, status=200, refresh_data=None):
     assert executor.status == status
 
 
-async def assert_page_response(
-    response, total_pages=1, max_pages=None, max_items=None
-):
+async def assert_page_response(response, total_pages=1, max_pages=None, max_items=None):
     result_response = {
         response: {
             "data": [{"key": "value"}],
@@ -46,6 +44,7 @@ async def assert_page_response(
             assert_response(resp, data)
         iterations_count += 1
     assert iterations_count == total_pages
+
 
 """
 test TapiocaClient
@@ -503,8 +502,6 @@ async def test_batch_requests(mocked, client):
 """
 test iterator features
 """
-
-
 
 
 async def test_simple_pages_iterator(mocked, client):

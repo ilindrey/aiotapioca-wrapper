@@ -12,12 +12,17 @@ class TapiocaInstantiator:
     def __init__(self, adapter_class):
         self.adapter_class = adapter_class
 
-    def __call__(self, serializer_class=None, session=None, **kwargs):
-        refresh_token_default = kwargs.pop("refresh_token_by_default", False)
+    def __call__(
+        self,
+        serializer_class=None,
+        session=None,
+        refresh_token_by_default=False,
+        **kwargs
+    ):
         return TapiocaClient(
             self.adapter_class(serializer_class=serializer_class),
             api_params=kwargs,
-            refresh_token_by_default=refresh_token_default,
+            refresh_token_by_default=refresh_token_by_default,
             session=session,
         )
 
@@ -43,7 +48,7 @@ class TapiocaClient:
         self._api_params = api_params or {}
         self._request_kwargs = request_kwargs
         self._resource = resource
-        self._refresh_token_default = refresh_token_by_default
+        self._refresh_token_by_default = refresh_token_by_default
         self._refresh_data = refresh_data
         self._session = session
 
@@ -63,45 +68,23 @@ class TapiocaClient:
         return self._api.__class__(serializer_class=serializer_class)
 
     def _wrap_in_tapioca(self, data, *args, **kwargs):
-        return TapiocaClient(
-            self._instatiate_api(),
-            data=data,
-            api_params=self._api_params,
-            request_kwargs=kwargs.pop("request_kwargs", self._request_kwargs),
-            response=kwargs.pop("response", self._response),
-            resource=kwargs.pop("resource", self._resource),
-            refresh_token_by_default=self._refresh_token_default,
-            refresh_data=self._refresh_data,
-            session=self._session,
-            *args,
-            **kwargs
-        )
+        context = self._context(**{**kwargs, "data": data})
+        return TapiocaClient(*args, **context)
 
     def _wrap_in_tapioca_executor(self, data, *args, **kwargs):
-        return TapiocaClientExecutor(
-            self._instatiate_api(),
-            data=data,
-            api_params=self._api_params,
-            request_kwargs=kwargs.pop("request_kwargs", self._request_kwargs),
-            response=kwargs.pop("response", self._response),
-            resource=kwargs.pop("resource", self._resource),
-            refresh_token_by_default=self._refresh_token_default,
-            refresh_data=self._refresh_data,
-            session=self._session,
-            *args,
-            **kwargs
-        )
+        context = self._context(**{**kwargs, "data": data})
+        return TapiocaClientExecutor(*args, **context)
 
     def _context(self, **kwargs):
         context = dict(
             client=self,
-            api=self._api,
+            api=self._instatiate_api(),
             data=self._data,
-            response=self._response,
             api_params=self._api_params,
             request_kwargs=self._request_kwargs,
+            response=self._response,
             resource=self._resource,
-            refresh_token_default=self._refresh_token_default,
+            refresh_token_by_default=self._refresh_token_by_default,
             refresh_data=self._refresh_data,
             session=self._session,
         )
@@ -331,7 +314,7 @@ class TapiocaClientExecutor(TapiocaClient):
             )
 
             should_refresh_token = (
-                refresh_token is not False and self._refresh_token_default
+                refresh_token is not False and self._refresh_token_by_default is True
             )
             auth_expired = await self._coro_wrap(
                 self._api.is_authentication_expired, tapioca_exception, **context
