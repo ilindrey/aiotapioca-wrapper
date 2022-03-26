@@ -3,9 +3,14 @@ import asyncio
 import aiohttp
 import webbrowser
 import json
+from aiologger.logger import Logger
+from aiologger.levels import LogLevel
 from collections import OrderedDict
 
 from .exceptions import ResponseProcessException
+
+
+logger = Logger.with_default_handlers(name="aiotapioca", level=LogLevel.DEBUG)
 
 
 class TapiocaInstantiator:
@@ -365,10 +370,13 @@ class TapiocaClientExecutor(TapiocaClient):
 
         if debug:
             executor = response()
-            response_info = "status: {} | url: {} - response data: {}".format(
-                executor.status, executor.response.url, str(executor.data)[:33]
+            text = str(executor.data)
+            if len(text) > 100:
+                text = "{}...".format(str(executor.data)[:333])
+            msg = "status: {} | url: {} - response data: {}".format(
+                executor.status, executor.response.url, text
             )
-            print(response_info)
+            logger.debug(msg)
 
         return response
 

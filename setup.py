@@ -29,6 +29,7 @@ test_requirements = [
     "pytest-asyncio>=0.18",
     "aioresponses>=0.7",
     "pydantic>=1.0.0",
+    "aiologger>=0.6.0",
 ]
 dev_requirements = [
     *test_requirements,
