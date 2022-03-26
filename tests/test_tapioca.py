@@ -1052,6 +1052,21 @@ async def test_token_expired_automatically_refresh_authentication(mocked):
         # refresh_authentication method should be able to update api_params
         assert response._api_params["token"] == "new_token"
 
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+
+        # check that the refresh_token flag is not cyclic
+        with pytest.raises(ClientError):
+            await token_refresh_client.test().post(refresh_token=True)
+
     async with TokenRefreshClient(
         token="token", refresh_token=True
     ) as token_refresh_client:
@@ -1071,6 +1086,21 @@ async def test_token_expired_automatically_refresh_authentication(mocked):
 
         # refresh_authentication method should be able to update api_params
         assert response._api_params["token"] == "new_token"
+
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+        mocked.post(
+            token_refresh_client.test().data,
+            callback=callback_401,
+            content_type="application/json",
+        )
+
+        # check that the refresh_token flag is not cyclic
+        with pytest.raises(ClientError):
+            await token_refresh_client.test().post()
 
 
 async def test_token_expired_automatically_refresh_authentication_by_default(
@@ -1093,6 +1123,21 @@ async def test_token_expired_automatically_refresh_authentication_by_default(
 
     # refresh_authentication method should be able to update api_params
     assert response._api_params["token"] == "new_token"
+
+    mocked.post(
+        token_refresh_by_default_client.test().data,
+        callback=callback_401,
+        content_type="application/json",
+    )
+    mocked.post(
+        token_refresh_by_default_client.test().data,
+        callback=callback_401,
+        content_type="application/json",
+    )
+
+    # check that the refresh_token flag is not cyclic
+    with pytest.raises(ClientError):
+        await token_refresh_by_default_client.test().post()
 
 
 async def test_raises_error_if_refresh_authentication_method_returns_false_value(

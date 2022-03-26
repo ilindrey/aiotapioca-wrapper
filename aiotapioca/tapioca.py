@@ -265,7 +265,7 @@ class TapiocaClientExecutor(TapiocaClient):
         return result
 
     async def _make_request(
-        self, request_method, refresh_token=None, repeat_number=0, *args, **kwargs
+        self, request_method, refresh_token=False, repeat_number=0, *args, **kwargs
     ):
         if "url" not in kwargs:
             kwargs["url"] = self._data
@@ -308,18 +308,13 @@ class TapiocaClientExecutor(TapiocaClient):
                 message=error_message, client=client
             )
 
-            should_refresh_token = (
-                self._api.refresh_token is True
-                or self._api_params.get("refresh_token") is True
-                or refresh_token is True
-            )
             auth_expired = await self._coro_wrap(
                 self._api.is_authentication_expired, tapioca_exception, **context
             )
 
             propagate_exception = True
 
-            if should_refresh_token and auth_expired:
+            if refresh_token and auth_expired:
                 self._refresh_data = await self._coro_wrap(
                     self._api.refresh_authentication, **context
                 )
@@ -363,6 +358,12 @@ class TapiocaClientExecutor(TapiocaClient):
             kwargs.pop("semaphore_class")
             if "semaphore_class" in kwargs
             else asyncio.Semaphore()
+        )
+
+        kwargs["refresh_token"] = (
+            self._api.refresh_token is True
+            or self._api_params.get("refresh_token") is True
+            or kwargs.get("refresh_token") is True
         )
 
         async with semaphore:
