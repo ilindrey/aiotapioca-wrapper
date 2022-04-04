@@ -15,6 +15,7 @@ def generate_wrapper_from_adapter(adapter_class):
 class TapiocaAdapter:
     serializer_class = SimpleSerializer
     refresh_token = False
+    semaphore = 10
 
     def __init__(self, serializer_class=None, *args, **kwargs):
         if serializer_class:

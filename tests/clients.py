@@ -69,6 +69,13 @@ class SimpleClientAdapter(JSONAdapterMixin, TapiocaAdapter):
 SimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter)
 
 
+class NoneSemaphoreClientAdapter(SimpleClientAdapter):
+    semaphore = None
+
+
+NoneSemaphoreClient = generate_wrapper_from_adapter(NoneSemaphoreClientAdapter)
+
+
 class CustomSerializer(SimpleSerializer):
     def to_kwargs(self, data, **kwargs):
         return kwargs

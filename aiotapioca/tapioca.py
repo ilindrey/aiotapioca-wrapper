@@ -256,6 +256,14 @@ class TapiocaClientExecutor(TapiocaClient):
     def refresh_data(self):
         return self._refresh_data
 
+    def __get_semaphore_value(self, kwargs):
+        semaphore = (
+            kwargs.pop("semaphore", None)
+            or self._api_params.get("semaphore")
+            or self._api.semaphore
+        )
+        return semaphore
+
     @staticmethod
     async def _coro_wrap(func, *args, **kwargs):
         if asyncio.iscoroutinefunction(func):
@@ -350,20 +358,18 @@ class TapiocaClientExecutor(TapiocaClient):
 
     async def _send(self, request_method, *args, **kwargs):
 
-        if "semaphore" in kwargs and "semaphore_class" not in kwargs:
-            kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.pop("semaphore", 10))
+        if "semaphore_class" not in kwargs:
+            semaphore = self.__get_semaphore_value(kwargs)
+            kwargs["semaphore_class"] = asyncio.Semaphore(semaphore)
 
-        debug = kwargs.pop("debug") if "debug" in kwargs else False
-        semaphore = (
-            kwargs.pop("semaphore_class")
-            if "semaphore_class" in kwargs
-            else asyncio.Semaphore()
-        )
+        debug = kwargs.pop("debug", False)
+        semaphore = kwargs.pop("semaphore_class", asyncio.Semaphore())
 
         kwargs["refresh_token"] = (
-            self._api.refresh_token is True
+            kwargs.get("refresh_token") is True
             or self._api_params.get("refresh_token") is True
-            or kwargs.get("refresh_token") is True
+            or self._api.refresh_token is True
+            or False
         )
 
         async with semaphore:
@@ -383,9 +389,10 @@ class TapiocaClientExecutor(TapiocaClient):
 
     async def _send_batch(self, request_method, *args, **kwargs):
 
-        data = kwargs.pop("data") if "data" in kwargs else []
+        data = kwargs.pop("data", [])
 
-        kwargs["semaphore_class"] = asyncio.Semaphore(kwargs.pop("semaphore", 10))
+        semaphore = self.__get_semaphore_value(kwargs)
+        kwargs["semaphore_class"] = asyncio.Semaphore(semaphore)
 
         results = await asyncio.gather(
             *[

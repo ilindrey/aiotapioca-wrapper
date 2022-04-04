@@ -8,9 +8,16 @@ from collections import OrderedDict
 from aiohttp.client_reqrep import ClientResponse
 from yarl import URL
 
-from aiotapioca.tapioca import TapiocaClient, TapiocaClientExecutor
+from aiotapioca.adapters import TapiocaAdapter
 from aiotapioca.exceptions import ClientError, ServerError
-from .clients import SimpleClient, TokenRefreshClient, FailTokenRefreshClient
+from aiotapioca.serializers import SimpleSerializer
+from aiotapioca.tapioca import TapiocaClient, TapiocaClientExecutor
+from .clients import (
+    SimpleClient,
+    NoneSemaphoreClient,
+    TokenRefreshClient,
+    FailTokenRefreshClient,
+)
 from .callbacks import callback_201, callback_401
 
 
@@ -51,6 +58,17 @@ async def check_pages_responses(
 """
 test TapiocaClient
 """
+
+
+def test_adapter_class_default_attributes():
+
+    assert isinstance(TapiocaAdapter.refresh_token, bool)
+    assert isinstance(TapiocaAdapter.semaphore, int)
+    assert isinstance(TapiocaAdapter.serializer_class, object)
+
+    assert TapiocaAdapter.refresh_token is False
+    assert TapiocaAdapter.semaphore == 10
+    assert TapiocaAdapter.serializer_class == SimpleSerializer
 
 
 def test_fill_url_template(client):
@@ -427,8 +445,8 @@ async def test_retry_request(mocked, retry_request_client):
 async def test_requests(mocked, client):
     debugs = (True, False)
     semaphores = (3, None)
-    type_requests = ("get", "post", "put", "patch", "delete")
-    for debug, semaphore, type_request in zip(debugs, semaphores, type_requests):
+    types_request = ("get", "post", "put", "patch", "delete")
+    for debug, semaphore, type_request in zip(debugs, semaphores, types_request):
 
         executor = client.test()
 
@@ -468,8 +486,8 @@ async def test_batch_requests(mocked, client):
     ]
     debugs = (True, False)
     semaphores = (3, None)
-    type_requests = ("post", "put", "patch", "delete")
-    for debug, semaphore, type_request in zip(debugs, semaphores, type_requests):
+    types_request = ("post", "put", "patch", "delete")
+    for debug, semaphore, type_request in zip(debugs, semaphores, types_request):
 
         executor = client.test()
         mocked_method = getattr(mocked, type_request)
@@ -500,6 +518,102 @@ async def test_batch_requests(mocked, client):
 
         assert len(results) == len(response_data)
 
+
+async def test_semaphore_as_api_params_requests(mocked):
+
+    semaphores = (4, None, False)
+    types_request = ("get", "post", "put", "patch", "delete")
+
+    for semaphore, type_request in zip(semaphores, types_request):
+
+        async with SimpleClient(semaphore=semaphore) as simple_client:
+
+            executor = simple_client.test()
+
+            status = 200 if type_request == "get" else 201
+
+            mocked_method = getattr(mocked, type_request)
+            executor_method = getattr(executor, type_request)
+
+            mocked_method(
+                executor.data,
+                body='{"data": {"key": "value"}}',
+                status=status,
+                content_type="application/json",
+            )
+
+            kwargs = dict()
+
+            response = await executor_method(**kwargs)
+
+            result_response = {
+                response: {"data": {"key": "value"}},
+                response.data: {"key": "value"},
+                response.data.key: "value",
+            }
+
+            for response, data in result_response.items():
+                check_response(response, data, status)
+                assert response()._api_params.get('semaphore') == semaphore
+
+
+async def test_semaphore_as_api_params_batch_requests(mocked):
+    response_data = [
+        {"data": {"key": "value"}},
+        {"data": {"key": "value"}},
+        {"data": {"key": "value"}},
+        ]
+
+    semaphores = (4, None, False)
+    types_request = ("post", "put", "patch", "delete")
+
+    for semaphore, type_request in zip(semaphores, types_request):
+
+        async with SimpleClient(semaphore=semaphore) as simple_client:
+
+            executor = simple_client.test()
+            mocked_method = getattr(mocked, type_request)
+            executor_method = getattr(executor, type_request + "_batch")
+
+            for data_row in response_data:
+                mocked_method(
+                    executor.data,
+                    body=json.dumps(data_row),
+                    status=201,
+                    content_type="application/json",
+                    )
+
+            kwargs = dict(data=response_data)
+            if semaphore:
+                kwargs.update({"semaphore": semaphore})
+
+            results = await executor_method(**kwargs)
+
+            for i, response in enumerate(results):
+                result_response = {
+                    response: response_data[i],
+                    response.data: response_data[i]["data"],
+                    response.data.key: response_data[i]["data"]["key"],
+                    }
+                for resp, data in result_response.items():
+                    check_response(resp, data, 201)
+                    assert resp()._api_params.get('semaphore') == semaphore
+
+            assert len(results) == len(response_data)
+
+
+async def test_failed_semaphore(mocked):
+
+    async with NoneSemaphoreClient() as none_semaphore_client:
+        mocked.get(
+            none_semaphore_client.test().data,
+            body='{"data": {"key": "value"}}',
+            status=200,
+            content_type="application/json",
+            )
+
+        with pytest.raises(TypeError):
+            await none_semaphore_client.test().get()
 
 """
 test iterator features
