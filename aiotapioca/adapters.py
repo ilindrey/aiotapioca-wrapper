@@ -49,6 +49,9 @@ class TapiocaAdapter:
     def get_api_root(self, api_params, **kwargs):
         return self.api_root
 
+    def get_resource_mapping(self, api_params, **kwargs):
+        return self.resource_mapping
+
     def fill_resource_template_url(self, template, url_params, **kwargs):
         if isinstance(template, str):
             return template.format(**url_params)

@@ -554,7 +554,7 @@ async def test_semaphore_as_api_params_requests(mocked):
 
             for response, data in result_response.items():
                 check_response(response, data, status)
-                assert response()._api_params.get('semaphore') == semaphore
+                assert response()._api_params.get("semaphore") == semaphore
 
 
 async def test_semaphore_as_api_params_batch_requests(mocked):
@@ -562,7 +562,7 @@ async def test_semaphore_as_api_params_batch_requests(mocked):
         {"data": {"key": "value"}},
         {"data": {"key": "value"}},
         {"data": {"key": "value"}},
-        ]
+    ]
 
     semaphores = (4, None, False)
     types_request = ("post", "put", "patch", "delete")
@@ -581,7 +581,7 @@ async def test_semaphore_as_api_params_batch_requests(mocked):
                     body=json.dumps(data_row),
                     status=201,
                     content_type="application/json",
-                    )
+                )
 
             kwargs = dict(data=response_data)
             if semaphore:
@@ -594,10 +594,10 @@ async def test_semaphore_as_api_params_batch_requests(mocked):
                     response: response_data[i],
                     response.data: response_data[i]["data"],
                     response.data.key: response_data[i]["data"]["key"],
-                    }
+                }
                 for resp, data in result_response.items():
                     check_response(resp, data, 201)
-                    assert resp()._api_params.get('semaphore') == semaphore
+                    assert resp()._api_params.get("semaphore") == semaphore
 
             assert len(results) == len(response_data)
 
@@ -610,10 +610,11 @@ async def test_failed_semaphore(mocked):
             body='{"data": {"key": "value"}}',
             status=200,
             content_type="application/json",
-            )
+        )
 
         with pytest.raises(TypeError):
             await none_semaphore_client.test().get()
+
 
 """
 test iterator features
