@@ -455,10 +455,6 @@ class TapiocaClientExecutor(TapiocaClient):
         item_count = 0
 
         while iterator_list:
-            if executor._reached_max_limits(
-                page_count, item_count, max_pages, max_items
-            ):
-                break
             for item in iterator_list:
                 if executor._reached_max_limits(
                     page_count, item_count, max_pages, max_items
@@ -468,6 +464,11 @@ class TapiocaClientExecutor(TapiocaClient):
                 item_count += 1
 
             page_count += 1
+
+            if executor._reached_max_limits(
+                page_count, item_count, max_pages, max_items
+            ):
+                break
 
             next_request_kwargs = await executor._get_iterator_next_request_kwargs()
 
