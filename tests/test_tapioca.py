@@ -472,10 +472,10 @@ async def test_retry_request(mocked, retry_request_client):
 
 
 async def test_requests(mocked, client):
-    debugs = (True, False)
+
     semaphores = (3, None)
     types_request = ("get", "post", "put", "patch", "delete")
-    for debug, semaphore, type_request in zip(debugs, semaphores, types_request):
+    for semaphore, type_request in zip(semaphores, types_request):
 
         executor = client.test()
 
@@ -491,7 +491,7 @@ async def test_requests(mocked, client):
             content_type="application/json",
         )
 
-        kwargs = dict(debug=debug)
+        kwargs = {}
         if semaphore:
             kwargs.update({"semaphore": semaphore})
 
@@ -513,10 +513,9 @@ async def test_batch_requests(mocked, client):
         {"data": {"key": "value"}},
         {"data": {"key": "value"}},
     ]
-    debugs = (True, False)
     semaphores = (3, None)
     types_request = ("post", "put", "patch", "delete")
-    for debug, semaphore, type_request in zip(debugs, semaphores, types_request):
+    for semaphore, type_request in zip(semaphores, types_request):
 
         executor = client.test()
         mocked_method = getattr(mocked, type_request)
@@ -530,7 +529,7 @@ async def test_batch_requests(mocked, client):
                 content_type="application/json",
             )
 
-        kwargs = dict(data=response_data, debug=debug)
+        kwargs = dict(data=response_data)
         if semaphore:
             kwargs.update({"semaphore": semaphore})
 
@@ -548,14 +547,15 @@ async def test_batch_requests(mocked, client):
         assert len(results) == len(response_data)
 
 
-async def test_semaphore_as_api_params_requests(mocked):
+async def test_as_api_params_requests(mocked):
 
+    debug_flags = (True, False)
     semaphores = (4, None, False)
     types_request = ("get", "post", "put", "patch", "delete")
 
-    for semaphore, type_request in zip(semaphores, types_request):
+    for debug, semaphore, type_request in zip(debug_flags, semaphores, types_request):
 
-        async with SimpleClient(semaphore=semaphore) as simple_client:
+        async with SimpleClient(semaphore=semaphore, debug=True) as simple_client:
 
             executor = simple_client.test()
 
@@ -586,19 +586,20 @@ async def test_semaphore_as_api_params_requests(mocked):
                 assert response()._api_params.get("semaphore") == semaphore
 
 
-async def test_semaphore_as_api_params_batch_requests(mocked):
+async def test_as_api_params_batch_requests(mocked):
     response_data = [
         {"data": {"key": "value"}},
         {"data": {"key": "value"}},
         {"data": {"key": "value"}},
     ]
 
+    debug_flags = (True, False)
     semaphores = (4, None, False)
     types_request = ("post", "put", "patch", "delete")
 
-    for semaphore, type_request in zip(semaphores, types_request):
+    for debug, semaphore, type_request in zip(debug_flags, semaphores, types_request):
 
-        async with SimpleClient(semaphore=semaphore) as simple_client:
+        async with SimpleClient(semaphore=semaphore, debug=debug) as simple_client:
 
             executor = simple_client.test()
             mocked_method = getattr(mocked, type_request)

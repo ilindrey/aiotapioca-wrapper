@@ -363,7 +363,8 @@ class TapiocaClientExecutor(TapiocaClient):
             semaphore = self.__get_semaphore_value(kwargs)
             kwargs["semaphore_class"] = asyncio.Semaphore(semaphore)
 
-        debug = kwargs.pop("debug", False)
+        debug = self._api_params.get("debug", False)
+
         semaphore = kwargs.pop("semaphore_class", asyncio.Semaphore())
 
         kwargs["refresh_token"] = (
