@@ -1,6 +1,8 @@
 import arrow
 from decimal import Decimal
 
+from pydantic import BaseModel
+
 
 class BaseSerializer:
     def deserialize(self, method_name, value, **kwargs):
@@ -61,3 +63,14 @@ class PydanticSerializer(BaseSerializer):
         else:
             serialized = model.parse_obj(data)
         return serialized
+
+    def serialize_pydantic(self, data):
+        results = data.dict()
+        if '__root__' in results:
+            return results['__root__']
+        return results
+
+    def serialize(self, data):
+        if isinstance(data, BaseModel):
+            data = self.serialize_pydantic(data)
+        return super().serialize(data)

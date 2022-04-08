@@ -287,3 +287,10 @@ def test_datetime_serialization(serializer):
     data = [arrow.get(string_date).datetime]
     serialized = serializer.serialize(data)
     assert serialized == [string_date]
+
+
+def test_pydantic_serialization(serializer):
+    source_data = {"data": [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]}
+    data = CustomModel.parse_obj(source_data)
+    serialized = PydanticSerializer().serialize(data)
+    assert serialized == source_data
