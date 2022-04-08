@@ -1,6 +1,7 @@
 import json
 
 import pytest
+import pytest_asyncio
 import pickle
 import xmltodict
 from collections import OrderedDict
@@ -12,13 +13,41 @@ from aiotapioca.adapters import TapiocaAdapter
 from aiotapioca.exceptions import ClientError, ServerError
 from aiotapioca.serializers import SimpleSerializer
 from aiotapioca.tapioca import TapiocaClient, TapiocaClientExecutor
+from .callbacks import callback_201, callback_401
 from .clients import (
     SimpleClient,
-    NoneSemaphoreClient,
+    XMLClient,
     TokenRefreshClient,
+    TokenRefreshByDefaultClient,
     FailTokenRefreshClient,
+    RetryRequestClient,
+    NoneSemaphoreClient,
 )
-from .callbacks import callback_201, callback_401
+
+
+@pytest_asyncio.fixture
+async def retry_request_client():
+    async with RetryRequestClient() as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def xml_client():
+    async with XMLClient() as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def token_refresh_by_default_client():
+    async with TokenRefreshByDefaultClient(token="token") as c:
+        yield c
+
+
+@pytest.fixture()
+def refresh_token_possible_false_values():
+    yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {
+        "key": "value"
+    }
 
 
 def check_response(response, data, status=200, refresh_data=None):

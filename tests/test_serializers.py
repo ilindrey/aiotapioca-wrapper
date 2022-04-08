@@ -1,12 +1,36 @@
 import arrow
-import json
 import pytest
+import pytest_asyncio
+import json
 from decimal import Decimal
-from yarl import URL
 from pydantic import BaseModel
+from yarl import URL
 
-from aiotapioca import BaseSerializer, SimpleSerializer
-from .clients import CustomModel
+from aiotapioca import BaseSerializer, SimpleSerializer, PydanticSerializer
+from .clients import CustomModel, SimpleClient, SerializerClient
+
+
+@pytest.fixture()
+def serializer():
+    yield SimpleSerializer()
+
+
+@pytest_asyncio.fixture
+async def serializer_client():
+    async with SerializerClient() as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def client_serializer_class():
+    async with SimpleClient(serializer_class=SimpleSerializer) as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def pydantic_client():
+    async with SimpleClient(serializer_class=PydanticSerializer) as c:
+        yield c
 
 
 """
