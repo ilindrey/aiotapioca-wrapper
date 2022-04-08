@@ -23,13 +23,18 @@ Documentation hosted by Readthedocs (original library, it's not asynchronous): h
 """
 
 package = "aiotapioca"
-requirements = ["aiohttp>=3.0", "arrow>=0.6.0,<1", "six>=1", "xmltodict>=0.9.2"]
+requirements = [
+    "aiohttp>=3.0",
+    "arrow>=0.6.0,<1",
+    "six>=1",
+    "xmltodict>=0.9.2",
+    "aiologger>=0.6.0",
+]
 test_requirements = [
     "pytest>=7.0",
     "pytest-asyncio>=0.18",
     "aioresponses>=0.7",
     "pydantic>=1.0.0",
-    "aiologger>=0.6.0",
 ]
 dev_requirements = [
     *test_requirements,
