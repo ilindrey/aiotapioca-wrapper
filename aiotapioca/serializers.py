@@ -66,8 +66,8 @@ class PydanticSerializer(BaseSerializer):
 
     def serialize_pydantic(self, data):
         results = data.dict()
-        if '__root__' in results:
-            return results['__root__']
+        if "__root__" in results:
+            return results["__root__"]
         return results
 
     def serialize(self, data):

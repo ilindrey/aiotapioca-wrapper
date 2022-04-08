@@ -15,9 +15,3 @@ def mocked():
 async def client():
     async with SimpleClient() as c:
         yield c
-
-
-
-
-
-
