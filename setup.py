@@ -28,13 +28,13 @@ requirements = [
     "arrow>=0.6.0,<1",
     "six>=1",
     "xmltodict>=0.9.2",
+    "pydantic>=1.0.0",
     "aiologger>=0.6.0",
 ]
 test_requirements = [
     "pytest>=7.0",
     "pytest-asyncio>=0.18",
     "aioresponses>=0.7",
-    "pydantic>=1.0.0",
 ]
 dev_requirements = [
     *test_requirements,
