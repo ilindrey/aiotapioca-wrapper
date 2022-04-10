@@ -2,13 +2,13 @@
 Features
 ========
 
-Here are some features tapioca supports. The wrapper you are using may support them or not, it will depend on the `tapioca-wrapper` version it is tied to and if the developer implemented the methods needed to support the feature. Either way, if you find yourself in a situation where you need one of these features, clone the wrapper, update the `tapioca-wrapper` version to the latest one, implement the features you need and submit a pull request to the developer. You will be helping a lot of people!
+Here are some features aiotapioca supports. The wrapper you are using may support them or not, it will depend on the `aiotapioca-wrapper` version it is tied to and if the developer implemented the methods needed to support the feature. Either way, if you find yourself in a situation where you need one of these features, clone the wrapper, update the `aiotapioca-wrapper` version to the latest one, implement the features you need and submit a pull request to the developer. You will be helping a lot of people!
 
 
 TapiocaClient
 =============
 
-The first object you get after you instanciate a tapioca wrapper is an instance of the ``TapiocaClient`` class. This class is capable of accessing the API endpoints of the wrapper and traversing response objects. No other action besides those can be achieved from a ``TapiocaClient``. To retrieve the raw data returned from the API call you will need to transform it in a ``TapiocaClientExecutor``.
+The first object you get after you instanciate a aiotapioca wrapper is an instance of the ``TapiocaClient`` class. This class is capable of accessing the API endpoints of the wrapper and traversing response objects. No other action besides those can be achieved from a ``TapiocaClient``. To retrieve the raw data returned from the API call you will need to transform it in a ``TapiocaClientExecutor``.
 
 **TODO: add examples**
 
@@ -28,8 +28,8 @@ In this cases you can instantiate the wrapper passing a ``default_url_params`` p
 
 .. code-block:: python
 
-	cli = MyWrapper(access_token='some_token', default_url_params={'user_id': 123456})
-	cli.resources() # http://www.someapi.com/123456/resources/
+	async with MyWrapper(access_token='some_token', default_url_params={'user_id': 123456}) as cli:
+	    cli.resources() # http://www.someapi.com/123456/resources/
 
 Using an existing requests.Session
 ----------------------------------
@@ -40,11 +40,11 @@ To use these features you can create a ``TapiocaClient`` with an existing sessio
 
 .. code-block:: python
 
-    session = requests.Session()
+    session = aiohttp.ClientSession()
     cli = MyWrapper(access_token='some_token', session=session)
 	cli.resources() # http://www.someapi.com/123456/resources/
 
-This allows us to perform some interesting operations without having to support them directly in ``TapiocaClient``.
+This allows us to perform some interesting operations without having to support them directly in ``TapiocaClient`` and instantiate it using the ``async with`` construct.
 For example caching for github requests using `cachecontrol`_:
 
 .. code-block:: python
@@ -56,7 +56,7 @@ For example caching for github requests using `cachecontrol`_:
 
     session = CacheControl(requests.Session(), cache=FileCache('webcache'))
     gh = tapioca_github.Github(client_id='some_id', access_token='some_token', session=session)
-    response  = gh.repo_single(owner="vintasoftware", repo="tapioca-wrapper").get()
+    response  = gh.repo_single(owner="ilindrey", repo="aiotapioca-wrapper").get()
     repo_data = response().data
 
 This will cache the E-tags provided by github to the folder `webcache`.
@@ -72,26 +72,69 @@ Every time you ``call`` in ``TapiocaClient`` you will get a ``TapiocaClientExecu
 Accessing raw response data
 ---------------------------
 
-To access the raw data contained in the executor, use the ``data`` **attribute**. To access the raw response, use the ``response`` **attribute**. To access the status code of the response, use the ``status_code`` **attribute**. If during the request the ``Auth refreshing`` process was executed, the returned value from it will be accessible in the ``refresh_data`` **attribute**.
+To access the raw data contained in the executor, use the ``data`` **attribute**. To access the raw response, use the ``response`` **attribute**. To access the status code of the response, use the ``status`` **attribute**. If during the request the ``Auth refreshing`` process was executed, the returned value from it will be accessible in the ``refresh_data`` **attribute**.
 
-**TODO: add examples**
+.. code-block:: python
+
+    async with MyWrapper(access_token='some_token') as cli:
+        
+        response = await cli.some_resource().get()
+
+        data = response().data
+        response = response().response
+        status = response().status
+        refresh_data = response().refresh_data
+
 
 HTTP calls
 ----------
 
-Executors have access to make HTTP calls using the current data it possesses as the URL. The `requests <http://docs.python-requests.org/en/latest/>`_ library is used as the engine to perform API calls. Every key word parameter you pass to: ``get()``, ``post()``, ``put()``, ``patch()``, ``delete()`` methods will be directly passed to the request library call. This means you will be using ``params={'myparam': 'paramvalue'}`` to send querystring arguments in the url and ``data={'datakey': 'keyvalue'}`` to send data in the body of the request.
+Executors have access to make HTTP calls using the current data it possesses as the URL. The `aiohttp <https://docs.aiohttp.org/en/stable/>`_ library is used as the engine to perform API calls. Every key word parameter you pass to: ``get()``, ``post()``, ``put()``, ``patch()``, ``delete()`` methods will be directly passed to the request library call. This means you will be using ``params={'myparam': 'paramvalue'}`` to send querystring arguments in the url and ``data={'datakey': 'keyvalue'}`` to send data in the body of the request.
 
-**TODO: add examples**
+.. code-block:: python
+
+    async with MyWrapper() as cli:
+        response = await cli.some_resource().get(params={'myparam': 'paramvalue'})
+        response = await cli.some_resource().post(data={'datakey': 'keyvalue'})
+        response = await cli.some_resource().delete(data={'id': 123})
+
+For perform multiple requests asynchronously, you can use batch methods as like a ``post_batch()``, ``patch_batch()``, ``put_batch()``, ``delete_batch()``. The data in the list must be passed to the data parameter in order to execute requests.
+
+.. code-block:: python
+
+    async with MyWrapper() as cli:
+        response = await cli.some_resource().post_batch(data=[
+                {'datakey1': 'keyvalue1'},
+                {'datakey2': 'keyvalue2'},
+            ])
 
 Auth refreshing (\*)
 --------------------
 
-Some clients need to update its token once they have expired. If the client supports this feature, you might instantiate it
-passing ```refresh_token_by_default=True``` or make any HTTP call passing ```refresh_auth=True``` (both defaults to
-```False```). Note that if your client instance have ```refresh_token_by_default=True```, then you don't need to
-explicity set it on HTTP calls.
+Some clients need to update its token once they have expired. If the client supports this feature, you might 
+specify ```refresh_token=True``` in the adapter class, instantiate it passing ```refresh_token=True``` 
+or make any HTTP call passing ```refresh_auth=True``` (both default to ```False```).
+Note that if your adapter claass or client instance has ```refresh_token=True```, then you don't need to explicitly set it on HTTP calls.
 
-**TODO: add examples**
+
+.. code-block:: python
+
+    class MyAPIAdapter(TapiocaAdapter):
+        refresh_token=True
+        ...
+    
+    MyWrapper = generate_wrapper_from_adapter(MyAPIAdapter)
+
+    # or
+
+    async with MyWrapper(refresh_token=True) as cli:
+	    ...
+
+    # or
+
+    async with MyWrapper() as cli:
+        response = await cli.some_resource().post(refresh_token=True)
+        ...
 
 *the wrapper you are current using may not support this feature
 
@@ -100,7 +143,31 @@ Pagination (\*)
 
 Use ``pages()`` method to call an endpoint that returns a collection of objects in batches. This will make your client automatically fetch more data untill there is none more left. You may use ``max_pages`` and/or ``max_items`` to limit the number of items you want to iterate over.
 
-**TODO: add examples**
+.. code-block:: python
+
+    async with MyWrapper() as cli:
+
+        response = await cli.some_resource().get(params=...)
+        async for page in response().pages():
+            print(page().data)
+            print(page().response)
+            ...
+
+        # or
+        
+        async for page in response().pages(max_pages=2):
+            ...
+
+        # or
+        
+        async for page in response().pages(max_items=10):
+            ...
+
+        # or
+        
+        async for page in response().pages(max_pages=2, max_items=10):
+            ...
+
 
 *the wrapper you are current using may not support this feature
 
@@ -110,7 +177,10 @@ Open docs (\*)
 
 When accessing an endpoint, you may want to read it's documentation in the internet. By calling ``open_docs()`` in a python interactive session, the doc page will be openned in a browser.
 
-**TODO: add examples**
+.. code-block:: python
+
+    cli = MyWrapper()
+    cli.some_resource().open_docs()
 
 *the wrapper you are current using may not support this feature
 
@@ -119,14 +189,17 @@ Open in the browser (\*)
 
 Whenever the data contained in the executor is a URL, you can directly open it in the browser from an interactive session by calling ``open_in_browser()``
 
-**TODO: add examples**
+.. code-block:: python
 
+    cli = MyWrapper()
+    cli.some_resource().open_in_browser()
+    
 *the wrapper you are current using may not support this feature
 
 Exceptions
 ==========
 
-Tapioca built in exceptions will help you to beautifuly catch and handle whenever there is a client or server error. Make sure the wrapper you are using correctly raises exceptions, the developer might not have treated this. Please refer to the :doc:`exceptions <exceptions>` for more information about exceptions.
+AioTapioca built in exceptions will help you to beautifuly catch and handle whenever there is a client or server error. Make sure the wrapper you are using correctly raises exceptions, the developer might not have treated this. Please refer to the :doc:`exceptions <exceptions>` for more information about exceptions.
 
 Serializers
 ===========

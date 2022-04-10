@@ -3,10 +3,10 @@ Building a wrapper
 ==================
 
 
-Wrapping an API with Tapioca
-============================
+Wrapping an API with AioTapioca
+===============================
 
-The easiest way to wrap an API using tapioca is starting from the `cookiecutter template <https://github.com/vintasoftware/cookiecutter-tapioca>`_. 
+The easiest way to wrap an API using aiotapioca is starting from the `cookiecutter template <https://github.com/vintasoftware/cookiecutter-tapioca>`_. 
 
 To use it, install cookiecutter in your machine:
 
@@ -20,16 +20,14 @@ and then use it to download the template and run the config steps:
 
 	cookiecutter gh:vintasoftware/cookiecutter-tapioca
 
-After this process, it's possible that you have a ready to go wrapper. But in most cases, you will need to customize stuff. Read through this document to understand what methods are available and how your wrapper can make the most of tapioca. Also, you might want to take a look in the source code of :doc:`other wrappers <flavours>` to get more ideas. 
-
-In case you are having any difficulties, seek help on `Gitter <https://gitter.im/vintasoftware/tapioca-wrapper>`_ or send an email to contact@vinta.com.br .
+After this process, it's possible that you have a ready to go wrapper. But in most cases, you will need to customize stuff. Read through this document to understand what methods are available and how your wrapper can make the most of tapioca. Also, you might want to take a look in the source code of :doc:`other wrappers <flavours>` to get more ideas.
 
 Adapter
 =======
 
-Tapioca features are mainly implemented in the ``TapiocaClient`` and ``TapiocaClientExecutor`` classes. Those are generic classes common to all wrappers and cannot be customized to specific services. All the code specific to the API wrapper you are creating goes in your adapter class, which should inherit from ``TapiocaAdapter`` and implement specific behaviours to the service you are working with. 
+AioTapioca features are mainly implemented in the ``TapiocaClient`` and ``TapiocaClientExecutor`` classes. Those are generic classes common to all wrappers and cannot be customized to specific services. All the code specific to the API wrapper you are creating goes in your adapter class, which should inherit from ``TapiocaAdapter`` and implement specific behaviours to the service you are working with. 
 
-Take a look in the generated code from the cookiecutter or in the `tapioca-facebook adapter <https://github.com/vintasoftware/tapioca-facebook/blob/master/tapioca_facebook/tapioca_facebook.py>`_ to get a little familiar with it before you continue. Note that at the end of the module you will need to perform the transformation of your adapter into a client:
+Take a look in the generated code from the cookiecutter or in the `aiotapioca-facebook adapter <https://github.com/ilindrey/aiotapioca-facebook/blob/master/aiotapioca_facebook/aiotapioca_facebook.py>`_ to get a little familiar with it before you continue. Note that at the end of the module you will need to perform the transformation of your adapter into a client:
 
 .. code-block:: python
 
@@ -45,9 +43,9 @@ Here is some information you should know when building your wrapper. You may cho
 Resource Mapping
 ----------------
 
-The resource mapping is a very simple dictionary which will tell your tapioca client about the available endpoints and how to call them. There's an example in your cookiecutter generated project. You can also take a look at `tapioca-facebook's resource mapping <https://github.com/vintasoftware/tapioca-facebook/blob/master/tapioca_facebook/resource_mapping.py>`_.
+The resource mapping is a very simple dictionary which will tell your aiotapioca client about the available endpoints and how to call them. There's an example in your cookiecutter generated project. You can also take a look at `aiotapioca-facebook's resource mapping <https://github.com/ilindrey/aiotapioca-facebook/blob/master/aiotapioca_facebook/resource_mapping.py>`_.
 
-Tapioca uses `requests <http://docs.python-requests.org/en/latest/>`_ to perform HTTP requests. This is important to know because you will be using the method ``get_request_kwargs`` to set authentication details and return a dictionary that will be passed directly to the request method. 
+AioTapioca uses `aiohttp <https://docs.aiohttp.org/en/stable/>`_ to perform HTTP requests. This is important to know because you will be using the method ``get_request_kwargs`` to set authentication details and return a dictionary that will be passed directly to the request method. 
 
 
 Formatting data
@@ -85,8 +83,8 @@ Set a ``serializer_class`` attribute or overwrite the ``get_serializer()`` metho
 
 .. code-block:: python
 
-	from tapioca import TapiocaAdapter
-	from tapioca.serializers import SimpleSerializer
+	from aiotapioca import TapiocaAdapter
+	from aiotapioca.serializers import SimpleSerializer
 
 	class MyAPISerializer(SimpleSerializer):
 		
@@ -117,7 +115,7 @@ Please refer to the :doc:`serializers <serializers>` for more information about 
 Refreshing Authentication (optional)
 ------------------------------------
 
-You can implement the ```refresh_authentication``` and ```is_authentication_expired``` methods in your Tapioca Client to refresh your authentication token every time it expires.
+You can implement the ```refresh_authentication``` and ```is_authentication_expired``` methods in your TapiocaClient to refresh your authentication token every time it expires.
 
 ```is_authentication_expired``` receives an error object from the request method (it contains the server response and HTTP Status code). You can use it to decide if a request failed because of the token. This method should return ```True``` if the authentication is expired or ```False``` otherwise  (default behavior).
 

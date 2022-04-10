@@ -2,30 +2,30 @@
 Quickstart
 ==========
 
-Using a tapioca package
-=======================
+Using a aiotapioca package
+==========================
 
 **Yes, you are in the right place**
 
-There is a good chance you found this page because you clicked a link from some python package called **tapioca-SOMETHING**. Well, welcome! You are in the right place. This page will teach you the basics of how to use the package that sent you here. If you didn't arrive here from another package, then please keep reading. The concepts learned here apply to any tapioca-**package** available.
+There is a good chance you found this page because you clicked a link from some python package called **aiotapioca-SOMETHING**. Well, welcome! You are in the right place. This page will teach you the basics of how to use the package that sent you here. If you didn't arrive here from another package, then please keep reading. The concepts learned here apply to any aiotapioca-**package** available.
 
-What's tapioca?
-===============
+What's aiotapioca?
+==================
 
-**tapioca** is an *API wrapper maker*. It helps Python developers creating packages for APIs (like the :ref:`Facebook Graph API <flavour-facebook>` or the :ref:`Twitter REST API <flavour-twitter>`. You can find a full list of available API packages made with tapioca :doc:`here <flavours>`.  
+**aiotapioca** is an *API wrapper maker*. It helps Python developers creating packages for APIs (like the :ref:`Facebook Graph API <flavour-aiofacebook>` or the :ref:`Twitter REST API <flavour-twitter>`. You can find a full list of available API packages made with aiotapioca :doc:`here <flavours>`.  
 
-All wrappers made with tapioca follow a simple interaction pattern that works uniformly, so once you learn how tapioca works, you will be able to work with any tapioca package available.
+All wrappers made with aiotapioca follow a simple interaction pattern that works uniformly, so once you learn how aiotapioca works, you will be able to work with any aiotapioca package available.
 
 Getting started
 ===============
 
-We will use ``tapioca-facebook`` as example to guide us through tapioca concepts. Let's install ``tapioca-facebook``:
+We will use ``aiotapioca-facebook`` as example to guide us through aiotapioca concepts. Let's install ``aiotapioca-facebook``:
 
 .. code-block:: bash
 
-	$ pip install tapioca-facebook
+	$ pip install aiotapioca-facebook
 
-To better experience tapioca, we will also use IPython:
+To better experience aiotapioca, we will also use IPython:
 
 .. code-block:: bash
 
@@ -38,14 +38,23 @@ Go to  `https://developers.facebook.com/tools/explorer/ <https://developers.face
 TapiocaClient object
 ====================
 
-This is how you initialize your tapioca client:
+This is how you initialize your aiotapioca client:
 
 .. code-block:: python
 
 	from tapioca_facebook import Facebook
 
-	api = Facebook(access_token='{your_genereated_access_token}')
+	async with Facebook(access_token='{your_genereated_access_token}') as api:
+		...
 
+You can also pass the debug flag when initialising your aiotapioca client:
+
+.. code-block:: python
+
+	from tapioca_facebook import Facebook
+
+	async with Facebook(access_token='{your_genereated_access_token}', debug=True) as api:
+		...
 
 If you are using IPython, you can now list available endpoints by typing ``api.`` and pressing ``tab``.
 
@@ -90,7 +99,7 @@ To request the current user likes, its easy:
 
 .. code-block:: python
 
-	likes = api.user_likes(id='me').get()
+	likes = await api.user_likes(id='me').get()
 
 
 To print the returned data:
@@ -122,12 +131,12 @@ You can iterate over returned data:
 
 .. code-block:: python
 
-	likes = api.user_likes(id='me').get()
+	likes = await api.user_likes(id='me').get()
 
 	for like in likes.data:
 		print(like.id().data)
 
-Items passed to the ``for`` loop will be wrapped in tapioca so you still have access to all features.
+Items passed to the ``for`` loop will be wrapped in aiotapioca so you still have access to all features.
 
 TapiocaClientExecutor object
 ============================
@@ -141,11 +150,11 @@ Here is the list of the methods available in a ``TapiocaClientExecutor``:
 Making requests
 ---------------
 
-Tapioca uses the `requests <http://docs.python-requests.org/en/latest/>`_ library to make requests so HTTP methods will work just the same (get()/post()/put()/delete()/head()/options()). The only difference is that we don't need to pass a URL since tapioca will take care of this.
+Tapioca uses the `aiohttp <https://docs.aiohttp.org/en/stable/>`_ library to make requests so HTTP methods will work just the same (get()/post()/patch()/put()/delete()/head()/options()). The only difference is that we don't need to pass a URL since aiotapioca will take care of this.
 
 .. code-block:: python
 
-	likes = api.user_likes(id='me').get()
+	likes = await api.user_likes(id='me').get()
 
 
 **URL params**
@@ -154,7 +163,7 @@ To pass query string parameters in the URL, you can use the ```params``` paramet
 
 .. code-block:: python
 
-	likes = api.user_likes(id='me').get(
+	likes = await api.user_likes(id='me').get(
 		params={'limit': 5})
 
 This will return only 5 results.
@@ -166,10 +175,24 @@ If you need to pass data in the body of your request, you can use the ```data```
 .. code-block:: python
 
 	# this will only work if you have a post to wall permission
-	api.user_feed(id='me').post(
+	await api.user_feed(id='me').post(
 		data={'message': 'I love tapiocas!! S2'})
 
-Please read `requests <http://docs.python-requests.org/en/latest/>`_ for more detailed information about how to use HTTP methods. 
+Please read `aiohttp <https://docs.aiohttp.org/en/stable/>`_ for more detailed information about how to use HTTP methods. 
+
+**Multiple requests**
+
+To perform multiple requests asynchronously, you can use batch methods (post_batch()/patch_batch()/put_batch()/delete_batch()):
+
+.. code-block:: python
+
+	# this will only work if you have a post to wall permission
+	await api.user_feed(id='me').post_batch(
+		data=[
+			{'message': 'I love tapiocas!! S2'},
+			{'message': 'I love tapiocas too!!'},
+			...
+		])
 
 Accessing raw data
 ------------------
@@ -178,7 +201,7 @@ Use ``data`` to return data contained in the Tapioca object.
 
 .. code-block:: python
 
-	>>> likes = api.user_likes(id='me').get()
+	>>> likes = await api.user_likes(id='me').get()
 	>>> likes().data
 	{
 		'data': [...],
@@ -190,24 +213,24 @@ Use ``data`` to return data contained in the Tapioca object.
 	>>> [...]
 
 Dynamically fetching pages
--------------------------
+--------------------------
 
 Many APIs use a paging concept to provide large amounts of data. This way, data is returned in multiple requests to avoid a single long request. Tapioca is built to provide an easy way to access paged data using the ``pages()`` method:
 
 .. code-block:: python
 
-	likes = api.user_likes(id='me').get()
+	likes = await api.user_likes(id='me').get()
 
-	for like in likes().pages():
+	async for like in likes().pages():
 		print(like.name().data)
 
-This will keep fetching user likes until there are none left. Items passed to the ``for`` loop will be wrapped in tapioca so you still have access to all features.
+This will keep fetching user likes until there are none left. Items passed to the ``for`` loop will be wrapped in aiotapioca so you still have access to all features.
 
 This method also accepts ``max_pages`` and ``max_items`` parameters. If both parameters are used, the ``for`` loop will stop after ``max_pages`` are fetched or ``max_items`` are yielded, whichever comes first:
 
 .. code-block:: python
 
-	for item in resp().pages(max_pages=2, max_items=40):
+	async for item in resp().pages(max_pages=2, max_items=40):
 		print(item)
 	# in this example, the for loop will stop after two pages are fetched or 40 items are yielded, 
 	# whichever comes first.
@@ -219,12 +242,12 @@ It's possible to access wrapped data attributes on executor. For example, it's p
 
 .. code-block:: python
 
-	likes = api.user_likes(id='me').get()
+	likes = await api.user_likes(id='me').get()
 
 	likes_list = likes.data
 	likes_list().reverse() 
 	# items in the likes_list are now in reverse order
-	# but still wrapped in a tapioca object
+	# but still wrapped in a aiotapioca object
 
 Opening documentation in the browser
 ------------------------------------
@@ -238,7 +261,7 @@ If you are accessing a resource, you can call ``open_docs`` to open the resource
 Opening any link in the browser
 -------------------------------
 
-Whenever the data contained in a tapioca object is a URL, you can open it in a browser by using the ``open_in_browser()`` method.
+Whenever the data contained in a aiotapioca object is a URL, you can open it in a browser by using the ``open_in_browser()`` method.
 
 
 For more information on what wrappers are capable of, please refer to the :doc:`features <features>` section.

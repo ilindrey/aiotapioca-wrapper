@@ -16,11 +16,11 @@ Usage
 Serialization
 -------------
 
-Data serialization is done in the background when tapioca is executing the request. It will traverse any data structure passed to the ``data`` param of the request and convert Python data types into serialized types.
+Data serialization is done in the background when aiotapioca is executing the request. It will traverse any data structure passed to the ``data`` param of the request and convert Python data types into serialized types.
 
 .. code-block:: python
 
-	>>> reponse = cli.the_resource().post(data={'date': datetime.today()})
+	>>> reponse = await cli.the_resource().post(data={'date': datetime.today()})
 
 In this example, ``datetime.today()`` will be converted into a string formatted date just before the request is executed.
 
@@ -31,7 +31,7 @@ To deserialize data, you need to transform your client into an executor and then
 
 .. code-block:: python
 
-	>>> reponse = cli.the_resource().get()
+	>>> reponse = await cli.the_resource().get()
 	>>> print(response.created_at())
 	<TapiocaClientExecutor object
 	2015-10-25T22:34:51+00:00>
@@ -60,7 +60,7 @@ Built-ins
 
 .. class:: SimpleSerializer
 
-``SimpleSerializer`` is a very basic and generic serializer. It is included by default in adapters unless explicitly removed. It supports serialization from `Decimal` and `datetime` and deserialization methods to those two types as well. Here is it's full code:
+``SimpleSerializer`` is a very basic and generic serializer. It is included by default in adapters unless explicitly removed. It supports serialization from `Decimal` and `datetime` and deserialization methods to those two types as well. Here is its full code:
 
 .. code-block:: python
 	
@@ -80,6 +80,54 @@ Built-ins
 
 
 As you can see, ``datetime`` values will be formatted to iso format.
+
+.. class:: PydanticSerializer
+
+``PydanticSerializer`` is designed to serialize and deserialize data into the `pydantic model <https://pydantic-docs.helpmanual.io/>`_. Here is its full code:
+
+.. code-block:: python
+	
+	class PydanticSerializer(BaseSerializer):
+		def to_pydantic(self, data, model=None):
+			if not model:
+				raise ValueError(
+					"""
+					The model parameter is not specified in the resource mapping
+					or is not passed as a function parameter.
+					"""
+				)
+			if isinstance(data, str):
+				serialized = model.parse_raw(data)
+			else:
+				serialized = model.parse_obj(data)
+			return serialized
+
+		def serialize_pydantic(self, data):
+			results = data.dict()
+			if "__root__" in results:
+				return results["__root__"]
+			return results
+
+		def serialize(self, data):
+			if isinstance(data, BaseModel):
+				data = self.serialize_pydantic(data)
+			return super().serialize(data)
+
+
+A pydantic model can be specified in resource_mapping by first specifying the to_pydantic method name and then specifying the model in the method parameters. For example:
+
+.. code-block:: python
+
+	RESOURCE_MAPPING = {
+		'some_resource': {
+			'resource': ...,
+			'docs': ...,
+			'to_pydantic': {'params': {'model': SomeModel}},
+		},
+		...
+	}
+
+
 
 Writing a custom serializer
 ===========================
@@ -107,7 +155,7 @@ Any method starting with ``to_`` in your custom serializer class will be availab
 
 .. code-block:: python
 	
-	from tapioca.serializers import BaseSerializer
+	from aiotapioca.serializers import BaseSerializer
 
 	class MyCustomSerializer(BaseSerializer):
 

@@ -2,6 +2,70 @@
 Changelog
 =========
 
+3.4.2
+=====
+- Fixed requirements.
+
+3.4.1
+=====
+- Fixed requirements.
+
+3.4.0
+=====
+- Using aiologger for debugging logs.
+- Fix for recursion due to refresh_token flag.
+- Added attribute semaphore to TapiocaAdapter.
+- Added ability to pass Semaphore as a client or request parameter.
+- Added get_resource_mapping method to TapiocaAdapter.
+- Fixed an unnecessary request.
+- Added serialisation from the pydantic model.
+- Reworked flag debug.
+
+3.3.1
+=====
+- Expanding debugging information.
+
+3.3.0
+=====
+- The handling of the refresh token parameter was changed.
+- Added refresh_token attribute to the TapiocaAdapter class.
+- Removed refresh_token_by_default parameter in the tapioca classes.
+- Parameters passing was changed in _wrap_in_tapioca and _wrap_in_tapioca_executor.
+- Minor fixes.
+
+3.2.4
+=====
+- Fixed "This instance has no response object" error in _wrap_in_tapioca and _wrap_in_tapioca_executor (empty response in property descendants and pages).
+
+3.2.3
+=====
+- Returned pass request_method as param in get_request_kwargs.
+
+3.2.2
+=====
+- Fixed fill resource template url.
+
+3.2.1
+=====
+- Context transmission was extended.
+
+3.2.0
+=====
+- Added retry_request and error_handling methods.
+- Added context passed to different adapter methods.
+
+3.1.1
+=====
+- Fixed debugging flag.
+
+3.1.0
+=====
+- Added PydanticSerializer.
+  
+3.0.0
+=====
+- Implementing an asynchronous fork.
+
 2.1.0
 =====
 - Make ``TapiocaClient`` and ``TapiocaClientExecutor`` pickle-able.
