@@ -10,7 +10,7 @@
 
 It's an asynchronous fork of [tapioca-wrapper](https://github.com/vintasoftware/tapioca-wrapper) library.
 
-![](docs/static/logo.png)
+![](docs/static/aiologo.png)
 
 Tapioca helps you generating Python clients for APIs.
 APIs wrapped by Tapioca are explorable and follow a simple interaction pattern that works uniformly so developers don't need to learn how to use a new coding interface/style for each service API.
