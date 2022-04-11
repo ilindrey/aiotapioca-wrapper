@@ -42,11 +42,11 @@ For more information about the ``semaphore`` attribute, read the `Python’s sta
 Methods
 -------
 
-.. method:: get_resource_mapping(self, api_params, \*\*kwargs)
+.. method:: get_resource_mapping(self, api_params, **kwargs)
 
 This method can be used instead of the ``resource_mapping`` attribute. Returns the ``resource_mapping`` attribute by default.
 
-.. method:: get_api_root(self, api_params, \*\*kwargs)
+.. method:: get_api_root(self, api_params, **kwargs)
 
 This method can be used instead of the ``api_root`` attribute. You might also use it to decide which base URL to use according to a user input.
 
@@ -74,7 +74,7 @@ You may also need to set different ``api_root`` to a specific resource. To do th
 			return 'http://api.the-dev-url.com/'
 		return 'http://api.the-production-url.com/'
 
-.. method:: get_request_kwargs(self, api_params, \*args, \*\*kwargs)
+.. method:: get_request_kwargs(self, api_params, *args, **kwargs)
 
 This method is called just before any request is made. You should use it to set whatever credentials the request might need. The **api_params** argument is a dictionary and has the parameters passed during the initialization of the aiotapioca client:
 
@@ -102,7 +102,7 @@ Here is an example of how to implement Basic Auth:
 
 			return params
 
-.. method:: process_response(self, response, \*\*kwargs)
+.. method:: process_response(self, response, **kwargs)
 
 This method is responsible for converting data returned in a response to a dictionary (which should be returned). It should also be used to raise exceptions when an error message or error response status is returned.
 
@@ -110,11 +110,11 @@ This method is responsible for converting data returned in a response to a dicti
 
 This converts data passed to the body of the request into text. For example, if you need to send JSON, you should use ``json.dumps(data)`` and return the response. **See the mixins section above.**
 
-.. method:: response_to_native(self, response, \*\*kwargs)
+.. method:: response_to_native(self, response, **kwargs)
 
 This method receives the response of a request and should return a dictionay with the data contained in the response. **see the mixins section above.**
 
-.. method:: get_iterator_next_request_kwargs(self, iterator_request_kwargs, response_data, response, \*\*kwargs)
+.. method:: get_iterator_next_request_kwargs(self, iterator_request_kwargs, response_data, response, **kwargs)
 
 Override this method if the service you are using supports pagination. It should return a dictionary that will be used to fetch the next batch of data, e.g.:
 
@@ -133,7 +133,7 @@ Override this method if the service you are using supports pagination. It should
 
 In this example, we are updating the URL from the last call made. ``iterator_request_kwargs`` contains the paramenters from the last call made, ``response_data`` contains the response data after it was parsed by ``process_response`` method, and ``response`` is the full response object with all its attributes like headers and status code. 
 
-.. method:: get_iterator_list(self, response_data, \*\*kwargs)
+.. method:: get_iterator_list(self, response_data, **kwargs)
 
 Many APIs enclose the returned list of objects in one of the returned attributes. Use this method to extract and return only the list from the response.
 
@@ -144,7 +144,7 @@ Many APIs enclose the returned list of objects in one of the returned attributes
 
 In this example, the object list is enclosed in the ``data`` attribute.
 
-.. method:: is_authentication_expired(self, exception, \*args, \*\*kwargs)
+.. method:: is_authentication_expired(self, exception, *args, **kwargs)
 
 Given an exception, checks if the authentication has expired or not. If the HTTP method was called with ``refresh_token=True``, then it will automatically call ``refresh_authentication``
 method and retry the original request.
@@ -152,14 +152,14 @@ method and retry the original request.
 If not implemented, ``is_authentication_expired`` will assume ``False``, ``refresh_token`` also
 defaults to ``False`` in the client initialization.
 
-.. method:: refresh_authentication(self, api_params, \*args, \*\*kwargs): 
+.. method:: refresh_authentication(self, api_params, *args, **kwargs): 
 
 Should do refresh authentication logic. Make sure you update `api_params` dictionary with the new token. If it successfully refreshs token it should return a truthy value that will be stored for later access in the executor class in the ``refresh_data`` attribute. If the refresh logic fails, return a falsy value. The original request will be retried only if a truthy is returned.
 
-.. method:: retry_request(self, tapioca_exception, error_message, repeat_number, \*\*kwargs): 
+.. method:: retry_request(self, tapioca_exception, error_message, repeat_number, **kwargs): 
 
 Conditions for repeating a request. If it returns True, the request will be repeated.
 
-.. method:: error_handling(self, tapioca_exception, error_message, repeat_number, \*\*kwargs):
+.. method:: error_handling(self, tapioca_exception, error_message, repeat_number, **kwargs):
 
 Wrapper for throwing custom exceptions. When, for example, the server responds with 200, and errors are passed inside json.
