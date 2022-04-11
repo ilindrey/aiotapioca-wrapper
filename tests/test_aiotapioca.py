@@ -42,7 +42,7 @@ async def token_refresh_by_default_client():
         yield c
 
 
-@pytest.fixture()
+@pytest.fixture
 def refresh_token_possible_false_values():
     yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {
         "key": "value"

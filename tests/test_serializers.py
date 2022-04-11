@@ -10,7 +10,7 @@ from aiotapioca import BaseSerializer, SimpleSerializer, PydanticSerializer
 from .clients import CustomModel, SimpleClient, SerializerClient
 
 
-@pytest.fixture()
+@pytest.fixture
 def serializer():
     yield SimpleSerializer()
 

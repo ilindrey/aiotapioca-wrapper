@@ -5,7 +5,7 @@ from aioresponses import aioresponses
 from .clients import SimpleClient
 
 
-@pytest.fixture()
+@pytest.fixture
 def mocked():
     with aioresponses() as m:
         yield m
