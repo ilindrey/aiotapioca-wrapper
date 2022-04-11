@@ -12,7 +12,7 @@ from yarl import URL
 from aiotapioca.adapters import TapiocaAdapter
 from aiotapioca.exceptions import ClientError, ServerError
 from aiotapioca.serializers import SimpleSerializer
-from aiotapioca.tapioca import TapiocaClient, TapiocaClientExecutor
+from aiotapioca.aiotapioca import TapiocaClient, TapiocaClientExecutor
 from .callbacks import callback_201, callback_401
 from .clients import (
     SimpleClient,

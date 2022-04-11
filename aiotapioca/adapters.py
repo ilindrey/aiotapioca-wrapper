@@ -2,7 +2,7 @@ import orjson
 import xmltodict
 from collections.abc import Mapping
 
-from .tapioca import TapiocaInstantiator
+from .aiotapioca import TapiocaInstantiator
 from .exceptions import ResponseProcessException, ClientError, ServerError
 from .serializers import SimpleSerializer
 

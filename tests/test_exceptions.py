@@ -7,7 +7,7 @@ from aiotapioca.exceptions import (
     ResponseProcessException,
     TapiocaException,
 )
-from aiotapioca.tapioca import TapiocaClient
+from aiotapioca.aiotapioca import TapiocaClient
 from .clients import SimpleClientAdapter
 
 
