@@ -15,28 +15,83 @@ It's an asynchronous fork of [tapioca-wrapper](https://github.com/vintasoftware/
 Tapioca helps you generating Python clients for APIs.
 APIs wrapped by Tapioca are explorable and follow a simple interaction pattern that works uniformly so developers don't need to learn how to use a new coding interface/style for each service API.
 
+## Usage
+
+First, you need to set up the mapping of the resources you want to work with:
+
+```python
+RESOURCE_MAPPING = {
+    "test": {
+        "resource": "test/{number}/",
+        "docs": "http://test.com/docs",
+        "spam": "eggs",
+        "foo": "bar",
+    },
+    ...
+}
+```
+
+Then create an adapter class that will work with resources:
+```python
+from aiotapioca.adapters import TapiocaAdapter
+
+
+class TestClientAdapter(TapiocaAdapter):
+    serializer_class = ...  # default SimpleSerializer
+    api_root = "https://api.test.com"
+    resource_mapping = RESOURCE_MAPPING
+```
+
+Generate a class-based wrapper using `generate_wrapper_from_adapter`:
+```python
+from aiotapioca.adapters import generate_wrapper_from_adapter
+
+TestClient = generate_wrapper_from_adapter(TestClientAdapter)
+```
+
+Using:
+
+```python
+async with TestClient(**some_params) as client:
+    
+    response = await client.test(number=...).get(data=..., 
+                                                 params=...)
+    print(response().data)
+    print(response().response)
+    
+    response = await client.test(number=...).post(data=..., 
+                                                  params=...)
+    
+    responses = await client.test(number=...).post_batch(data=[..., ...], 
+                                                         params=...)
+```
+
+For page-by-page traversal, you can use the method of the `pages`:
+
+```python
+async with TestClient(**some_params) as client:
+    result = await client.test(number=...).get()
+    async for page in result().pages():
+        print(page().data)
+        print(page().response)
+```
+
+You must also implement the `get_iterator_list` and `get_iterator_next_request_kwargs` methods for it.
 
 ## Documentation
 
-Full documentation hosted by [readthedocs](http://tapioca-wrapper.readthedocs.org/).
+Full documentation hosted by [readthedocs](http://aiotapioca-wrapper.readthedocs.org/).
 
 ## Flavours
 
-You can find the full list of available tapioca clients [here](http://tapioca-wrapper.readthedocs.org/en/stable/flavours.html).
+You can find the full list of available tapioca clients [here](http://aiotapioca-wrapper.readthedocs.org/en/stable/flavours.html).
 
-To create new flavours, refer to [Building a wrapper](http://tapioca-wrapper.readthedocs.org/en/stable/buildingawrapper.html) in the documentation. There is also a [cookiecutter template](https://github.com/vintasoftware/cookiecutter-tapioca) to help bootstraping new API clients.
+To create new flavours, refer to [Building a wrapper](http://aiotapioca-wrapper.readthedocs.org/en/stable/buildingawrapper.html) in the documentation. There is also a [cookiecutter template](https://github.com/vintasoftware/cookiecutter-tapioca) to help bootstraping new API clients.
 
 
 ## Other resources
 
-- [Contributors](https://github.com/vintasoftware/tapioca-wrapper/graphs/contributors)
-- [Changelog](http://tapioca-wrapper.readthedocs.org/en/stable/changelog.html)
+- [Contributors](https://github.com/ilindrey/aiotapioca-wrapper/graphs/contributors)
+- [Changelog](http://aiotapioca-wrapper.readthedocs.org/en/stable/changelog.html)
 - [Blog post explaining the basics about Tapioca](http://www.vinta.com.br/blog/2016/python-api-clients-with-tapioca/)
 
-## Help
-
-If you have any questions or need help, please send an email to: contact@vinta.com.br
-
-## Commercial Support
-
-This project, as other Vinta open-source projects, is used in products of Vinta clients. We are always looking for exciting work, so if you need any commercial support, feel free to get in touch: contact@vinta.com.br
