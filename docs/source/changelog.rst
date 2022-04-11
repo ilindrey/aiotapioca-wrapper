@@ -2,6 +2,10 @@
 Changelog
 =========
 
+3.5.0
+=====
+- migration to orjson
+
 3.4.2
 =====
 - Fixed requirements.

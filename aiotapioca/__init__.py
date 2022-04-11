@@ -1,6 +1,6 @@
 __author__ = "Filipe Ximenes, Andrey Ilin"
 __email__ = "andreyilin@fastmail.com"
-__version__ = "3.4.2"
+__version__ = "3.5.0"
 
 
 from .adapters import (
