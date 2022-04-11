@@ -1,5 +1,4 @@
-import json
-
+import orjson
 import pytest
 import pytest_asyncio
 import pickle
@@ -524,7 +523,7 @@ async def test_batch_requests(mocked, client):
         for data_row in response_data:
             mocked_method(
                 executor.data,
-                body=json.dumps(data_row),
+                body=orjson.dumps(data_row),
                 status=201,
                 content_type="application/json",
             )
@@ -608,7 +607,7 @@ async def test_as_api_params_batch_requests(mocked):
             for data_row in response_data:
                 mocked_method(
                     executor.data,
-                    body=json.dumps(data_row),
+                    body=orjson.dumps(data_row),
                     status=201,
                     content_type="application/json",
                 )

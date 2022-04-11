@@ -1,7 +1,7 @@
 import arrow
 import pytest
 import pytest_asyncio
-import json
+import orjson
 from decimal import Decimal
 from pydantic import BaseModel
 from yarl import URL
@@ -99,7 +99,10 @@ async def test_request_with_data_serialization(mocked, serializer_client):
         0
     ].kwargs["data"]
 
-    assert json.loads(request_body) == {"date": string_date, "decimal": string_decimal}
+    assert orjson.loads(request_body) == {
+        "date": string_date,
+        "decimal": string_decimal,
+    }
 
 
 """

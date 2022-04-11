@@ -1,13 +1,13 @@
-import pytest
 import aiohttp
+import pytest
 
+from aiotapioca.aiotapioca import TapiocaClient
 from aiotapioca.exceptions import (
     ClientError,
     ServerError,
     ResponseProcessException,
     TapiocaException,
 )
-from aiotapioca.aiotapioca import TapiocaClient
 from .clients import SimpleClientAdapter
 
 
