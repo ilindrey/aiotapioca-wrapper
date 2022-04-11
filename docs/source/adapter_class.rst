@@ -32,7 +32,7 @@ For more information about the ``serializer_class`` attribute, read the :doc:`se
 
 .. attribute:: refresh_token
 
- If the HTTP method was called with `refresh_token=True`, then it will automatically call `refresh_authentication` method and retry the original request.
+ If the HTTP method was called with ``refresh_token=True``, then it will automatically call ``refresh_authentication`` method and retry the original request.
 
 .. attribute:: semaphore
 
@@ -146,11 +146,11 @@ In this example, the object list is enclosed in the ``data`` attribute.
 
 .. method:: is_authentication_expired(self, exception, \*args, \*\*kwargs)
 
-Given an exception, checks if the authentication has expired or not. If the HTTP method was called with ```refresh_token=True```, then it will automatically call ```refresh_authentication```
+Given an exception, checks if the authentication has expired or not. If the HTTP method was called with ``refresh_token=True``, then it will automatically call ``refresh_authentication``
 method and retry the original request.
 
-If not implemented, ```is_authentication_expired``` will assume ```False```, ```refresh_token``` also
-defaults to ```False``` in the client initialization.
+If not implemented, ``is_authentication_expired`` will assume ``False``, ``refresh_token`` also
+defaults to ``False`` in the client initialization.
 
 .. method:: refresh_authentication(self, api_params, \*args, \*\*kwargs): 
 
