@@ -1,6 +1,5 @@
-import json
+import orjson
 import xmltodict
-from aiohttp.client_exceptions import ContentTypeError
 from collections.abc import Mapping
 
 from .tapioca import TapiocaInstantiator
@@ -141,14 +140,12 @@ class JSONAdapterMixin:
 
     def format_data_to_request(self, data, **kwargs):
         if data:
-            return json.dumps(data)
+            return orjson.dumps(data)
 
     async def response_to_native(self, response, **kwargs):
-        try:
-            return await response.json()
-        except ContentTypeError:
-            text = await response.text()
-            return json.loads(text)
+        text = await response.text()
+        if text:
+            return orjson.loads(text)
 
     async def get_error_message(self, data, response=None, **kwargs):
         if not data and response:

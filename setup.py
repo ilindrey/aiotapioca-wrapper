@@ -30,6 +30,7 @@ requirements = [
     "xmltodict>=0.9.2",
     "pydantic>=1.0.0",
     "aiologger>=0.6.0",
+    "orjson>=3.0.0",
 ]
 test_requirements = [
     "pytest>=7.0",
