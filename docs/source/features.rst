@@ -113,7 +113,7 @@ Auth refreshing (\*)
 
 Some clients need to update its token once they have expired. If the client supports this feature, you might 
 specify ``refresh_token=True`` in the adapter class, instantiate it passing ``refresh_token=True`` 
-or make any HTTP call passing ```refresh_auth=True``` (both default to ``False``).
+or make any HTTP call passing ``refresh_auth=True`` (both default to ``False``).
 Note that if your adapter claass or client instance has ``refresh_token=True``, then you don't need to explicitly set it on HTTP calls.
 
 

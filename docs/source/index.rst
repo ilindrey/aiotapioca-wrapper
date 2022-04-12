@@ -1,5 +1,5 @@
 
-Welcome to tapioca-wrapper documentation!
+Welcome to aiotapioca-wrapper documentation!
 =========================================
 
 Contents:
