@@ -138,7 +138,7 @@ class JSONAdapterMixin:
         arguments["headers"]["Content-Type"] = "application/json"
         return arguments
 
-    def format_data_to_request(self, data, **kwargs):
+    def format_data_to_request(self, data):
         if data:
             return orjson.dumps(data)
 
