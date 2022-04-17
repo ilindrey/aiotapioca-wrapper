@@ -1,6 +1,8 @@
 import orjson
 import xmltodict
 from collections.abc import Mapping
+from dataclasses import asdict, is_dataclass
+from pydantic import BaseModel
 
 from .aiotapioca import TapiocaInstantiator
 from .exceptions import ResponseProcessException, ClientError, ServerError
@@ -150,13 +152,11 @@ class JSONAdapterMixin:
     async def get_error_message(self, data, response=None, **kwargs):
         if not data and response:
             data = await self.response_to_native(response, **kwargs)
-
         if data:
             if "error" in data:
-                return data.get("error", None)
+                return data.get("error")
             elif "errors" in data:
                 return data.get("errors")
-
         return data
 
 
@@ -205,3 +205,67 @@ class XMLAdapterMixin:
             if "xml" in response.headers["content-type"]:
                 return xmltodict.parse(text, **self._xmltodict_parse_kwargs)
             return {"text": text}
+
+
+class PydanticMixin:
+    extract_root = True
+    convert_to_dict = False
+
+    def get_request_kwargs(self, api_params, *args, **kwargs):
+        arguments = super().get_request_kwargs(api_params, *args, **kwargs)
+        if "headers" not in arguments:
+            arguments["headers"] = {}
+        arguments["headers"]["Content-Type"] = "application/json"
+        return arguments
+
+    def format_data_to_request(self, data):
+        if data:
+            if isinstance(data, BaseModel):
+                return orjson.dumps(data.dict())
+            elif is_dataclass(data):
+                return orjson.dumps(asdict(data))
+            return orjson.dumps(data)
+
+    async def response_to_native(self, response, **kwargs):
+        text = await response.text()
+        if text:
+            data = orjson.loads(text)
+            if response.status == 200:
+                pydantic_model = self.get_pydantic_model(**kwargs)
+                if type(pydantic_model) == type(BaseModel):
+                    data = pydantic_model.parse_obj(data)
+                elif is_dataclass(pydantic_model):
+                    if hasattr(pydantic_model, '__pydantic_model__'):
+                        data = pydantic_model.__pydantic_model__.parse_obj(data)
+                    else:
+                        raise TypeError(f"It isn't pydantic dataclass: {pydantic_model}.")
+                else:
+                    raise TypeError(f"It isn't pydantic model: {pydantic_model}.")
+                if self.convert_to_dict:
+                    data = data.dict()
+                if self.extract_root:
+                    if isinstance(data, BaseModel) and hasattr(data, '__root__'):
+                        return data.__root__
+                    elif '__root__' in data:
+                        return data['__root__']
+                return data
+            return data
+
+    async def get_error_message(self, data, response=None, **kwargs):
+        if not data and response:
+            data = await self.response_to_native(response, **kwargs)
+        if data:
+            if "error" in data:
+                return data.get("error")
+            elif "errors" in data:
+                return data.get("errors")
+        return data
+
+    def get_pydantic_model(self, resource, **kwargs):
+        pydantic_model = resource.get("pydantic_model")
+        if not pydantic_model:
+            raise ValueError(
+                "Pydantic model not found."
+                "Specify the pydantic model as the pydantic_model parameter in resource_mapping"
+            )
+        return pydantic_model

@@ -1,11 +1,13 @@
+import pickle
+from dataclasses import asdict, is_dataclass
+from collections import OrderedDict
+
 import orjson
 import pytest
 import pytest_asyncio
-import pickle
 import xmltodict
-from collections import OrderedDict
-
 from aiohttp.client_reqrep import ClientResponse
+from pydantic import BaseModel
 from yarl import URL
 
 from aiotapioca.adapters import TapiocaAdapter
@@ -21,6 +23,11 @@ from .clients import (
     FailTokenRefreshClient,
     RetryRequestClient,
     NoneSemaphoreClient,
+    PydanticDefaultClient,
+    PydanticAllDisabledClient,
+    PydanticExtractRootClient,
+    PydanticConvertToDictClient,
+    PydanticAllEnabledClient
 )
 
 
@@ -1323,3 +1330,69 @@ async def test_raises_error_if_refresh_authentication_method_returns_false_value
 
             with pytest.raises(ClientError):
                 await fail_client.test().post(refresh_token=refresh_token)
+
+
+"""
+Test PydanticMixin.
+
+Clients:
+
+    PydanticDefaultClient,
+    PydanticAllDisabledClient,
+    PydanticExtractRootClient,
+    PydanticConvertToDictClient,
+    PydanticAllEnabledClient
+"""
+
+
+async def test_pydantic_mixin_response_to_native_default_client(mocked):
+    response_body_root = (
+        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
+    )
+    response_body = (
+        '{"data": %s}' % response_body_root
+    )
+    async with PydanticDefaultClient() as client:
+        mocked.get(
+            client.test().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test().get()
+        assert isinstance(response().data, BaseModel)
+        assert response().data.dict() == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_root().get()
+        assert isinstance(response().data, list)
+        for response_data, expected_data in zip(response().data, orjson.loads(response_body_root)):
+            assert isinstance(response_data, BaseModel)
+            assert response_data.dict() == expected_data
+
+        mocked.get(
+            client.test_dataclass().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_dataclass().get()
+        assert isinstance(response().data, BaseModel)
+        assert response().data.dict() == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_dataclass_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_dataclass_root().get()
+        assert isinstance(response().data, list)
+        for response_data, expected_data in zip(response().data, orjson.loads(response_body_root)):
+            assert isinstance(response_data, BaseModel)
+            assert response_data.dict() == expected_data

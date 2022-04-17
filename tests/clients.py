@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, dataclasses
 
 from aiotapioca import (
     generate_wrapper_from_adapter,
     TapiocaAdapter,
     JSONAdapterMixin,
+    PydanticMixin,
     XMLAdapterMixin,
     SimpleSerializer,
 )
@@ -18,6 +19,26 @@ class CustomModel(BaseModel):
     data: list[Detail]
 
 
+class RootModel(BaseModel):
+    __root__: list[Detail]
+
+
+@dataclasses.dataclass
+class DetailDT:
+    key1: str
+    key2: int
+
+
+@dataclasses.dataclass
+class CustomModelDT:
+    data: list[Detail]
+
+
+@dataclasses.dataclass
+class RootModelDT:
+    __root__: list[Detail]
+
+
 test = {
     "resource": "test/",
     "docs": "http://www.example.org",
@@ -25,7 +46,10 @@ test = {
 
 RESOURCE_MAPPING = {
     "test": test,
-    "test_pydantic": {**test, "to_pydantic": {"params": {"model": CustomModel}}},
+    "test_pydantic_serializer": {
+        **test,
+        "to_pydantic": {"params": {"model": CustomModel}},
+    },
     "user": {"resource": "user/{id}/", "docs": "http://www.example.org/user"},
     "resource": {
         "resource": "resource/{number}/",
@@ -139,3 +163,53 @@ class FailTokenRefreshClientAdapter(TokenRefreshByDefaultClientAdapter):
 
 
 FailTokenRefreshClient = generate_wrapper_from_adapter(FailTokenRefreshClientAdapter)
+
+
+"""
+Pydantic
+"""
+
+
+class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
+    api_root = "https://api.example.org"
+    resource_mapping = {
+        "test": {**test, "pydantic_model": CustomModel},
+        "test_root": {**test, "pydantic_model": RootModel},
+        "test_dataclass": {**test, "pydantic_model": CustomModelDT},
+        "test_dataclass_root": {**test, "pydantic_model": RootModelDT},
+        }
+
+
+PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapter)
+
+
+class PydanticAllDisabledClientAdapter(PydanticDefaultClientAdapter):
+    extract_root = False
+    convert_to_dict = False
+
+
+PydanticAllDisabledClient = generate_wrapper_from_adapter(PydanticAllDisabledClientAdapter)
+
+
+class PydanticExtractRootClientAdapter(PydanticDefaultClientAdapter):
+    extract_root = True
+    convert_to_dict = False
+
+
+PydanticExtractRootClient = generate_wrapper_from_adapter(PydanticExtractRootClientAdapter)
+
+
+class PydanticConvertToDictClientAdapter(PydanticDefaultClientAdapter):
+    extract_root = False
+    convert_to_dict = True
+
+
+PydanticConvertToDictClient = generate_wrapper_from_adapter(PydanticConvertToDictClientAdapter)
+
+
+class PydanticAllEnabledClientAdapter(PydanticDefaultClientAdapter):
+    extract_root = True
+    convert_to_dict = True
+
+
+PydanticAllEnabledClient = generate_wrapper_from_adapter(PydanticAllEnabledClientAdapter)
