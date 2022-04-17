@@ -1345,6 +1345,42 @@ Clients:
 """
 
 
+async def test_pydantic_model_not_found(mocked):
+    async with PydanticDefaultClient() as client:
+        mocked.get(
+            client.test_not_found().data,
+            body='{}',
+            status=200,
+            content_type="application/json",
+        )
+        with pytest.raises(ValueError):
+            await client.test_not_found().get()
+
+
+async def test_bad_pydantic_model(mocked):
+    async with PydanticDefaultClient() as client:
+        mocked.get(
+            client.test_bad_pydantic_model().data,
+            body='{}',
+            status=200,
+            content_type="application/json",
+        )
+        with pytest.raises(TypeError):
+            await client.test_bad_pydantic_model().get()
+
+
+async def test_bad_dataclass_model(mocked):
+    async with PydanticDefaultClient() as client:
+        mocked.get(
+            client.test_bad_dataclass_model().data,
+            body='{}',
+            status=200,
+            content_type="application/json",
+        )
+        with pytest.raises(TypeError):
+            await client.test_bad_dataclass_model().get()
+
+
 async def test_pydantic_mixin_response_to_native_default_client(mocked):
     response_body_root = (
         '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'

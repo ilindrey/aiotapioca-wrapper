@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from pydantic import BaseModel, dataclasses
 
 from aiotapioca import (
@@ -37,6 +39,11 @@ class CustomModelDT:
 @dataclasses.dataclass
 class RootModelDT:
     __root__: list[Detail]
+
+
+@dataclass
+class BadModelDT:
+    data: list[Detail]
 
 
 test = {
@@ -177,6 +184,9 @@ class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
         "test_root": {**test, "pydantic_model": RootModel},
         "test_dataclass": {**test, "pydantic_model": CustomModelDT},
         "test_dataclass_root": {**test, "pydantic_model": RootModelDT},
+        "test_not_found": {**test, "pydantic_model": None},
+        "test_bad_pydantic_model": {**test, "pydantic_model": 100500},
+        "test_bad_dataclass_model": {**test, "pydantic_model": BadModelDT},
         }
 
 
