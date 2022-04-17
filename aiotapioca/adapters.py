@@ -230,7 +230,7 @@ class PydanticMixin:
         text = await response.text()
         if text:
             data = orjson.loads(text)
-            if response.status == 200:
+            if response.method.upper() == 'GET' and response.status == 200:
                 pydantic_model = self.get_pydantic_model(**kwargs)
                 if type(pydantic_model) == type(BaseModel):
                     data = pydantic_model.parse_obj(data)
