@@ -1432,3 +1432,215 @@ async def test_pydantic_mixin_response_to_native_default_client(mocked):
         for response_data, expected_data in zip(response().data, orjson.loads(response_body_root)):
             assert isinstance(response_data, BaseModel)
             assert response_data.dict() == expected_data
+
+
+async def test_pydantic_mixin_response_to_native_all_disabled_client(mocked):
+    response_body_root = (
+        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
+    )
+    response_body = (
+        '{"data": %s}' % response_body_root
+    )
+    async with PydanticAllDisabledClient() as client:
+        mocked.get(
+            client.test().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test().get()
+        assert isinstance(response().data, BaseModel)
+        assert response().data.dict() == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_root().get()
+        assert isinstance(response().data, BaseModel)
+        assert hasattr(response().data, '__root__')
+        assert response().data.dict()['__root__'] == orjson.loads(response_body_root)
+
+        mocked.get(
+            client.test_dataclass().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_dataclass().get()
+        assert isinstance(response().data, BaseModel)
+        assert response().data.dict() == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_dataclass_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_dataclass_root().get()
+        assert isinstance(response().data, BaseModel)
+        assert hasattr(response().data, '__root__')
+        assert response().data.dict()['__root__'] == orjson.loads(response_body_root)
+
+
+async def test_pydantic_mixin_response_to_native_extract_root_client(mocked):
+    response_body_root = (
+        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
+    )
+    response_body = (
+        '{"data": %s}' % response_body_root
+    )
+    async with PydanticExtractRootClient() as client:
+        mocked.get(
+            client.test().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test().get()
+        assert isinstance(response().data, BaseModel)
+        assert response().data.dict() == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_root().get()
+        assert isinstance(response().data, list)
+        for response_data, expected_data in zip(response().data, orjson.loads(response_body_root)):
+            assert isinstance(response_data, BaseModel)
+            assert response_data.dict() == expected_data
+
+        mocked.get(
+            client.test_dataclass().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_dataclass().get()
+        assert isinstance(response().data, BaseModel)
+        assert response().data.dict() == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_dataclass_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test_dataclass_root().get()
+        assert isinstance(response().data, list)
+        for response_data, expected_data in zip(response().data, orjson.loads(response_body_root)):
+            assert isinstance(response_data, BaseModel)
+            assert response_data.dict() == expected_data
+
+
+async def test_pydantic_mixin_response_to_native_covert_to_dict_client(mocked):
+    response_body_root = (
+        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
+    )
+    response_body = (
+        '{"data": %s}' % response_body_root
+    )
+    async with PydanticConvertToDictClient() as client:
+        mocked.get(
+            client.test().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test().get()
+        assert isinstance(response().data, dict)
+        assert response().data == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test_root().get()
+        assert isinstance(response().data, dict)
+        assert '__root__' in response().data
+        for response_data, expected_data in zip(response().data['__root__'], orjson.loads(response_body_root)):
+            assert isinstance(response_data, dict)
+            assert response_data == expected_data
+
+        mocked.get(
+            client.test_dataclass().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test_dataclass().get()
+        assert isinstance(response().data, dict)
+        assert response().data == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_dataclass_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test_dataclass_root().get()
+        assert isinstance(response().data, dict)
+        assert '__root__' in response().data
+        for response_data, expected_data in zip(response().data['__root__'], orjson.loads(response_body_root)):
+            assert isinstance(response_data, dict)
+            assert response_data == expected_data
+
+
+async def test_pydantic_mixin_response_to_native_all_enabled_client(mocked):
+    response_body_root = (
+        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
+    )
+    response_body = (
+        '{"data": %s}' % response_body_root
+    )
+    async with PydanticAllEnabledClient() as client:
+        mocked.get(
+            client.test().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test().get()
+        assert isinstance(response().data, dict)
+        assert response().data == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test_root().get()
+        assert isinstance(response().data, list)
+        for response_data, expected_data in zip(response().data, orjson.loads(response_body_root)):
+            assert isinstance(response_data, dict)
+            assert response_data == expected_data
+
+        mocked.get(
+            client.test_dataclass().data,
+            body=response_body,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test_dataclass().get()
+        assert isinstance(response().data, dict)
+        assert response().data == orjson.loads(response_body)
+
+        mocked.get(
+            client.test_dataclass_root().data,
+            body=response_body_root,
+            status=200,
+            content_type="application/json",
+            )
+        response = await client.test_dataclass_root().get()
+        assert isinstance(response().data, list)
+        for response_data, expected_data in zip(response().data, orjson.loads(response_body_root)):
+            assert isinstance(response_data, dict)
+            assert response_data == expected_data
