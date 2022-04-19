@@ -146,13 +146,13 @@ async def test_convert_to_pydantic(mocked, pydantic_client):
     )
 
     mocked.get(
-        pydantic_client.test().data,
+        pydantic_client.test_pydantic_serializer().data,
         body=response_body,
         status=200,
         content_type="application/json",
     )
 
-    response = await pydantic_client.test_pydantic().get()
+    response = await pydantic_client.test_pydantic_serializer().get()
     data = response().to_pydantic()
 
     assert isinstance(data, BaseModel)
@@ -183,13 +183,13 @@ async def test_convert_to_pydantic_pass_model_as_param(mocked, pydantic_client):
     )
 
     mocked.get(
-        pydantic_client.test().data,
+        pydantic_client.test_pydantic_serializer().data,
         body=response_body,
         status=200,
         content_type="application/json",
     )
 
-    response = await pydantic_client.test().get()
+    response = await pydantic_client.test_pydantic_serializer().get()
 
     data = response().to_pydantic(model=CustomModel)
 

@@ -61,7 +61,8 @@ class TapiocaAdapter:
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
         request_kwargs = kwargs.get('request_kwargs', {})
-        serialized = self.serialize_data(request_kwargs.get("data"), **kwargs)
+
+        serialized = self.serialize_data(request_kwargs.get('data'), **kwargs)
         request_kwargs.update(
             {
                 "data": self.format_data_to_request(serialized, **kwargs),
@@ -176,18 +177,20 @@ class XMLAdapterMixin:
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
         # stores kwargs prefixed with 'xmltodict_unparse__' for use by xmltodict.unparse
+        request_kwargs = kwargs.get('request_kwargs', {})
         self._xmltodict_unparse_kwargs = {
-            k[len("xmltodict_unparse__") :]: kwargs.pop(k)
-            for k in kwargs.copy().keys()
+            k[len("xmltodict_unparse__") :]: request_kwargs.pop(k)
+            for k in request_kwargs.copy().keys()
             if k.startswith("xmltodict_unparse__")
         }
         # stores kwargs prefixed with 'xmltodict_parse__' for use by xmltodict.parse
         self._xmltodict_parse_kwargs = {
-            k[len("xmltodict_parse__") :]: kwargs.pop(k)
-            for k in kwargs.copy().keys()
+            k[len("xmltodict_parse__") :]: request_kwargs.pop(k)
+            for k in request_kwargs.copy().keys()
             if k.startswith("xmltodict_parse__")
         }
 
+        kwargs['request_kwargs'] = request_kwargs
         arguments = super().get_request_kwargs(api_params, *args, **kwargs)
 
         if "headers" not in arguments:
