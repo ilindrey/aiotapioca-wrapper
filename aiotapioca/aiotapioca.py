@@ -366,15 +366,16 @@ class TapiocaClientExecutor(TapiocaClient):
 
         semaphore = kwargs.pop("semaphore_class", asyncio.Semaphore())
 
-        kwargs["refresh_token"] = (
-            kwargs.get("refresh_token") is True
+        refresh_token = (
+            kwargs.pop("refresh_token", False) is True
             or self._api_params.get("refresh_token") is True
             or self._api.refresh_token is True
             or False
         )
+        repeat_number = 0
 
         async with semaphore:
-            response = await self._make_request(request_method, *args, **kwargs)
+            response = await self._make_request(request_method, refresh_token, repeat_number, *args, **kwargs)
 
         if debug:
             executor = response()
