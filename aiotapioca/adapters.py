@@ -42,7 +42,7 @@ class TapiocaAdapter:
         if self.serializer_class:
             return self.serializer_class()
 
-    def serialize_data(self, data):
+    def serialize_data(self, data, **kwargs):
         if self.serializer:
             return self.serializer.serialize(data)
         return data
@@ -60,14 +60,14 @@ class TapiocaAdapter:
             return template
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
-        serialized = self.serialize_data(kwargs.get("data"))
-
-        kwargs.update(
+        request_kwargs = kwargs.get('request_kwargs', {})
+        serialized = self.serialize_data(request_kwargs.get("data"), **kwargs)
+        request_kwargs.update(
             {
-                "data": self.format_data_to_request(serialized),
+                "data": self.format_data_to_request(serialized, **kwargs),
             }
         )
-        return kwargs
+        return request_kwargs
 
     async def process_response(self, response, **kwargs):
 
@@ -84,7 +84,7 @@ class TapiocaAdapter:
     def get_error_message(self, data, response=None, **kwargs):
         return str(data)
 
-    def format_data_to_request(self, data):
+    def format_data_to_request(self, data, **kwargs):
         raise NotImplementedError()
 
     def response_to_native(self, response, **kwargs):
@@ -125,7 +125,7 @@ class TapiocaAdapter:
 
 
 class FormAdapterMixin:
-    def format_data_to_request(self, data):
+    def format_data_to_request(self, data, **kwargs):
         return data
 
     async def response_to_native(self, response, **kwargs):
@@ -140,7 +140,7 @@ class JSONAdapterMixin:
         arguments["headers"]["Content-Type"] = "application/json"
         return arguments
 
-    def format_data_to_request(self, data):
+    def format_data_to_request(self, data, **kwargs):
         if data:
             return orjson.dumps(data)
 
@@ -195,7 +195,7 @@ class XMLAdapterMixin:
         arguments["headers"]["Content-Type"] = "application/xml"
         return arguments
 
-    def format_data_to_request(self, data):
+    def format_data_to_request(self, data, **kwargs):
         if data:
             return self._input_branches_to_xml_bytestring(data)
 
@@ -218,7 +218,7 @@ class PydanticMixin:
         arguments["headers"]["Content-Type"] = "application/json"
         return arguments
 
-    def format_data_to_request(self, data):
+    def format_data_to_request(self, data, **kwargs):
         if data:
             if isinstance(data, BaseModel):
                 return orjson.dumps(data.dict())
