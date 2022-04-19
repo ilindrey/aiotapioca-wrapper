@@ -379,8 +379,9 @@ class TapiocaClientExecutor(TapiocaClient):
         if debug:
             executor = response()
             text = str(executor.data)
-            if len(text) > 100:
-                text = "{}...".format(str(executor.data)[:333])
+            length = 3333
+            if len(text) > length:
+                text = "{}...".format(text[:length])
             msg = "status: {} | url: {} - response data: {}".format(
                 executor.status, executor.response.url, text
             )
