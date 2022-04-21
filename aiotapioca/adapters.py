@@ -211,6 +211,9 @@ class XMLAdapterMixin:
 
 
 class PydanticMixin:
+    forced_to_have_model = False
+    validate_data_received = True
+    validate_data_sending = True
     extract_root = True
     convert_to_dict = False
 
@@ -223,6 +226,8 @@ class PydanticMixin:
 
     def format_data_to_request(self, data, **kwargs):
         if data:
+            if self.validate_data_sending and (not isinstance(data, BaseModel) or not is_dataclass(data)):
+                data = self.convert_data_to_pydantic_model('request', data, **kwargs)
             if isinstance(data, BaseModel):
                 return orjson.dumps(data.dict())
             elif is_dataclass(data):
@@ -233,26 +238,69 @@ class PydanticMixin:
         text = await response.text()
         if text:
             data = orjson.loads(text)
-            if response.method.upper() == 'GET' and response.status == 200:
-                pydantic_model = self.get_pydantic_model(**kwargs)
-                if type(pydantic_model) == type(BaseModel):
-                    data = pydantic_model.parse_obj(data)
-                elif is_dataclass(pydantic_model):
-                    if hasattr(pydantic_model, '__pydantic_model__'):
-                        data = pydantic_model.__pydantic_model__.parse_obj(data)
-                    else:
-                        raise TypeError(f"It isn't pydantic dataclass: {pydantic_model}.")
-                else:
-                    raise TypeError(f"It isn't pydantic model: {pydantic_model}.")
-                if self.convert_to_dict:
-                    data = data.dict()
-                if self.extract_root:
-                    if isinstance(data, BaseModel) and hasattr(data, '__root__'):
+            if self.validate_data_received and response.status == 200:
+                data = self.convert_data_to_pydantic_model('response', data, **kwargs)
+                if isinstance(data, BaseModel):
+                    if self.extract_root and hasattr(data, '__root__'):
                         return data.__root__
-                    elif '__root__' in data:
-                        return data['__root__']
+                    if self.convert_to_dict:
+                        data = data.dict()
+                        if self.extract_root and '__root__' in data:
+                            return data['__root__']
+                        return data
                 return data
             return data
+
+    def convert_data_to_pydantic_model(self, type_convert, data, **kwargs):
+        model = self.get_pydantic_model(type_convert, **kwargs)
+        if type(model) == type(BaseModel):
+            return model.parse_obj(data)
+        return data
+
+    def get_pydantic_model(self, type_convert, resource, request_method, **kwargs):
+        model = None
+        models = resource.get("pydantic_models")
+        if type(models) == type(BaseModel) or is_dataclass(models):
+            model = models
+        elif isinstance(models, dict):
+            method = request_method.upper()
+            if 'request' in models or 'response' in models:
+                models = models.get(type_convert)
+            if type(models) == type(BaseModel) or is_dataclass(models):
+                model = models
+            elif isinstance(models, dict):
+                for key, value in models.items():
+                    if type(key) == type(BaseModel) or is_dataclass(key):
+                        if isinstance(value, str) and value.upper() == method:
+                            model = key
+                            break
+                        elif isinstance(value, list) or isinstance(value, tuple):
+                            for item in value:
+                                if item.upper() == request_method:
+                                    model = key
+                                    break
+        # search default model
+        if not model and isinstance(models, dict):
+            if 'request' in models or 'response' in models:
+                models = models.get(type_convert)
+            if isinstance(models, dict):
+                for key, value in models.items():
+                    if value is None:
+                        model = key
+                        break
+        if self.forced_to_have_model and not model:
+            raise ValueError(
+                "Pydantic model not found."
+                "Specify the pydantic model as the pydantic_model parameter in resource_mapping"
+            )
+        if is_dataclass(model):
+            if hasattr(model, '__pydantic_model__'):
+                model = model.__pydantic_model__
+            else:
+                raise TypeError(f"It isn't pydantic dataclass: {model}.")
+        if self.forced_to_have_model and type(model) != type(BaseModel):
+            raise TypeError(f"It isn't pydantic model: {model}.")
+        return model
 
     async def get_error_message(self, data, response=None, **kwargs):
         if not data and response:
@@ -263,12 +311,3 @@ class PydanticMixin:
             elif "errors" in data:
                 return data.get("errors")
         return data
-
-    def get_pydantic_model(self, resource, **kwargs):
-        pydantic_model = resource.get("pydantic_model")
-        if not pydantic_model:
-            raise ValueError(
-                "Pydantic model not found."
-                "Specify the pydantic model as the pydantic_model parameter in resource_mapping"
-            )
-        return pydantic_model
