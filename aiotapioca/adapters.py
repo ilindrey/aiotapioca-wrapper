@@ -59,7 +59,7 @@ class TapiocaAdapter:
         else:
             return template
 
-    def get_request_kwargs(self, api_params, *args, **kwargs):
+    def get_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
 
         serialized = self.serialize_data(request_kwargs.get("data"), **kwargs)
@@ -134,8 +134,8 @@ class FormAdapterMixin:
 
 
 class JSONAdapterMixin:
-    def get_request_kwargs(self, api_params, *args, **kwargs):
-        arguments = super().get_request_kwargs(api_params, *args, **kwargs)
+    def get_request_kwargs(self, *args, **kwargs):
+        arguments = super().get_request_kwargs(*args, **kwargs)
         if "headers" not in arguments:
             arguments["headers"] = {}
         arguments["headers"]["Content-Type"] = "application/json"
@@ -175,7 +175,7 @@ class XMLAdapterMixin:
                 "in xmltodict spec: \n%s" % e.message
             )
 
-    def get_request_kwargs(self, api_params, *args, **kwargs):
+    def get_request_kwargs(self, *args, **kwargs):
         # stores kwargs prefixed with 'xmltodict_unparse__' for use by xmltodict.unparse
         request_kwargs = kwargs.get("request_kwargs", {})
         self._xmltodict_unparse_kwargs = {
@@ -191,7 +191,7 @@ class XMLAdapterMixin:
         }
 
         kwargs["request_kwargs"] = request_kwargs
-        arguments = super().get_request_kwargs(api_params, *args, **kwargs)
+        arguments = super().get_request_kwargs(*args, **kwargs)
 
         if "headers" not in arguments:
             arguments["headers"] = {}
@@ -217,8 +217,8 @@ class PydanticMixin:
     extract_root = True
     convert_to_dict = False
 
-    def get_request_kwargs(self, api_params, *args, **kwargs):
-        arguments = super().get_request_kwargs(api_params, *args, **kwargs)
+    def get_request_kwargs(self, *args, **kwargs):
+        arguments = super().get_request_kwargs(*args, **kwargs)
         if "headers" not in arguments:
             arguments["headers"] = {}
         arguments["headers"]["Content-Type"] = "application/json"
