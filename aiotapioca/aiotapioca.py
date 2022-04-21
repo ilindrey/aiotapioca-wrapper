@@ -283,18 +283,18 @@ class TapiocaClientExecutor(TapiocaClient):
             request_method=request_method,
             refresh_token=refresh_token,
             repeat_number=repeat_number,
-            request_kwargs={**kwargs}
+            request_kwargs={**kwargs},
         )
-        del context['client']
-        del context['data']
+        del context["client"]
+        del context["data"]
 
         request_kwargs = self._api.get_request_kwargs(*args, **context)
         response = await self._session.request(request_method, **request_kwargs)
 
         try:
-            context.update({'response': response, 'request_kwargs':request_kwargs})
+            context.update({"response": response, "request_kwargs": request_kwargs})
             data = await self._coro_wrap(self._api.process_response, **context)
-            context['data'] = data
+            context["data"] = data
         except ResponseProcessException as e:
             repeat_number += 1
 
@@ -302,12 +302,14 @@ class TapiocaClientExecutor(TapiocaClient):
                 e.data, response=response, request_kwargs=request_kwargs
             )
 
-            context.update({
-                    'client': client,
-                    'response': response,
-                    'request_kwargs': request_kwargs,
-                    'repeat_number': repeat_number,
-            })
+            context.update(
+                {
+                    "client": client,
+                    "response": response,
+                    "request_kwargs": request_kwargs,
+                    "repeat_number": repeat_number,
+                }
+            )
 
             error_message = await self._coro_wrap(
                 self._api.get_error_message, **{**context, "data": e.data}
@@ -375,7 +377,9 @@ class TapiocaClientExecutor(TapiocaClient):
         repeat_number = 0
 
         async with semaphore:
-            response = await self._make_request(request_method, refresh_token, repeat_number, *args, **kwargs)
+            response = await self._make_request(
+                request_method, refresh_token, repeat_number, *args, **kwargs
+            )
 
         if debug:
             executor = response()

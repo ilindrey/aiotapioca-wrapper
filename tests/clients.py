@@ -1,7 +1,3 @@
-from dataclasses import dataclass
-
-from pydantic import BaseModel, dataclasses
-
 from aiotapioca import (
     generate_wrapper_from_adapter,
     TapiocaAdapter,
@@ -10,7 +6,15 @@ from aiotapioca import (
     XMLAdapterMixin,
     SimpleSerializer,
 )
-from .models import Detail, DetailDT, CustomModel, CustomModelDT, RootModel, RootModelDT, BadModelDT
+from .models import (
+    Detail,
+    DetailDT,
+    CustomModel,
+    CustomModelDT,
+    RootModel,
+    RootModelDT,
+    BadModelDT,
+)
 
 
 test = {
@@ -147,11 +151,35 @@ Pydantic
 class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
     api_root = "https://api.example.org"
     resource_mapping = {
-        "test": {**test, "pydantic_models": {'request': CustomModel, 'response': {CustomModel: 'GET'}}},
-        "test_root": {**test, "pydantic_models": {'request': {Detail: ['POST']}, 'response': {RootModel: 'GET'}}},
-        "test_dataclass": {**test, "pydantic_models": {'request': CustomModelDT, 'response': {CustomModelDT: ['GET']}}},
-        "test_dataclass_root": {**test, "pydantic_models": {'request': {DetailDT: 'POST'}, 'response': {RootModel: 'GET'}}},
-        }
+        "test": {
+            **test,
+            "pydantic_models": {
+                "request": CustomModel,
+                "response": {CustomModel: "GET"},
+            },
+        },
+        "test_root": {
+            **test,
+            "pydantic_models": {
+                "request": {Detail: ["POST"]},
+                "response": {RootModel: "GET"},
+            },
+        },
+        "test_dataclass": {
+            **test,
+            "pydantic_models": {
+                "request": CustomModelDT,
+                "response": {CustomModelDT: ["GET"]},
+            },
+        },
+        "test_dataclass_root": {
+            **test,
+            "pydantic_models": {
+                "request": {DetailDT: "POST"},
+                "response": {RootModel: "GET"},
+            },
+        },
+    }
 
 
 PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapter)
@@ -163,7 +191,7 @@ class PydanticForcedClientAdapter(PydanticDefaultClientAdapter):
         "test_not_found": {**test, "pydantic_models": None},
         "test_bad_pydantic_model": {**test, "pydantic_models": 100500},
         "test_bad_dataclass_model": {**test, "pydantic_models": BadModelDT},
-        }
+    }
 
 
 PydanticForcedClient = generate_wrapper_from_adapter(PydanticForcedClientAdapter)

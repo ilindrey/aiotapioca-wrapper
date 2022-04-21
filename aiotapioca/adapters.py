@@ -60,9 +60,9 @@ class TapiocaAdapter:
             return template
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
-        request_kwargs = kwargs.get('request_kwargs', {})
+        request_kwargs = kwargs.get("request_kwargs", {})
 
-        serialized = self.serialize_data(request_kwargs.get('data'), **kwargs)
+        serialized = self.serialize_data(request_kwargs.get("data"), **kwargs)
         request_kwargs.update(
             {
                 "data": self.format_data_to_request(serialized, **kwargs),
@@ -177,7 +177,7 @@ class XMLAdapterMixin:
 
     def get_request_kwargs(self, api_params, *args, **kwargs):
         # stores kwargs prefixed with 'xmltodict_unparse__' for use by xmltodict.unparse
-        request_kwargs = kwargs.get('request_kwargs', {})
+        request_kwargs = kwargs.get("request_kwargs", {})
         self._xmltodict_unparse_kwargs = {
             k[len("xmltodict_unparse__") :]: request_kwargs.pop(k)
             for k in request_kwargs.copy().keys()
@@ -190,7 +190,7 @@ class XMLAdapterMixin:
             if k.startswith("xmltodict_parse__")
         }
 
-        kwargs['request_kwargs'] = request_kwargs
+        kwargs["request_kwargs"] = request_kwargs
         arguments = super().get_request_kwargs(api_params, *args, **kwargs)
 
         if "headers" not in arguments:
@@ -226,8 +226,10 @@ class PydanticMixin:
 
     def format_data_to_request(self, data, **kwargs):
         if data:
-            if self.validate_data_sending and (not isinstance(data, BaseModel) or not is_dataclass(data)):
-                data = self.convert_data_to_pydantic_model('request', data, **kwargs)
+            if self.validate_data_sending and (
+                not isinstance(data, BaseModel) or not is_dataclass(data)
+            ):
+                data = self.convert_data_to_pydantic_model("request", data, **kwargs)
             if isinstance(data, BaseModel):
                 return orjson.dumps(data.dict())
             elif is_dataclass(data):
@@ -239,15 +241,15 @@ class PydanticMixin:
         if text:
             data = orjson.loads(text)
             if self.validate_data_received and response.status == 200:
-                data = self.convert_data_to_pydantic_model('response', data, **kwargs)
+                data = self.convert_data_to_pydantic_model("response", data, **kwargs)
                 if isinstance(data, BaseModel):
                     if self.convert_to_dict:
                         data = data.dict()
                     if self.extract_root:
-                        if hasattr(data, '__root__'):
+                        if hasattr(data, "__root__"):
                             return data.__root__
-                        elif '__root__' in data:
-                            return data['__root__']
+                        elif "__root__" in data:
+                            return data["__root__"]
                     return data
                 return data
             return data
@@ -265,7 +267,7 @@ class PydanticMixin:
             model = models
         elif isinstance(models, dict):
             method = request_method.upper()
-            if 'request' in models or 'response' in models:
+            if "request" in models or "response" in models:
                 models = models.get(type_convert)
             if type(models) == type(BaseModel) or is_dataclass(models):
                 model = models
@@ -282,7 +284,7 @@ class PydanticMixin:
                                     break
         # search default model
         if not model and isinstance(models, dict):
-            if 'request' in models or 'response' in models:
+            if "request" in models or "response" in models:
                 models = models.get(type_convert)
             if isinstance(models, dict):
                 for key, value in models.items():
@@ -295,7 +297,7 @@ class PydanticMixin:
                 " Specify the pydantic models in the pydantic_models parameter in resource_mapping"
             )
         if is_dataclass(model):
-            if hasattr(model, '__pydantic_model__'):
+            if hasattr(model, "__pydantic_model__"):
                 model = model.__pydantic_model__
             else:
                 raise TypeError(f"It isn't pydantic dataclass: {model}.")

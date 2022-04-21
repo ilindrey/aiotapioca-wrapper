@@ -10,7 +10,7 @@ from aiohttp.client_reqrep import ClientResponse
 from pydantic import BaseModel
 from yarl import URL
 
-from aiotapioca.adapters import TapiocaAdapter, PydanticMixin, generate_wrapper_from_adapter
+from aiotapioca.adapters import TapiocaAdapter, generate_wrapper_from_adapter
 from aiotapioca.exceptions import ClientError, ServerError
 from aiotapioca.serializers import SimpleSerializer
 from aiotapioca.aiotapioca import TapiocaClient, TapiocaClientExecutor
@@ -560,7 +560,9 @@ async def test_as_api_params_requests(mocked):
     semaphores = (4, None, False)
     types_request = ("get", "post", "put", "patch", "delete")
 
-    for debug, semaphore, type_request in product(debug_flags, semaphores, types_request):
+    for debug, semaphore, type_request in product(
+        debug_flags, semaphores, types_request
+    ):
 
         async with SimpleClient(semaphore=semaphore, debug=True) as simple_client:
 
@@ -604,7 +606,9 @@ async def test_as_api_params_batch_requests(mocked):
     semaphores = (4, None, False)
     types_request = ("post", "put", "patch", "delete")
 
-    for debug, semaphore, type_request in product(debug_flags, semaphores, types_request):
+    for debug, semaphore, type_request in product(
+        debug_flags, semaphores, types_request
+    ):
 
         async with SimpleClient(semaphore=semaphore, debug=debug) as simple_client:
 
@@ -1342,7 +1346,7 @@ async def test_pydantic_model_not_found(mocked):
     async with PydanticForcedClient() as client:
         mocked.get(
             client.test_not_found().data,
-            body='{}',
+            body="{}",
             status=200,
             content_type="application/json",
         )
@@ -1354,7 +1358,7 @@ async def test_bad_pydantic_model(mocked):
     async with PydanticForcedClient() as client:
         mocked.get(
             client.test_bad_pydantic_model().data,
-            body='{}',
+            body="{}",
             status=200,
             content_type="application/json",
         )
@@ -1366,7 +1370,7 @@ async def test_bad_dataclass_model(mocked):
     async with PydanticForcedClient() as client:
         mocked.get(
             client.test_bad_dataclass_model().data,
-            body='{}',
+            body="{}",
             status=200,
             content_type="application/json",
         )
@@ -1385,11 +1389,16 @@ async def test_pydantic_mixin_response_to_native(mocked):
     extract_root_list = [True, False]
     convert_to_dict_list = [True, False]
 
-    for received, sending, extract, convert in product(validate_data_received_list, validate_data_sending_list, extract_root_list, convert_to_dict_list):
+    for validate_received, validate_sending, extract, convert in product(
+        validate_data_received_list,
+        validate_data_sending_list,
+        extract_root_list,
+        convert_to_dict_list,
+    ):
 
         class PidanticClientAdapter(PydanticDefaultClientAdapter):
-            validate_data_received = received
-            validate_data_sending = sending
+            validate_data_received = validate_received
+            validate_data_sending = validate_sending
             extract_root = extract
             convert_to_dict = convert
 
@@ -1403,7 +1412,7 @@ async def test_pydantic_mixin_response_to_native(mocked):
                 content_type="application/json",
             )
             response = await client.test().get()
-            if convert or not received:
+            if convert or not validate_received:
                 assert isinstance(response().data, dict)
                 assert response().data == orjson.loads(response_body)
             else:
@@ -1421,16 +1430,18 @@ async def test_pydantic_mixin_response_to_native(mocked):
             if extract:
                 assert isinstance(data, list)
             else:
-                if not received:
+                if not validate_received:
                     assert isinstance(data, list)
                 elif convert:
                     assert isinstance(data, dict)
-                    data = data['__root__']
+                    data = data["__root__"]
                 else:
                     assert isinstance(data, BaseModel)
                     data = data.__root__
-            for response_data, expected_data in zip(data, orjson.loads(response_body_root)):
-                if convert or not received:
+            for response_data, expected_data in zip(
+                data, orjson.loads(response_body_root)
+            ):
+                if convert or not validate_received:
                     assert isinstance(response_data, dict)
                     assert response_data == expected_data
                 else:
@@ -1444,7 +1455,7 @@ async def test_pydantic_mixin_response_to_native(mocked):
                 content_type="application/json",
             )
             response = await client.test_dataclass().get()
-            if convert or not received:
+            if convert or not validate_received:
                 assert isinstance(response().data, dict)
                 assert response().data == orjson.loads(response_body)
             else:
@@ -1462,16 +1473,18 @@ async def test_pydantic_mixin_response_to_native(mocked):
             if extract:
                 assert isinstance(data, list)
             else:
-                if not received:
+                if not validate_received:
                     assert isinstance(data, list)
                 elif convert:
                     assert isinstance(data, dict)
-                    data = data['__root__']
+                    data = data["__root__"]
                 else:
                     assert isinstance(data, BaseModel)
                     data = data.__root__
-            for response_data, expected_data in zip(data, orjson.loads(response_body_root)):
-                if convert or not received:
+            for response_data, expected_data in zip(
+                data, orjson.loads(response_body_root)
+            ):
+                if convert or not validate_received:
                     assert isinstance(response_data, dict)
                     assert response_data == expected_data
                 else:
@@ -1490,11 +1503,16 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
     extract_root_list = [True, False]
     convert_to_dict_list = [True, False]
 
-    for received, sending, extract, convert in product(validate_data_received_list, validate_data_sending_list, extract_root_list, convert_to_dict_list):
+    for validate_received, validate_sending, extract, convert in product(
+        validate_data_received_list,
+        validate_data_sending_list,
+        extract_root_list,
+        convert_to_dict_list,
+    ):
 
         class PidanticClientAdapter(PydanticDefaultClientAdapter):
-            validate_data_received = received
-            validate_data_sending = sending
+            validate_data_received = validate_received
+            validate_data_sending = validate_sending
             extract_root = extract
             convert_to_dict = convert
 
@@ -1508,7 +1526,7 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 status=200,
                 content_type="application/json",
             )
-            if sending:
+            if validate_sending:
                 data = orjson.loads(response_body)
                 response = await client.test().post(data=data)
                 assert response().data == {"id": 100500}
@@ -1517,7 +1535,7 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 response = await client.test().post(data=data)
                 assert response().data == {"id": 100500}
 
-            if sending:
+            if validate_sending:
                 data = orjson.loads(response_body_root)
                 for _ in range(len(data)):
                     mocked.post(
@@ -1549,8 +1567,8 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 body='{"id": 100500}',
                 status=200,
                 content_type="application/json",
-                )
-            if sending:
+            )
+            if validate_sending:
                 data = orjson.loads(response_body)
                 response = await client.test_dataclass().post(data=data)
                 assert response().data == {"id": 100500}
@@ -1559,7 +1577,7 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 response = await client.test_dataclass().post(data=data)
                 assert response().data == {"id": 100500}
 
-            if sending:
+            if validate_sending:
                 data = orjson.loads(response_body_root)
                 for _ in range(len(data)):
                     mocked.post(
@@ -1601,9 +1619,8 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 body='{"id": 100500}',
                 status=200,
                 content_type="application/json",
-                )
+            )
         responses = await client.test_root().post_batch(data=data)
         assert len(responses) == len(data)
         for response in responses:
             assert response().data == {"id": 100500}
-

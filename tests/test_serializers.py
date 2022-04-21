@@ -25,6 +25,7 @@ async def client_serializer_class():
     async with SimpleClient(serializer_class=SimpleSerializer) as c:
         yield c
 
+
 """
 test serializer
 """
@@ -249,4 +250,3 @@ def test_datetime_serialization(serializer):
     data = [arrow.get(string_date).datetime]
     serialized = serializer.serialize(data)
     assert serialized == [string_date]
-
