@@ -1388,9 +1388,8 @@ async def test_pydantic_mixin_response_to_native(mocked):
     response_body_root = (
         '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
     )
-    response_body = (
-        '{"data": %s}' % response_body_root
-    )
+    response_body = '{"data": %s}' % response_body_root
+
     validate_data_received_list = [True, False]
     validate_data_sending_list = [True, False]
     extract_root_list = [True, False]
@@ -1490,61 +1489,131 @@ async def test_pydantic_mixin_response_to_native(mocked):
                     assert response_data.dict() == expected_data
 
 
-# async def test_pydantic_mixin_format_data_to_request_default_client(mocked):
-#     response_body_root = (
-#         '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
-#     )
-#     response_body = '{"data": %s}' % response_body_root
-#     async with PydanticDefaultClient() as client:
-#
-#         data = CustomModel.parse_raw(response_body)
-#         for _ in range(len(data.data)):
-#             mocked.post(
-#                 client.test().data,
-#                 body='{"id": 100500}',
-#                 status=200,
-#                 content_type="application/json",
-#             )
-#         responses = await client.test().post_batch(data=data.data)
-#         assert len(responses) == len(data.data)
-#         for response in responses:
-#             assert response().data == {"id": 100500}
-#
-#         data = RootModel.parse_raw(response_body_root)
-#         for _ in range(len(data.__root__)):
-#             mocked.post(
-#                 client.test_root().data,
-#                 body='{"id": 100500}',
-#                 status=200,
-#                 content_type="application/json",
-#             )
-#         responses = await client.test_root().post_batch(data=data.__root__)
-#         assert len(responses) == len(data.__root__)
-#         for response in responses:
-#             assert response().data == {"id": 100500}
-#
-#         data = CustomModelDT.__pydantic_model__.parse_raw(response_body)
-#         for _ in range(len(data.data)):
-#             mocked.post(
-#                 client.test().data,
-#                 body='{"id": 100500}',
-#                 status=200,
-#                 content_type="application/json",
-#             )
-#         responses = await client.test().post_batch(data=data.data)
-#         assert len(responses) == len(data.data)
-#         for response in responses:
-#             assert response().data == {"id": 100500}
-#
-#         data = RootModelDT.__pydantic_model__.parse_raw(response_body_root)
-#         for _ in range(len(data.__root__)):
-#             mocked.post(
-#                 client.test_root().data,
-#                 body='{"id": 100500}',
-#                 status=200,
-#                 content_type="application/json",
-#             )
-#         responses = await client.test_root().post_batch(data=data.__root__)
-#         assert len(responses) == len(data.__root__)
-#         for response in responses:
-#             assert response().data == {"id": 100500}
+async def test_pydantic_mixin_format_data_to_request(mocked):
+    response_body_root = (
+        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
+    )
+    response_body = '{"data": %s}' % response_body_root
+
+    validate_data_received_list = [True, False]
+    validate_data_sending_list = [True, False]
+    extract_root_list = [True, False]
+    convert_to_dict_list = [True, False]
+
+    for received, sending, extract, convert in product(validate_data_received_list, validate_data_sending_list, extract_root_list, convert_to_dict_list):
+
+        class PidanticClientAdapter(PydanticDefaultClientAdapter):
+            validate_data_received = received
+            validate_data_sending = sending
+            extract_root = extract
+            convert_to_dict = convert
+
+        PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
+
+        async with PydanticClient() as client:
+
+            mocked.post(
+                client.test().data,
+                body='{"id": 100500}',
+                status=200,
+                content_type="application/json",
+            )
+            if sending:
+                data = orjson.loads(response_body)
+                response = await client.test().post(data=data)
+                assert response().data == {"id": 100500}
+            else:
+                data = CustomModel.parse_raw(response_body)
+                response = await client.test().post(data=data)
+                assert response().data == {"id": 100500}
+
+            if sending:
+                data = orjson.loads(response_body_root)
+                for _ in range(len(data)):
+                    mocked.post(
+                        client.test_root().data,
+                        body='{"id": 100500}',
+                        status=200,
+                        content_type="application/json",
+                    )
+                responses = await client.test_root().post_batch(data=data)
+                assert len(responses) == len(data)
+                for response in responses:
+                    assert response().data == {"id": 100500}
+            else:
+                data = RootModel.parse_raw(response_body_root)
+                for _ in range(len(data.__root__)):
+                    mocked.post(
+                        client.test_root().data,
+                        body='{"id": 100500}',
+                        status=200,
+                        content_type="application/json",
+                    )
+                responses = await client.test_root().post_batch(data=data.__root__)
+                assert len(responses) == len(data.__root__)
+                for response in responses:
+                    assert response().data == {"id": 100500}
+
+            mocked.post(
+                client.test().data,
+                body='{"id": 100500}',
+                status=200,
+                content_type="application/json",
+                )
+            if sending:
+                data = orjson.loads(response_body)
+                response = await client.test_dataclass().post(data=data)
+                assert response().data == {"id": 100500}
+            else:
+                data = CustomModelDT.__pydantic_model__.parse_raw(response_body)
+                response = await client.test_dataclass().post(data=data)
+                assert response().data == {"id": 100500}
+
+            if sending:
+                data = orjson.loads(response_body_root)
+                for _ in range(len(data)):
+                    mocked.post(
+                        client.test_root().data,
+                        body='{"id": 100500}',
+                        status=200,
+                        content_type="application/json",
+                    )
+                responses = await client.test_root().post_batch(data=data)
+                assert len(responses) == len(data)
+                for response in responses:
+                    assert response().data == {"id": 100500}
+            else:
+                data = RootModelDT.__pydantic_model__.parse_raw(response_body_root)
+                for _ in range(len(data.__root__)):
+                    mocked.post(
+                        client.test_root().data,
+                        body='{"id": 100500}',
+                        status=200,
+                        content_type="application/json",
+                    )
+                responses = await client.test_root().post_batch(data=data.__root__)
+                assert len(responses) == len(data.__root__)
+                for response in responses:
+                    assert response().data == {"id": 100500}
+
+    class PidanticClientAdapter(PydanticDefaultClientAdapter):
+        forced_to_have_model = True
+        validate_data_sending = False
+        validate_data_received = False
+
+    PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
+
+    async with PydanticClient() as client:
+        data = orjson.loads(response_body_root)
+        for _ in range(len(data)):
+            mocked.post(
+                client.test_root().data,
+                body='{"id": 100500}',
+                status=200,
+                content_type="application/json",
+                )
+        responses = await client.test_root().post_batch(data=data)
+        assert len(responses) == len(data)
+        for response in responses:
+            assert response().data == {"id": 100500}
+

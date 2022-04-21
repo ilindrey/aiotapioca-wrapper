@@ -10,7 +10,7 @@ from aiotapioca import (
     XMLAdapterMixin,
     SimpleSerializer,
 )
-from .models import CustomModel, CustomModelDT, RootModel, RootModelDT, BadModelDT
+from .models import Detail, DetailDT, CustomModel, CustomModelDT, RootModel, RootModelDT, BadModelDT
 
 
 test = {
@@ -147,10 +147,10 @@ Pydantic
 class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
     api_root = "https://api.example.org"
     resource_mapping = {
-        "test": {**test, "pydantic_models": CustomModel},
-        "test_root": {**test, "pydantic_models": RootModel},
-        "test_dataclass": {**test, "pydantic_models": CustomModelDT},
-        "test_dataclass_root": {**test, "pydantic_models": RootModelDT},
+        "test": {**test, "pydantic_models": {'request': CustomModel, 'response': {CustomModel: 'GET'}}},
+        "test_root": {**test, "pydantic_models": {'request': {Detail: ['POST']}, 'response': {RootModel: 'GET'}}},
+        "test_dataclass": {**test, "pydantic_models": {'request': CustomModelDT, 'response': {CustomModelDT: ['GET']}}},
+        "test_dataclass_root": {**test, "pydantic_models": {'request': {DetailDT: 'POST'}, 'response': {RootModel: 'GET'}}},
         "test_not_found": {**test, "pydantic_models": None},
         "test_bad_pydantic_model": {**test, "pydantic_models": 100500},
         "test_bad_dataclass_model": {**test, "pydantic_models": BadModelDT},
