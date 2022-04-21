@@ -1,8 +1,6 @@
 import arrow
 from decimal import Decimal
 
-from pydantic import BaseModel
-
 
 class BaseSerializer:
     def deserialize(self, method_name, value, **kwargs):
@@ -47,30 +45,3 @@ class SimpleSerializer(BaseSerializer):
 
     def serialize_datetime(self, data):
         return arrow.get(data).isoformat()
-
-
-class PydanticSerializer(BaseSerializer):
-    def to_pydantic(self, data, model=None):
-        if not model:
-            raise ValueError(
-                """
-                The model parameter is not specified in the resource mapping
-                or is not passed as a function parameter.
-                """
-            )
-        if isinstance(data, str):
-            serialized = model.parse_raw(data)
-        else:
-            serialized = model.parse_obj(data)
-        return serialized
-
-    def serialize_pydantic(self, data):
-        results = data.dict()
-        if "__root__" in results:
-            return results["__root__"]
-        return results
-
-    def serialize(self, data):
-        if isinstance(data, BaseModel):
-            data = self.serialize_pydantic(data)
-        return super().serialize(data)

@@ -11,7 +11,7 @@ from .adapters import (
     XMLAdapterMixin,
     PydanticMixin,
 )
-from .serializers import BaseSerializer, SimpleSerializer, PydanticSerializer
+from .serializers import BaseSerializer, SimpleSerializer
 
 
 __all__ = (
@@ -23,5 +23,4 @@ __all__ = (
     "PydanticMixin",
     "BaseSerializer",
     "SimpleSerializer",
-    "PydanticSerializer",
 )
