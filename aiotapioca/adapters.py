@@ -292,7 +292,7 @@ class PydanticMixin:
         if self.forced_to_have_model and not model:
             raise ValueError(
                 "Pydantic model not found."
-                "Specify the pydantic model as the pydantic_model parameter in resource_mapping"
+                " Specify the pydantic models in the pydantic_models parameter in resource_mapping"
             )
         if is_dataclass(model):
             if hasattr(model, '__pydantic_model__'):

@@ -151,11 +151,19 @@ class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
         "test_root": {**test, "pydantic_models": {'request': {Detail: ['POST']}, 'response': {RootModel: 'GET'}}},
         "test_dataclass": {**test, "pydantic_models": {'request': CustomModelDT, 'response': {CustomModelDT: ['GET']}}},
         "test_dataclass_root": {**test, "pydantic_models": {'request': {DetailDT: 'POST'}, 'response': {RootModel: 'GET'}}},
+        }
+
+
+PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapter)
+
+
+class PydanticForcedClientAdapter(PydanticDefaultClientAdapter):
+    forced_to_have_model = True
+    resource_mapping = {
         "test_not_found": {**test, "pydantic_models": None},
         "test_bad_pydantic_model": {**test, "pydantic_models": 100500},
         "test_bad_dataclass_model": {**test, "pydantic_models": BadModelDT},
         }
 
 
-PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapter)
-
+PydanticForcedClient = generate_wrapper_from_adapter(PydanticForcedClientAdapter)
