@@ -280,12 +280,12 @@ class TapiocaClientExecutor(TapiocaClient):
             kwargs["url"] = self._data
 
         context = self._context(
-            client=None,
             request_method=request_method,
             refresh_token=refresh_token,
             repeat_number=repeat_number,
             request_kwargs={**kwargs}
         )
+        del context['client']
         del context['data']
 
         request_kwargs = self._api.get_request_kwargs(*args, **context)
