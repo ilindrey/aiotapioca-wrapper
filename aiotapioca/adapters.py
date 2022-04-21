@@ -241,13 +241,14 @@ class PydanticMixin:
             if self.validate_data_received and response.status == 200:
                 data = self.convert_data_to_pydantic_model('response', data, **kwargs)
                 if isinstance(data, BaseModel):
-                    if self.extract_root and hasattr(data, '__root__'):
-                        return data.__root__
                     if self.convert_to_dict:
                         data = data.dict()
-                        if self.extract_root and '__root__' in data:
+                    if self.extract_root:
+                        if hasattr(data, '__root__'):
+                            return data.__root__
+                        elif '__root__' in data:
                             return data['__root__']
-                        return data
+                    return data
                 return data
             return data
 

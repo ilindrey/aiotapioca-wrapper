@@ -10,40 +10,7 @@ from aiotapioca import (
     XMLAdapterMixin,
     SimpleSerializer,
 )
-
-
-class Detail(BaseModel):
-    key1: str
-    key2: int
-
-
-class CustomModel(BaseModel):
-    data: list[Detail]
-
-
-class RootModel(BaseModel):
-    __root__: list[Detail]
-
-
-@dataclasses.dataclass
-class DetailDT:
-    key1: str
-    key2: int
-
-
-@dataclasses.dataclass
-class CustomModelDT:
-    data: list[Detail]
-
-
-@dataclasses.dataclass
-class RootModelDT:
-    __root__: list[Detail]
-
-
-@dataclass
-class BadModelDT:
-    data: list[Detail]
+from .models import CustomModel, CustomModelDT, RootModel, RootModelDT, BadModelDT
 
 
 test = {
@@ -180,46 +147,15 @@ Pydantic
 class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
     api_root = "https://api.example.org"
     resource_mapping = {
-        "test": {**test, "pydantic_model": CustomModel},
-        "test_root": {**test, "pydantic_model": RootModel},
-        "test_dataclass": {**test, "pydantic_model": CustomModelDT},
-        "test_dataclass_root": {**test, "pydantic_model": RootModelDT},
-        "test_not_found": {**test, "pydantic_model": None},
-        "test_bad_pydantic_model": {**test, "pydantic_model": 100500},
-        "test_bad_dataclass_model": {**test, "pydantic_model": BadModelDT},
+        "test": {**test, "pydantic_models": CustomModel},
+        "test_root": {**test, "pydantic_models": RootModel},
+        "test_dataclass": {**test, "pydantic_models": CustomModelDT},
+        "test_dataclass_root": {**test, "pydantic_models": RootModelDT},
+        "test_not_found": {**test, "pydantic_models": None},
+        "test_bad_pydantic_model": {**test, "pydantic_models": 100500},
+        "test_bad_dataclass_model": {**test, "pydantic_models": BadModelDT},
         }
 
 
 PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapter)
 
-
-class PydanticAllDisabledClientAdapter(PydanticDefaultClientAdapter):
-    extract_root = False
-    convert_to_dict = False
-
-
-PydanticAllDisabledClient = generate_wrapper_from_adapter(PydanticAllDisabledClientAdapter)
-
-
-class PydanticExtractRootClientAdapter(PydanticDefaultClientAdapter):
-    extract_root = True
-    convert_to_dict = False
-
-
-PydanticExtractRootClient = generate_wrapper_from_adapter(PydanticExtractRootClientAdapter)
-
-
-class PydanticConvertToDictClientAdapter(PydanticDefaultClientAdapter):
-    extract_root = False
-    convert_to_dict = True
-
-
-PydanticConvertToDictClient = generate_wrapper_from_adapter(PydanticConvertToDictClientAdapter)
-
-
-class PydanticAllEnabledClientAdapter(PydanticDefaultClientAdapter):
-    extract_root = True
-    convert_to_dict = True
-
-
-PydanticAllEnabledClient = generate_wrapper_from_adapter(PydanticAllEnabledClientAdapter)
