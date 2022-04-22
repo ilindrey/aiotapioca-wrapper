@@ -2,6 +2,15 @@
 Changelog
 =========
 
+3.6.0
+=====
+- Added context transfer to get_request_kwargs method.
+- Peddling kwargs to format_data_to_request and serialize_data methods.
+- Increased the debugging data output limit.
+- Removed api_params argument from get_request_kwargs method.
+- Removed PydanticSerializer.
+- Added PydanticAdapterMixin.
+
 3.5.0
 =====
 - migration to orjson
