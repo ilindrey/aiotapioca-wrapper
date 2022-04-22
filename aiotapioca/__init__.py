@@ -9,7 +9,7 @@ from .adapters import (
     FormAdapterMixin,
     JSONAdapterMixin,
     XMLAdapterMixin,
-    PydanticMixin,
+    PydanticAdapterMixin,
 )
 from .serializers import BaseSerializer, SimpleSerializer
 
@@ -20,7 +20,7 @@ __all__ = (
     "FormAdapterMixin",
     "JSONAdapterMixin",
     "XMLAdapterMixin",
-    "PydanticMixin",
+    "PydanticAdapterMixin",
     "BaseSerializer",
     "SimpleSerializer",
 )

@@ -210,7 +210,7 @@ class XMLAdapterMixin:
             return {"text": text}
 
 
-class PydanticMixin:
+class PydanticAdapterMixin:
     forced_to_have_model = False
     validate_data_received = True
     validate_data_sending = True

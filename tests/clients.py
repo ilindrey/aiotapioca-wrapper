@@ -2,7 +2,7 @@ from aiotapioca import (
     generate_wrapper_from_adapter,
     TapiocaAdapter,
     JSONAdapterMixin,
-    PydanticMixin,
+    PydanticAdapterMixin,
     XMLAdapterMixin,
     SimpleSerializer,
 )
@@ -148,7 +148,7 @@ Pydantic
 """
 
 
-class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
+class PydanticDefaultClientAdapter(PydanticAdapterMixin, TapiocaAdapter):
     api_root = "https://api.example.org"
     resource_mapping = {
         "test": {
@@ -176,7 +176,7 @@ class PydanticDefaultClientAdapter(PydanticMixin, TapiocaAdapter):
             **test,
             "pydantic_models": {
                 "request": {DetailDT: "POST"},
-                "response": {RootModel: "GET"},
+                "response": {RootModelDT: "GET"},
             },
         },
     }

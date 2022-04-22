@@ -1338,7 +1338,7 @@ async def test_raises_error_if_refresh_authentication_method_returns_false_value
 
 
 """
-Test PydanticMixin.
+Test PydanticAdapterMixin.
 """
 
 
