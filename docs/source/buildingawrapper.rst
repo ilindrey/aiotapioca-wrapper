@@ -60,6 +60,7 @@ You might want to use one of the following mixins to help you with data format h
 - ``FormAdapterMixin`` 
 - ``JSONAdapterMixin``
 - ``XMLAdapterMixin``
+- ``PydanticAdapterMixin``
 
 
 Exceptions

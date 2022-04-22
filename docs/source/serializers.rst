@@ -81,54 +81,6 @@ Built-ins
 
 As you can see, ``datetime`` values will be formatted to iso format.
 
-.. class:: PydanticSerializer
-
-``PydanticSerializer`` is designed to serialize and deserialize data into the `pydantic model <https://pydantic-docs.helpmanual.io/>`_. Here is its full code:
-
-.. code-block:: python
-	
-	class PydanticSerializer(BaseSerializer):
-		def to_pydantic(self, data, model=None):
-			if not model:
-				raise ValueError(
-					"""
-					The model parameter is not specified in the resource mapping
-					or is not passed as a function parameter.
-					"""
-				)
-			if isinstance(data, str):
-				serialized = model.parse_raw(data)
-			else:
-				serialized = model.parse_obj(data)
-			return serialized
-
-		def serialize_pydantic(self, data):
-			results = data.dict()
-			if "__root__" in results:
-				return results["__root__"]
-			return results
-
-		def serialize(self, data):
-			if isinstance(data, BaseModel):
-				data = self.serialize_pydantic(data)
-			return super().serialize(data)
-
-
-A pydantic model can be specified in resource_mapping by first specifying the to_pydantic method name and then specifying the model in the method parameters. For example:
-
-.. code-block:: python
-
-	RESOURCE_MAPPING = {
-		'some_resource': {
-			'resource': ...,
-			'docs': ...,
-			'to_pydantic': {'params': {'model': SomeModel}},
-		},
-		...
-	}
-
-
-
 Writing a custom serializer
 ===========================
 
