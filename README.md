@@ -33,10 +33,10 @@ RESOURCE_MAPPING = {
 
 Then create an adapter class that will work with resources:
 ```python
-from aiotapioca.adapters import TapiocaAdapter
+from aiotapioca import JSONAdapterMixin, TapiocaAdapter
 
 
-class TestClientAdapter(TapiocaAdapter):
+class SomeClientAdapter(JSONAdapterMixin, TapiocaAdapter):
     serializer_class = ...  # default SimpleSerializer
     api_root = "https://api.test.com"
     resource_mapping = RESOURCE_MAPPING
@@ -46,13 +46,13 @@ Generate a class-based wrapper using `generate_wrapper_from_adapter`:
 ```python
 from aiotapioca.adapters import generate_wrapper_from_adapter
 
-TestClient = generate_wrapper_from_adapter(TestClientAdapter)
+SomeClient = generate_wrapper_from_adapter(SomeClientAdapter)
 ```
 
 Using:
 
 ```python
-async with TestClient(**some_params) as client:
+async with SomeClient() as client:
     
     response = await client.test(number=...).get(data=..., 
                                                  params=...)
@@ -69,7 +69,7 @@ async with TestClient(**some_params) as client:
 For page-by-page traversal, you can use the method of the `pages`:
 
 ```python
-async with TestClient(**some_params) as client:
+async with SomeClient() as client:
     result = await client.test(number=...).get()
     async for page in result().pages():
         print(page().data)
