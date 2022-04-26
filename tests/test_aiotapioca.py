@@ -556,15 +556,12 @@ async def test_batch_requests(mocked, client):
 
 async def test_as_api_params_requests(mocked):
 
-    debug_flags = (True, False)
     semaphores = (4, None, False)
     types_request = ("get", "post", "put", "patch", "delete")
 
-    for debug, semaphore, type_request in product(
-        debug_flags, semaphores, types_request
-    ):
+    for semaphore, type_request in product(semaphores, types_request):
 
-        async with SimpleClient(semaphore=semaphore, debug=True) as simple_client:
+        async with SimpleClient(semaphore=semaphore) as simple_client:
 
             executor = simple_client.test()
 
@@ -602,15 +599,12 @@ async def test_as_api_params_batch_requests(mocked):
         {"data": {"key": "value"}},
     ]
 
-    debug_flags = (True, False)
     semaphores = (4, None, False)
     types_request = ("post", "put", "patch", "delete")
 
-    for debug, semaphore, type_request in product(
-        debug_flags, semaphores, types_request
-    ):
+    for semaphore, type_request in product(semaphores, types_request):
 
-        async with SimpleClient(semaphore=semaphore, debug=debug) as simple_client:
+        async with SimpleClient(semaphore=semaphore) as simple_client:
 
             executor = simple_client.test()
             mocked_method = getattr(mocked, type_request)

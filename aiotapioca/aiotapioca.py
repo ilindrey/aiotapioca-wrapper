@@ -3,14 +3,9 @@ import asyncio
 import aiohttp
 import webbrowser
 import json
-from aiologger.logger import Logger
-from aiologger.levels import LogLevel
 from collections import OrderedDict
 
 from .exceptions import ResponseProcessException
-
-
-logger = Logger.with_default_handlers(name="aiotapioca", level=LogLevel.DEBUG)
 
 
 class TapiocaInstantiator:
@@ -289,8 +284,8 @@ class TapiocaClientExecutor(TapiocaClient):
         del context["data"]
 
         data = None
-        request_kwargs = context['request_kwargs']
-        response = context['response']
+        request_kwargs = context["request_kwargs"]
+        response = context["response"]
 
         try:
             request_kwargs = self._api.get_request_kwargs(*args, **context)
@@ -311,7 +306,7 @@ class TapiocaClientExecutor(TapiocaClient):
                     "response": response,
                     "request_kwargs": request_kwargs,
                     "repeat_number": repeat_number,
-                    "data": ex.data
+                    "data": ex.data,
                 }
             )
 
@@ -344,7 +339,9 @@ class TapiocaClientExecutor(TapiocaClient):
 
             # code based on
             # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
-            if await self._coro_wrap(self._api.retry_request, tapioca_exception, error_message, **context):
+            if await self._coro_wrap(
+                self._api.retry_request, tapioca_exception, error_message, **context
+            ):
                 return await self._make_request(
                     request_method,
                     refresh_token=False,
@@ -356,7 +353,12 @@ class TapiocaClientExecutor(TapiocaClient):
             if propagate_exception:
                 # code based on
                 # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
-                await self._coro_wrap(self._api.error_handling, tapioca_exception, error_message, **context)
+                await self._coro_wrap(
+                    self._api.error_handling,
+                    tapioca_exception,
+                    error_message,
+                    **context
+                )
         except Exception as ex:
             await self._coro_wrap(self._api.error_handling, ex, **context)
 
@@ -369,8 +371,6 @@ class TapiocaClientExecutor(TapiocaClient):
         if "semaphore_class" not in kwargs:
             semaphore = self.__get_semaphore_value(kwargs)
             kwargs["semaphore_class"] = asyncio.Semaphore(semaphore)
-
-        debug = self._api_params.get("debug", False)
 
         semaphore = kwargs.pop("semaphore_class", asyncio.Semaphore())
 
@@ -386,17 +386,6 @@ class TapiocaClientExecutor(TapiocaClient):
             response = await self._make_request(
                 request_method, refresh_token, repeat_number, *args, **kwargs
             )
-
-        if debug:
-            executor = response()
-            text = str(executor.data)
-            length = 3333
-            if len(text) > length:
-                text = "{}...".format(text[:length])
-            msg = "status: {} | url: {} - response data: {}".format(
-                executor.status, executor.response.url, text
-            )
-            logger.debug(msg)
 
         return response
 

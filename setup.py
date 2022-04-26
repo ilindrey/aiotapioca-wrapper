@@ -25,7 +25,6 @@ Documentation hosted by Readthedocs (original library, it's not asynchronous): h
 package = "aiotapioca"
 requirements = [
     "aiohttp>=3.0",
-    "aiologger>=0.6.0",
     "arrow>=0.6.0,<1",
     "orjson>=3.0.0",
     "pydantic>=1.0.0",
