@@ -2,6 +2,11 @@
 Changelog
 =========
 
+3.7.0
+=====
+- Removed debug option.
+- Expanded the possibility of error handling. Added catch aiohttp exceptions.
+
 3.6.0
 =====
 - Added context transfer to get_request_kwargs method.

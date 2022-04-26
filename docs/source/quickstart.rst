@@ -47,14 +47,6 @@ This is how you initialize your aiotapioca client:
 	async with Facebook(access_token='{your_genereated_access_token}') as api:
 		...
 
-You can also pass the debug flag when initialising your aiotapioca client:
-
-.. code-block:: python
-
-	from tapioca_facebook import Facebook
-
-	async with Facebook(access_token='{your_genereated_access_token}', debug=True) as api:
-		...
 
 If you are using IPython, you can now list available endpoints by typing ``api.`` and pressing ``tab``.
 
