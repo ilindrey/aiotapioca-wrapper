@@ -342,6 +342,7 @@ class TapiocaClientExecutor(TapiocaClient):
             if await self._coro_wrap(
                 self._api.retry_request, tapioca_exception, error_message, **context
             ):
+                propagate_exception = False
                 return await self._make_request(
                     request_method,
                     refresh_token=False,
