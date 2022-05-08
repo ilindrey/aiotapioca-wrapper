@@ -5,7 +5,12 @@ from dataclasses import asdict, is_dataclass
 from pydantic import BaseModel
 
 from .aiotapioca import TapiocaInstantiator
-from .exceptions import ResponseProcessException, ClientError, ServerError
+from .exceptions import (
+    ResponseProcessException,
+    ClientError,
+    ServerError,
+    TapiocaException,
+)
 from .serializers import SimpleSerializer
 
 
@@ -105,7 +110,9 @@ class TapiocaAdapter:
     def refresh_authentication(self, api_params, *args, **kwargs):
         raise NotImplementedError()
 
-    def retry_request(self, exception, error_message=None, repeat_number=0, **kwargs):
+    def retry_request(
+        self, exception=None, error_message=None, repeat_number=0, **kwargs
+    ):
         """
         Conditions for repeating a request.
         If it returns True, the request will be repeated.
@@ -114,7 +121,9 @@ class TapiocaAdapter:
         """
         return False
 
-    def error_handling(self, exception, error_message=None, repeat_number=0, **kwargs):
+    def error_handling(
+        self, exception=None, error_message=None, repeat_number=0, **kwargs
+    ):
         """
         Wrapper for throwing custom exceptions. When,
         for example, the server responds with 200,
@@ -122,7 +131,13 @@ class TapiocaAdapter:
         Code based on:
         https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/adapters.py#L165
         """
-        raise exception
+        if exception:
+            if exception is ClientError or exception is ServerError:
+                raise exception(message=error_message, client=kwargs["client"])
+            else:
+                raise exception
+        elif error_message:
+            raise TapiocaException(message=error_message, client=kwargs["client"])
 
 
 class FormAdapterMixin:

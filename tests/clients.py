@@ -99,8 +99,8 @@ XMLClient = generate_wrapper_from_adapter(XMLClientAdapter)
 
 
 class RetryRequestClientAdapter(SimpleClientAdapter):
-    def retry_request(self, tapioca_exception, error_message, repeat_number, **kwargs):
-        if tapioca_exception.status == 400 and repeat_number <= 11:
+    def retry_request(self, exception, error_message, repeat_number, **kwargs):
+        if kwargs["response"].status == 400 and repeat_number <= 11:
             return True
         return False
 
@@ -115,7 +115,7 @@ refresh token
 
 class TokenRefreshClientAdapter(SimpleClientAdapter):
     def is_authentication_expired(self, exception, *args, **kwargs):
-        return exception.status == 401
+        return kwargs["response"].status == 401
 
     def refresh_authentication(self, api_params, *args, **kwargs):
         new_token = "new_token"

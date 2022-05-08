@@ -156,10 +156,10 @@ defaults to ``False`` in the client initialization.
 
 Should do refresh authentication logic. Make sure you update `api_params` dictionary with the new token. If it successfully refreshs token it should return a truthy value that will be stored for later access in the executor class in the ``refresh_data`` attribute. If the refresh logic fails, return a falsy value. The original request will be retried only if a truthy is returned.
 
-.. method:: retry_request(self, tapioca_exception, error_message, repeat_number, **kwargs): 
+.. method:: retry_request(self, exception, error_message, repeat_number, **kwargs): 
 
 Conditions for repeating a request. If it returns True, the request will be repeated.
 
-.. method:: error_handling(self, tapioca_exception, error_message, repeat_number, **kwargs):
+.. method:: error_handling(self, exception, error_message, repeat_number, **kwargs):
 
 Wrapper for throwing custom exceptions. When, for example, the server responds with 200, and errors are passed inside json.

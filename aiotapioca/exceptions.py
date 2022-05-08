@@ -1,6 +1,6 @@
 class ResponseProcessException(Exception):
-    def __init__(self, tapioca_exception, data, *args, **kwargs):
-        self.tapioca_exception = tapioca_exception
+    def __init__(self, exception, data, *args, **kwargs):
+        self.exception = exception
         self.data = data
         super().__init__(*args, **kwargs)
 
@@ -11,7 +11,6 @@ class TapiocaException(Exception):
         self.client = client
         if client is not None:
             self.status = client().status
-
         if not message:
             message = "response status code: {}".format(self.status)
         super().__init__(message)

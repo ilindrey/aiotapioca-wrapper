@@ -310,19 +310,11 @@ class TapiocaClientExecutor(TapiocaClient):
                 }
             )
 
-            error_message = await self._coro_wrap(
-                self._api.get_error_message, **context
-            )
-            tapioca_exception = ex.tapioca_exception(
-                message=error_message, client=client
-            )
-
-            auth_expired = await self._coro_wrap(
-                self._api.is_authentication_expired, tapioca_exception, **context
-            )
-
             propagate_exception = True
 
+            auth_expired = await self._coro_wrap(
+                self._api.is_authentication_expired, ex.exception, **context
+            )
             if refresh_token and auth_expired:
                 self._refresh_data = await self._coro_wrap(
                     self._api.refresh_authentication, **context
@@ -337,10 +329,14 @@ class TapiocaClientExecutor(TapiocaClient):
                         **kwargs
                     )
 
+            error_message = await self._coro_wrap(
+                self._api.get_error_message, **context
+            )
+
             # code based on
             # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
             if await self._coro_wrap(
-                self._api.retry_request, tapioca_exception, error_message, **context
+                self._api.retry_request, ex.exception, error_message, **context
             ):
                 propagate_exception = False
                 return await self._make_request(
@@ -355,10 +351,7 @@ class TapiocaClientExecutor(TapiocaClient):
                 # code based on
                 # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
                 await self._coro_wrap(
-                    self._api.error_handling,
-                    tapioca_exception,
-                    error_message,
-                    **context
+                    self._api.error_handling, ex.exception, error_message, **context
                 )
         except Exception as ex:
             await self._coro_wrap(self._api.error_handling, ex, **context)
