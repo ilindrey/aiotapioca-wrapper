@@ -4,12 +4,12 @@ import pytest
 from aiotapioca.aiotapioca import TapiocaClient
 from aiotapioca.exceptions import (
     ClientError,
-    ServerError,
     ResponseProcessException,
+    ServerError,
     TapiocaException,
 )
-from .clients import SimpleClientAdapter
 
+from .clients import SimpleClientAdapter
 
 """
 test TapiocaException

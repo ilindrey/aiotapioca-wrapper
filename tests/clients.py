@@ -1,21 +1,21 @@
 from aiotapioca import (
-    generate_wrapper_from_adapter,
-    TapiocaAdapter,
     JSONAdapterMixin,
     PydanticAdapterMixin,
-    XMLAdapterMixin,
     SimpleSerializer,
-)
-from .models import (
-    Detail,
-    DetailDT,
-    CustomModel,
-    CustomModelDT,
-    RootModel,
-    RootModelDT,
-    BadModelDT,
+    TapiocaAdapter,
+    XMLAdapterMixin,
+    generate_wrapper_from_adapter,
 )
 
+from .models import (
+    BadModelDT,
+    CustomModel,
+    CustomModelDT,
+    Detail,
+    DetailDT,
+    RootModel,
+    RootModelDT,
+)
 
 test = {
     "resource": "test/",

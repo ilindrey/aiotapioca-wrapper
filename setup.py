@@ -7,8 +7,8 @@ try:
 except ImportError:
     from distutils.core import setup
 
-import re
 import os
+import re
 import sys
 
 description = """

@@ -1,5 +1,6 @@
-import arrow
 from decimal import Decimal
+
+import arrow
 
 
 class BaseSerializer:

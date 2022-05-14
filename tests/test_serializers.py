@@ -1,12 +1,14 @@
+from decimal import Decimal
+
 import arrow
+import orjson
 import pytest
 import pytest_asyncio
-import orjson
-from decimal import Decimal
 from yarl import URL
 
 from aiotapioca import BaseSerializer, SimpleSerializer
-from .clients import SimpleClient, SerializerClient
+
+from .clients import SerializerClient, SimpleClient
 
 
 @pytest.fixture

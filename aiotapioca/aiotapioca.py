@@ -1,9 +1,10 @@
-import copy
-import asyncio
-import aiohttp
 import webbrowser
-import json
+from asyncio import Semaphore, gather, iscoroutinefunction
 from collections import OrderedDict
+from copy import copy
+
+from aiohttp import ClientSession
+from orjson import dumps
 
 from .exceptions import ResponseProcessException
 
@@ -45,7 +46,7 @@ class TapiocaClient:
 
     async def __aenter__(self):
         if self._session is None:
-            self._session = aiohttp.ClientSession()
+            self._session = ClientSession()
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
@@ -82,7 +83,7 @@ class TapiocaClient:
         return context
 
     def _get_doc(self):
-        resources = copy.copy(self._resource)
+        resources = copy(self._resource)
         docs = (
             "Automatic generated __doc__ from resource_mapping.\n"
             "Resource: %s\n"
@@ -188,7 +189,7 @@ class TapiocaClient:
     def __str__(self):
         if type(self._data) == OrderedDict:
             return "<{} object, printing as dict:\n" "{}>".format(
-                self.__class__.__name__, json.dumps(self._data, indent=4)
+                self.__class__.__name__, dumps(self._data, indent=4).decode("utf-8")
             )
         else:
             import pprint
@@ -262,7 +263,7 @@ class TapiocaClientExecutor(TapiocaClient):
 
     @staticmethod
     async def _coro_wrap(func, *args, **kwargs):
-        if asyncio.iscoroutinefunction(func):
+        if iscoroutinefunction(func):
             result = await func(*args, **kwargs)
         else:
             result = func(*args, **kwargs)
@@ -364,9 +365,9 @@ class TapiocaClientExecutor(TapiocaClient):
 
         if "semaphore_class" not in kwargs:
             semaphore = self.__get_semaphore_value(kwargs)
-            kwargs["semaphore_class"] = asyncio.Semaphore(semaphore)
+            kwargs["semaphore_class"] = Semaphore(semaphore)
 
-        semaphore = kwargs.pop("semaphore_class", asyncio.Semaphore())
+        semaphore = kwargs.pop("semaphore_class", Semaphore())
 
         refresh_token = (
             kwargs.pop("refresh_token", False) is True
@@ -388,9 +389,9 @@ class TapiocaClientExecutor(TapiocaClient):
         data = kwargs.pop("data", [])
 
         semaphore = self.__get_semaphore_value(kwargs)
-        kwargs["semaphore_class"] = asyncio.Semaphore(semaphore)
+        kwargs["semaphore_class"] = Semaphore(semaphore)
 
-        results = await asyncio.gather(
+        results = await gather(
             *[
                 self._send(request_method, *args, **{**kwargs, "data": row})
                 for row in data

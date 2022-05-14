@@ -1,5 +1,6 @@
 from aiotapioca import PydanticAdapterMixin
-from .models import Detail, CustomModel, CustomModelDT
+
+from .models import CustomModel, CustomModelDT, Detail
 
 
 def test_pydantic_model_get_pydantic_model():

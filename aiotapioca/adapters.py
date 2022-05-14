@@ -1,13 +1,14 @@
-import orjson
-import xmltodict
 from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
+
+from orjson import dumps, loads
 from pydantic import BaseModel
+from xmltodict import parse, unparse
 
 from .aiotapioca import TapiocaInstantiator
 from .exceptions import (
-    ResponseProcessException,
     ClientError,
+    ResponseProcessException,
     ServerError,
     TapiocaException,
 )
@@ -158,12 +159,12 @@ class JSONAdapterMixin:
 
     def format_data_to_request(self, data, **kwargs):
         if data:
-            return orjson.dumps(data)
+            return dumps(data)
 
     async def response_to_native(self, response, **kwargs):
         text = await response.text()
         if text:
-            return orjson.loads(text)
+            return loads(text)
 
     async def get_error_message(self, data, response=None, **kwargs):
         if not data and response:
@@ -179,9 +180,7 @@ class JSONAdapterMixin:
 class XMLAdapterMixin:
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):
-            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode(
-                "utf-8"
-            )
+            return unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
         try:
             return data.encode("utf-8")
         except Exception as e:
@@ -221,7 +220,7 @@ class XMLAdapterMixin:
         if response:
             text = await response.text()
             if "xml" in response.headers["content-type"]:
-                return xmltodict.parse(text, **self._xmltodict_parse_kwargs)
+                return parse(text, **self._xmltodict_parse_kwargs)
             return {"text": text}
 
 
@@ -246,15 +245,15 @@ class PydanticAdapterMixin:
             ):
                 data = self.convert_data_to_pydantic_model("request", data, **kwargs)
             if isinstance(data, BaseModel):
-                return orjson.dumps(data.dict())
+                return dumps(data.dict())
             elif is_dataclass(data):
-                return orjson.dumps(asdict(data))
-            return orjson.dumps(data)
+                return dumps(asdict(data))
+            return dumps(data)
 
     async def response_to_native(self, response, **kwargs):
         text = await response.text()
         if text:
-            data = orjson.loads(text)
+            data = loads(text)
             if self.validate_data_received and response.status == 200:
                 data = self.convert_data_to_pydantic_model("response", data, **kwargs)
                 if isinstance(data, BaseModel):

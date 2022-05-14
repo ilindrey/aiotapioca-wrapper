@@ -11,24 +11,25 @@ from pydantic import BaseModel
 from yarl import URL
 
 from aiotapioca.adapters import TapiocaAdapter, generate_wrapper_from_adapter
+from aiotapioca.aiotapioca import TapiocaClient, TapiocaClientExecutor
 from aiotapioca.exceptions import ClientError, ServerError
 from aiotapioca.serializers import SimpleSerializer
-from aiotapioca.aiotapioca import TapiocaClient, TapiocaClientExecutor
+
 from .callbacks import callback_201, callback_401
 from .clients import (
-    SimpleClient,
-    XMLClient,
-    TokenRefreshClient,
-    TokenRefreshByDefaultClient,
+    CustomModel,
+    CustomModelDT,
     FailTokenRefreshClient,
-    RetryRequestClient,
     NoneSemaphoreClient,
     PydanticDefaultClientAdapter,
     PydanticForcedClient,
-    CustomModel,
+    RetryRequestClient,
     RootModel,
-    CustomModelDT,
     RootModelDT,
+    SimpleClient,
+    TokenRefreshByDefaultClient,
+    TokenRefreshClient,
+    XMLClient,
 )
 
 
