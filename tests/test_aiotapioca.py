@@ -17,9 +17,12 @@ from aiotapioca.serializers import SimpleSerializer
 
 from .callbacks import callback_201, callback_401
 from .clients import (
+    ClassParserClient,
     CustomModel,
     CustomModelDT,
+    DictParserClient,
     FailTokenRefreshClient,
+    FuncParserClient,
     NoneSemaphoreClient,
     PydanticDefaultClientAdapter,
     PydanticForcedClient,
@@ -27,6 +30,7 @@ from .clients import (
     RootModel,
     RootModelDT,
     SimpleClient,
+    StaticMethodParserClient,
     TokenRefreshByDefaultClient,
     TokenRefreshClient,
     XMLClient,
@@ -157,10 +161,17 @@ async def test_in_operator(mocked, client):
 async def test_transform_camelCase_in_snake_case(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
+    response_data = {
+        "data": {
+            "key_snake": "value",
+            "camelCase": "data in camel case",
+            "NormalCamelCase": "data in camel case",
+        },
+        "paging": {"next": "%s" % next_url},
+    }
     mocked.add(
         client.test().data,
-        body='{"data" :{"key_snake": "value", "camelCase": "data in camel case", "NormalCamelCase": "data in camel case"}, "paging": {"next": "%s"}}'
-        % next_url,
+        body=orjson.dumps(response_data),
         status=200,
         content_type="application/json",
     )
@@ -1619,3 +1630,104 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
         assert len(responses) == len(data)
         for response in responses:
             assert response().data == {"id": 100500}
+
+
+class TestParsers:
+    @pytest_asyncio.fixture
+    async def func_parser_client(self):
+        async with FuncParserClient() as client:
+            yield client
+
+    @pytest_asyncio.fixture
+    async def static_method_parser_client(self):
+        async with StaticMethodParserClient() as client:
+            yield client
+
+    @pytest_asyncio.fixture
+    async def class_parser_client(self):
+        async with ClassParserClient() as client:
+            yield client
+
+    @pytest_asyncio.fixture
+    async def dict_parser_client(self):
+        async with DictParserClient() as client:
+            yield client
+
+    async def test_parsers_not_found(self, mocked, func_parser_client):
+        mocked.get(
+            func_parser_client.test().data,
+            body='["a", "b", "c"]',
+            status=200,
+            content_type="application/json",
+        )
+        response = await func_parser_client.test().get()
+
+        with pytest.raises(AttributeError):
+            response().blablabla()
+
+    async def test_func_parser(self, mocked, func_parser_client):
+        mocked.get(
+            func_parser_client.test().data,
+            body='["a", "b", "c"]',
+            status=200,
+            content_type="application/json",
+        )
+        response = await func_parser_client.test().get()
+
+        assert response().foo_parser() == ["a", "b", "c"]
+        assert response().foo_parser(0) == "a"
+        assert response().foo_parser(1) == "b"
+        assert response().foo_parser(2) == "c"
+        with pytest.raises(IndexError):
+            response().foo_parser(3)
+
+    async def test_static_method_parser(self, mocked, static_method_parser_client):
+        mocked.get(
+            static_method_parser_client.test().data,
+            body='["a", "b", "c"]',
+            status=200,
+            content_type="application/json",
+        )
+        response = await static_method_parser_client.test().get()
+
+        assert response().foo() == ["a", "b", "c"]
+        assert response().foo(0) == "a"
+        assert response().foo(1) == "b"
+        assert response().foo(2) == "c"
+        with pytest.raises(IndexError):
+            response().foo(3)
+
+    async def test_class_parser(self, mocked, class_parser_client):
+        mocked.get(
+            class_parser_client.test().data,
+            body='["a", "b", "c"]',
+            status=200,
+            content_type="application/json",
+        )
+        response = await class_parser_client.test().get()
+
+        parser = response().foo_parser()
+        assert parser.bar() == ["a", "b", "c"]
+        assert parser.bar(0) == "a"
+        assert parser.bar(1) == "b"
+        assert parser.bar(2) == "c"
+        with pytest.raises(IndexError):
+            parser.bar(3)
+
+    async def test_dict_parser(self, mocked, dict_parser_client):
+        mocked.get(
+            dict_parser_client.test().data,
+            body='["a", "b", "c"]',
+            status=200,
+            content_type="application/json",
+        )
+        response = await dict_parser_client.test().get()
+
+        assert response().func_parser() == ["a", "b", "c"]
+        assert response().func_parser(1) == "b"
+
+        assert response().static_method_parser() == ["a", "b", "c"]
+        assert response().static_method_parser(1) == "b"
+
+        assert response().class_parser().bar() == ["a", "b", "c"]
+        assert response().class_parser().bar(1) == "b"

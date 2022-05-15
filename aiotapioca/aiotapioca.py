@@ -1,7 +1,10 @@
+import re
 import webbrowser
 from asyncio import Semaphore, gather, iscoroutinefunction
 from collections import OrderedDict
 from copy import copy
+from functools import partial
+from inspect import isclass, isfunction
 
 from aiohttp import ClientSession
 from orjson import dumps
@@ -221,11 +224,41 @@ class TapiocaClientExecutor(TapiocaClient):
     def __iter__(self):
         raise Exception("Cannot iterate over a TapiocaClientExecutor object")
 
+    def _to_snake_case(self, name):
+        name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+        return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
+
+    def _get_parser_from_resource(self, name, parser=None):
+        if self._resource is None:
+            return None
+
+        parsers = parser or self._resource.get("parsers")
+        if parsers is None:
+            return None
+        elif isfunction(parsers) and name == parsers.__name__:
+            return partial(parsers, self._data)
+        elif isclass(parsers) and name == self._to_snake_case(parsers.__name__):
+            parsers.data = self._data
+            return parsers
+        elif isinstance(parsers, dict) and name in parsers:
+            parser = parsers[name]
+            parser_name = (
+                self._to_snake_case(parser.__name__)
+                if isclass(parser)
+                else parser.__name__
+            )
+            return self._get_parser_from_resource(parser_name, parser)
+
+        return None
+
     def __getattr__(self, name):
         # Fix to be pickle-able:
         # return None for all unimplemented dunder methods
         if name.startswith("__") and name.endswith("__"):
             raise AttributeError(name)
+        parser = self._get_parser_from_resource(name)
+        if parser is not None:
+            return parser
         if name.startswith("to_"):  # deserializing
             method = self._resource.get(name)
             kwargs = method.get("params", {}) if method else {}

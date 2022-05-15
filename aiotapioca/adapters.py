@@ -3,7 +3,8 @@ from dataclasses import asdict, is_dataclass
 
 from orjson import dumps, loads
 from pydantic import BaseModel
-from xmltodict import parse, unparse
+from xmltodict import parse as xml_parse
+from xmltodict import unparse as xml_unparse
 
 from .aiotapioca import TapiocaInstantiator
 from .exceptions import (
@@ -137,7 +138,7 @@ class TapiocaAdapter:
                 raise exception(message=error_message, client=kwargs["client"])
             else:
                 raise exception
-        elif error_message:
+        if error_message:
             raise TapiocaException(message=error_message, client=kwargs["client"])
 
 
@@ -180,7 +181,7 @@ class JSONAdapterMixin:
 class XMLAdapterMixin:
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):
-            return unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
+            return xml_unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
         try:
             return data.encode("utf-8")
         except Exception as e:
@@ -220,7 +221,7 @@ class XMLAdapterMixin:
         if response:
             text = await response.text()
             if "xml" in response.headers["content-type"]:
-                return parse(text, **self._xmltodict_parse_kwargs)
+                return xml_parse(text, **self._xmltodict_parse_kwargs)
             return {"text": text}
 
 

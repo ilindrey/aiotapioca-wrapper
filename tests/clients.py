@@ -16,6 +16,7 @@ from .models import (
     RootModel,
     RootModelDT,
 )
+from .parsers import FooParser, foo_parser
 
 test = {
     "resource": "test/",
@@ -108,9 +109,7 @@ class RetryRequestClientAdapter(SimpleClientAdapter):
 RetryRequestClient = generate_wrapper_from_adapter(RetryRequestClientAdapter)
 
 
-"""
-refresh token
-"""
+# refresh token
 
 
 class TokenRefreshClientAdapter(SimpleClientAdapter):
@@ -143,9 +142,56 @@ class FailTokenRefreshClientAdapter(TokenRefreshByDefaultClientAdapter):
 FailTokenRefreshClient = generate_wrapper_from_adapter(FailTokenRefreshClientAdapter)
 
 
-"""
-Pydantic
-"""
+# parsers
+
+
+class FuncParserClientAdapter(SimpleClientAdapter):
+    def get_resource_mapping(self, api_params, **kwargs):
+        resource_mapping = super().get_resource_mapping(api_params, **kwargs)
+        resource_mapping["test"]["parsers"] = foo_parser
+        return resource_mapping
+
+
+FuncParserClient = generate_wrapper_from_adapter(FuncParserClientAdapter)
+
+
+class StaticMethodParserClientAdapter(SimpleClientAdapter):
+    def get_resource_mapping(self, api_params, **kwargs):
+        resource_mapping = super().get_resource_mapping(api_params, **kwargs)
+        resource_mapping["test"]["parsers"] = FooParser.foo
+        return resource_mapping
+
+
+StaticMethodParserClient = generate_wrapper_from_adapter(
+    StaticMethodParserClientAdapter
+)
+
+
+class ClassParserClientAdapter(SimpleClientAdapter):
+    def get_resource_mapping(self, api_params, **kwargs):
+        resource_mapping = super().get_resource_mapping(api_params, **kwargs)
+        resource_mapping["test"]["parsers"] = FooParser
+        return resource_mapping
+
+
+ClassParserClient = generate_wrapper_from_adapter(ClassParserClientAdapter)
+
+
+class DictParserClientAdapter(SimpleClientAdapter):
+    def get_resource_mapping(self, api_params, **kwargs):
+        resource_mapping = super().get_resource_mapping(api_params, **kwargs)
+        resource_mapping["test"]["parsers"] = {
+            "func_parser": foo_parser,
+            "static_method_parser": FooParser.foo,
+            "class_parser": FooParser,
+        }
+        return resource_mapping
+
+
+DictParserClient = generate_wrapper_from_adapter(DictParserClientAdapter)
+
+
+# pydantic
 
 
 class PydanticDefaultClientAdapter(PydanticAdapterMixin, TapiocaAdapter):
