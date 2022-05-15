@@ -2,6 +2,12 @@
 Changelog
 =========
 
+3.8.0
+=====
+- Added propagate_exception flag after retry_request call.
+- Added data parsing mechanism. Parsers can be specified in resource_mapping.
+- Reworked exception handling.
+
 3.7.0
 =====
 - Removed debug option.
