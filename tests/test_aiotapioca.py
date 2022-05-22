@@ -1100,7 +1100,7 @@ async def test_xml_returns_text_if_response_not_xml(mocked, xml_client):
 
     response = await xml_client.test().post(data=data)
 
-    assert "Any response" == response().data["text"]
+    assert "Any response" == response().data
 
 
 async def test_xml_post_dict_returns_dict_if_response_xml(mocked, xml_client):

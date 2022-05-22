@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 
 import xmltodict
-from orjson import dumps, loads
+from orjson import JSONDecodeError, dumps, loads
 from pydantic import BaseModel
 
 from .aiotapioca import TapiocaInstantiator
@@ -136,15 +136,20 @@ class JSONAdapterMixin:
 
     async def response_to_native(self, response, **kwargs):
         text = await response.text()
-        if text:
+        if not text:
+            return None
+        try:
             return loads(text)
+        except JSONDecodeError:
+            return text
 
     def get_error_message(self, data, response, **kwargs):
-        if data:
+        if isinstance(data, dict):
             if "error" in data:
-                return data.get("error")
+                return data["error"]
             elif "errors" in data:
-                return data.get("errors")
+                return data["errors"]
+            return str(data)
         return data
 
 
@@ -194,22 +199,15 @@ class XMLAdapterMixin:
             text = await response.text()
             if "xml" in response.headers["content-type"]:
                 return xmltodict.parse(text, **self._xmltodict_parse_kwargs)
-            return {"text": text}
+            return text
 
 
-class PydanticAdapterMixin:
+class PydanticAdapterMixin(JSONAdapterMixin):
     forced_to_have_model = False
     validate_data_received = True
     validate_data_sending = True
     extract_root = True
     convert_to_dict = False
-
-    def get_request_kwargs(self, *args, **kwargs):
-        arguments = super().get_request_kwargs(*args, **kwargs)
-        if "headers" not in arguments:
-            arguments["headers"] = {}
-        arguments["headers"]["Content-Type"] = "application/json"
-        return arguments
 
     def format_data_to_request(self, data, *args, **kwargs):
         if data:
@@ -224,22 +222,22 @@ class PydanticAdapterMixin:
             return dumps(data)
 
     async def response_to_native(self, response, **kwargs):
-        text = await response.text()
-        if text:
-            data = loads(text)
-            if self.validate_data_received and response.status == 200:
-                data = self.convert_data_to_pydantic_model("response", data, **kwargs)
-                if isinstance(data, BaseModel):
-                    if self.convert_to_dict:
-                        data = data.dict()
-                    if self.extract_root:
-                        if hasattr(data, "__root__"):
-                            return data.__root__
-                        elif "__root__" in data:
-                            return data["__root__"]
-                    return data
+        data = await super().response_to_native(response, **kwargs)
+        if isinstance(data, str):
+            return data
+        if self.validate_data_received and response.status == 200:
+            data = self.convert_data_to_pydantic_model("response", data, **kwargs)
+            if isinstance(data, BaseModel):
+                if self.convert_to_dict:
+                    data = data.dict()
+                if self.extract_root:
+                    if hasattr(data, "__root__"):
+                        return data.__root__
+                    elif "__root__" in data:
+                        return data["__root__"]
                 return data
             return data
+        return data
 
     def convert_data_to_pydantic_model(self, type_convert, data, **kwargs):
         model = self.get_pydantic_model(type_convert, **kwargs)
@@ -291,13 +289,3 @@ class PydanticAdapterMixin:
         if self.forced_to_have_model and type(model) != type(BaseModel):
             raise TypeError(f"It isn't pydantic model: {model}.")
         return model
-
-    async def get_error_message(self, data, response=None, **kwargs):
-        if not data and response:
-            data = await self.response_to_native(response, **kwargs)
-        if data:
-            if "error" in data:
-                return data.get("error")
-            elif "errors" in data:
-                return data.get("errors")
-        return data
