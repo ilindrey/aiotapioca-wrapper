@@ -9,7 +9,7 @@ from inspect import isclass, isfunction
 from aiohttp import ClientSession
 from orjson import dumps
 
-from .exceptions import ResponseProcessException
+from .exceptions import TapiocaException, ResponseProcessException
 
 
 class TapiocaInstantiator:
@@ -217,12 +217,12 @@ class TapiocaClientExecutor(TapiocaClient):
         super().__init__(api, *args, **kwargs)
 
     def __getitem__(self, key):
-        raise Exception(
+        raise TapiocaException(
             "This operation cannot be done on a" + " TapiocaClientExecutor object"
         )
 
     def __iter__(self):
-        raise Exception("Cannot iterate over a TapiocaClientExecutor object")
+        raise TapiocaException("Cannot iterate over a TapiocaClientExecutor object")
 
     def _to_snake_case(self, name):
         name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
@@ -275,7 +275,7 @@ class TapiocaClientExecutor(TapiocaClient):
     @property
     def response(self):
         if self._response is None:
-            raise Exception("This instance has no response object")
+            raise TapiocaException("This instance has no response object")
         return self._response
 
     @property
@@ -328,6 +328,7 @@ class TapiocaClientExecutor(TapiocaClient):
             data = await self._coro_wrap(self._api.process_response, **context)
             context["data"] = data
         except ResponseProcessException as ex:
+
             repeat_number += 1
 
             client = self._wrap_in_tapioca(
@@ -346,13 +347,9 @@ class TapiocaClientExecutor(TapiocaClient):
 
             propagate_exception = True
 
-            auth_expired = await self._coro_wrap(
-                self._api.is_authentication_expired, ex.exception, **context
-            )
+            auth_expired = await self._coro_wrap(self._api.is_authentication_expired, ex, **context)
             if refresh_token and auth_expired:
-                self._refresh_data = await self._coro_wrap(
-                    self._api.refresh_authentication, **context
-                )
+                self._refresh_data = await self._coro_wrap(self._api.refresh_authentication, ex, **context)
                 if self._refresh_data:
                     propagate_exception = False
                     return await self._make_request(
@@ -363,15 +360,7 @@ class TapiocaClientExecutor(TapiocaClient):
                         **kwargs
                     )
 
-            error_message = await self._coro_wrap(
-                self._api.get_error_message, **context
-            )
-
-            # code based on
-            # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
-            if await self._coro_wrap(
-                self._api.retry_request, ex.exception, error_message, **context
-            ):
+            if await self._coro_wrap(self._api.retry_request, ex, **context):
                 propagate_exception = False
                 return await self._make_request(
                     request_method,
@@ -382,13 +371,10 @@ class TapiocaClientExecutor(TapiocaClient):
                 )
 
             if propagate_exception:
-                # code based on
-                # https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/tapi.py#L344
-                await self._coro_wrap(
-                    self._api.error_handling, ex.exception, error_message, **context
-                )
+                await self._coro_wrap(self._api.error_handling, ex, **context)
+
         except Exception as ex:
-            await self._coro_wrap(self._api.error_handling, ex, **context)
+            await self._coro_wrap(self._api.error_handling, ex, *args, **context)
 
         return self._wrap_in_tapioca(
             data, response=response, request_kwargs=request_kwargs
@@ -477,7 +463,7 @@ class TapiocaClientExecutor(TapiocaClient):
         reached_item_limit = max_items is not None and max_items <= item_count
         return reached_page_limit or reached_item_limit
 
-    async def pages(self, max_pages=None, max_items=None, **kwargs):
+    async def pages(self, max_pages=None, max_items=None):
         executor = self
         iterator_list = executor._get_iterator_list()
         page_count = 0

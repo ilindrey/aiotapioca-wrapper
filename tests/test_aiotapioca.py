@@ -415,31 +415,18 @@ async def test_carries_request_kwargs_over_calls(mocked, client):
     assert "headers" in request_kwargs
 
 
-async def test_thrown_tapioca_exception_with_client_error_data(mocked, client):
-    mocked.get(
-        client.test().data,
-        body='{"error": "bad request test"}',
-        status=400,
-        content_type="application/json",
-    )
-    with pytest.raises(ClientError) as client_exception:
-        await client.test().get()
-    assert "bad request test" in client_exception.value.args
-
-
-async def test_thrown_tapioca_exception_with_server_error_data(mocked, client):
-    mocked.get(
-        client.test().data,
-        body='{"error": "server error test"}',
-        status=500,
-        content_type="application/json",
-    )
-    with pytest.raises(ServerError) as server_exception:
-        await client.test().get()
-    assert "server error test" in server_exception.value.args
-
-
 async def test_retry_request(mocked, retry_request_client):
+    for _ in range(11):
+        mocked.get(
+            retry_request_client.test().data,
+            body='{"error": "bad request test"}',
+            status=400,
+            content_type="application/json",
+        )
+
+    with pytest.raises(ClientError):
+        await retry_request_client.test().get()
+
     for _ in range(10):
         mocked.get(
             retry_request_client.test().data,

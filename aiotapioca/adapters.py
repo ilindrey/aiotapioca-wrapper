@@ -1,18 +1,12 @@
 from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 
+import xmltodict
 from orjson import dumps, loads
 from pydantic import BaseModel
-from xmltodict import parse as xml_parse
-from xmltodict import unparse as xml_unparse
 
 from .aiotapioca import TapiocaInstantiator
-from .exceptions import (
-    ClientError,
-    ResponseProcessException,
-    ServerError,
-    TapiocaException,
-)
+from .exceptions import ClientError, ServerError
 from .serializers import SimpleSerializer
 
 
@@ -72,31 +66,35 @@ class TapiocaAdapter:
         serialized = self.serialize_data(request_kwargs.get("data"), **kwargs)
         request_kwargs.update(
             {
-                "data": self.format_data_to_request(serialized, **kwargs),
+                "data": self.format_data_to_request(serialized, *args, **kwargs),
             }
         )
         return request_kwargs
 
-    async def process_response(self, response, **kwargs):
+    def format_data_to_request(self, data, *args, **kwargs):
+        raise NotImplementedError()
 
-        if 500 <= response.status < 600:
-            raise ResponseProcessException(ServerError, None)
+    async def process_response(self, response, **kwargs):
 
         data = await self.response_to_native(response, **kwargs)
 
-        if 400 <= response.status < 500:
-            raise ResponseProcessException(ClientError, data)
+        if 400 <= response.status < 600:
+            self.raise_response_error(data, response, **kwargs)
 
         return data
 
-    def get_error_message(self, data, response=None, **kwargs):
-        return str(data)
-
-    def format_data_to_request(self, data, **kwargs):
-        raise NotImplementedError()
-
     def response_to_native(self, response, **kwargs):
         raise NotImplementedError()
+
+    def raise_response_error(self, data, response, **kwargs):
+        message = self.get_error_message(data, response, **kwargs)
+        if 400 <= response.status < 500:
+            raise ClientError(message, data, response, **kwargs)
+        elif 500 <= response.status < 600:
+            raise ServerError(message, data, response, **kwargs)
+
+    def get_error_message(self, data, response, **kwargs):
+        return str(data)
 
     def get_iterator_list(self, data, **kwargs):
         raise NotImplementedError()
@@ -106,44 +104,21 @@ class TapiocaAdapter:
     ):
         raise NotImplementedError()
 
-    def is_authentication_expired(self, exception, *args, **kwargs):
+    def is_authentication_expired(self, exception, repeat_number=0, **kwargs):
         return False
 
-    def refresh_authentication(self, api_params, *args, **kwargs):
+    def refresh_authentication(self, exception, repeat_number=0, **kwargs):
         raise NotImplementedError()
 
-    def retry_request(
-        self, exception=None, error_message=None, repeat_number=0, **kwargs
-    ):
-        """
-        Conditions for repeating a request.
-        If it returns True, the request will be repeated.
-        Code based on:
-        https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/adapters.py#L218
-        """
+    def retry_request(self, exception, repeat_number=0, **kwargs):
         return False
 
-    def error_handling(
-        self, exception=None, error_message=None, repeat_number=0, **kwargs
-    ):
-        """
-        Wrapper for throwing custom exceptions. When,
-        for example, the server responds with 200,
-        and errors are passed inside json.
-        Code based on:
-        https://github.com/pavelmaksimov/tapi-wrapper/blob/262468e039db83e8e13564966ad96be39a3d2dab/tapi2/adapters.py#L165
-        """
-        if exception:
-            if exception is ClientError or exception is ServerError:
-                raise exception(message=error_message, client=kwargs["client"])
-            else:
-                raise exception
-        if error_message:
-            raise TapiocaException(message=error_message, client=kwargs["client"])
+    def error_handling(self, exception, repeat_number=0, **kwargs):
+        raise
 
 
 class FormAdapterMixin:
-    def format_data_to_request(self, data, **kwargs):
+    def format_data_to_request(self, data, *args, **kwargs):
         return data
 
     async def response_to_native(self, response, **kwargs):
@@ -158,7 +133,7 @@ class JSONAdapterMixin:
         arguments["headers"]["Content-Type"] = "application/json"
         return arguments
 
-    def format_data_to_request(self, data, **kwargs):
+    def format_data_to_request(self, data, *args, **kwargs):
         if data:
             return dumps(data)
 
@@ -167,9 +142,7 @@ class JSONAdapterMixin:
         if text:
             return loads(text)
 
-    async def get_error_message(self, data, response=None, **kwargs):
-        if not data and response:
-            data = await self.response_to_native(response, **kwargs)
+    def get_error_message(self, data, response, **kwargs):
         if data:
             if "error" in data:
                 return data.get("error")
@@ -181,7 +154,7 @@ class JSONAdapterMixin:
 class XMLAdapterMixin:
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):
-            return xml_unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
+            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
         try:
             return data.encode("utf-8")
         except Exception as e:
@@ -213,7 +186,7 @@ class XMLAdapterMixin:
         arguments["headers"]["Content-Type"] = "application/xml"
         return arguments
 
-    def format_data_to_request(self, data, **kwargs):
+    def format_data_to_request(self, data, *args, **kwargs):
         if data:
             return self._input_branches_to_xml_bytestring(data)
 
@@ -221,7 +194,7 @@ class XMLAdapterMixin:
         if response:
             text = await response.text()
             if "xml" in response.headers["content-type"]:
-                return xml_parse(text, **self._xmltodict_parse_kwargs)
+                return xmltodict.parse(text, **self._xmltodict_parse_kwargs)
             return {"text": text}
 
 
@@ -239,7 +212,7 @@ class PydanticAdapterMixin:
         arguments["headers"]["Content-Type"] = "application/json"
         return arguments
 
-    def format_data_to_request(self, data, **kwargs):
+    def format_data_to_request(self, data, *args, **kwargs):
         if data:
             if self.validate_data_sending and (
                 not isinstance(data, BaseModel) or not is_dataclass(data)
