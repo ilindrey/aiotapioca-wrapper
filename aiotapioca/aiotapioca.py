@@ -9,7 +9,7 @@ from inspect import isclass, isfunction
 from aiohttp import ClientSession
 from orjson import dumps
 
-from .exceptions import TapiocaException, ResponseProcessException
+from .exceptions import ResponseProcessException, TapiocaException
 
 
 class TapiocaInstantiator:
@@ -345,11 +345,18 @@ class TapiocaClientExecutor(TapiocaClient):
                 }
             )
 
+            if repeat_number > self._api.max_retries_requests:
+                await self._coro_wrap(self._api.error_handling, ex, **context)
+
             propagate_exception = True
 
-            auth_expired = await self._coro_wrap(self._api.is_authentication_expired, ex, **context)
+            auth_expired = await self._coro_wrap(
+                self._api.is_authentication_expired, ex, **context
+            )
             if refresh_token and auth_expired:
-                self._refresh_data = await self._coro_wrap(self._api.refresh_authentication, ex, **context)
+                self._refresh_data = await self._coro_wrap(
+                    self._api.refresh_authentication, ex, **context
+                )
                 if self._refresh_data:
                     propagate_exception = False
                     return await self._make_request(

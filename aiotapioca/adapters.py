@@ -16,8 +16,9 @@ def generate_wrapper_from_adapter(adapter_class):
 
 class TapiocaAdapter:
     serializer_class = SimpleSerializer
-    refresh_token = False
+    max_retries_requests = 10
     semaphore = 10
+    refresh_token = False
 
     def __init__(self, serializer_class=None, *args, **kwargs):
         if serializer_class:
@@ -62,7 +63,6 @@ class TapiocaAdapter:
 
     def get_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
-
         serialized = self.serialize_data(request_kwargs.get("data"), **kwargs)
         request_kwargs.update(
             {
@@ -75,12 +75,9 @@ class TapiocaAdapter:
         raise NotImplementedError()
 
     async def process_response(self, response, **kwargs):
-
         data = await self.response_to_native(response, **kwargs)
-
         if 400 <= response.status < 600:
             self.raise_response_error(data, response, **kwargs)
-
         return data
 
     def response_to_native(self, response, **kwargs):
@@ -154,7 +151,9 @@ class JSONAdapterMixin:
 class XMLAdapterMixin:
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):
-            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
+            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode(
+                "utf-8"
+            )
         try:
             return data.encode("utf-8")
         except Exception as e:

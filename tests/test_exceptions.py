@@ -1,8 +1,7 @@
 import aiohttp
 import pytest
 
-from aiotapioca.aiotapioca import TapiocaClient
-from aiotapioca.exceptions import  ClientError, ResponseProcessException, ServerError
+from aiotapioca.exceptions import ClientError, ResponseProcessException, ServerError
 
 from .clients import SimpleClientAdapter
 

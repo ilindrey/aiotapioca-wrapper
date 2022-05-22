@@ -101,7 +101,7 @@ XMLClient = generate_wrapper_from_adapter(XMLClientAdapter)
 
 class RetryRequestClientAdapter(SimpleClientAdapter):
     def retry_request(self, exception, *args, **kwargs):
-        if kwargs["response"].status == 400 and kwargs['repeat_number'] <= 10:
+        if kwargs["response"].status == 400:
             return True
         return False
 
@@ -118,7 +118,7 @@ class TokenRefreshClientAdapter(SimpleClientAdapter):
 
     def refresh_authentication(self, exception, *args, **kwargs):
         new_token = "new_token"
-        kwargs['api_params']["token"] = new_token
+        kwargs["api_params"]["token"] = new_token
         return new_token
 
 
