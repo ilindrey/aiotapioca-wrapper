@@ -77,14 +77,14 @@ class TapiocaAdapter:
     async def process_response(self, response, **kwargs):
         data = await self.response_to_native(response, **kwargs)
         if 400 <= response.status < 600:
-            self.raise_response_error(data, response, **kwargs)
+            message = self.get_error_message(data, response, **kwargs)
+            self.raise_response_error(message, data, response, **kwargs)
         return data
 
     def response_to_native(self, response, **kwargs):
         raise NotImplementedError()
 
-    def raise_response_error(self, data, response, **kwargs):
-        message = self.get_error_message(data, response, **kwargs)
+    def raise_response_error(self, message, data, response, **kwargs):
         if 400 <= response.status < 500:
             raise ClientError(message, data, response, **kwargs)
         elif 500 <= response.status < 600:
