@@ -10,8 +10,8 @@ from .exceptions import ClientError, ServerError
 from .serializers import SimpleSerializer
 
 
-def generate_wrapper_from_adapter(adapter_class):
-    return TapiocaInstantiator(adapter_class)
+def generate_wrapper_from_adapter(adapter_class, session=None):
+    return TapiocaInstantiator(adapter_class, session)
 
 
 class TapiocaAdapter:

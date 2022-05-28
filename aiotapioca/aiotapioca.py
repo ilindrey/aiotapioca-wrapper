@@ -13,14 +13,15 @@ from .exceptions import ResponseProcessException, TapiocaException
 
 
 class TapiocaInstantiator:
-    def __init__(self, adapter_class):
+    def __init__(self, adapter_class, session=None):
         self.adapter_class = adapter_class
+        self._session = session
 
     def __call__(self, serializer_class=None, session=None, **kwargs):
         return TapiocaClient(
             self.adapter_class(serializer_class=serializer_class),
             api_params=kwargs,
-            session=session,
+            session=session or self._session,
         )
 
 
@@ -53,6 +54,15 @@ class TapiocaClient:
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
+        if self._session is not None:
+            await self._session.close()
+
+    async def _init_session(self):
+        if self._session is None:
+            self._session = ClientSession()
+        return self._session
+
+    async def _close_session(self):
         if self._session is not None:
             await self._session.close()
 
