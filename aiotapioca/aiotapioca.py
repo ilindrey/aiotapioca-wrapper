@@ -190,17 +190,15 @@ class TapiocaClient:
         return []
 
     def __str__(self):
-        if type(self._data) == OrderedDict:
-            return "<{} object, printing as dict:\n" "{}>".format(
-                self.__class__.__name__, dumps(self._data, indent=4).decode("utf-8")
-            )
+        if self._data is None:
+            return "<{} object>".format(type(self).__name__)
+        elif type(self._data) is OrderedDict:
+            return "<{} object, printing as dict: {}>".format(type(self).__name__, dumps(self._data, indent=4).decode("utf-8"))
         else:
             import pprint
 
             pp = pprint.PrettyPrinter(indent=4)
-            return "<{} object\n" "{}>".format(
-                self.__class__.__name__, pp.pformat(self._data)
-            )
+            return "<{} object: {}>".format(type(self).__name__, pp.pformat(self._data))
 
     def _repr_pretty_(self, p, cycle):
         p.text(self.__str__())
@@ -218,7 +216,7 @@ class TapiocaClientExecutor(TapiocaClient):
 
     def __getitem__(self, key):
         raise TapiocaException(
-            "This operation cannot be done on a" + " TapiocaClientExecutor object"
+            "This operation cannot be done on a TapiocaClientExecutor object"
         )
 
     def __iter__(self):
