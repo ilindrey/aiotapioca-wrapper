@@ -4,22 +4,40 @@ __version__ = "3.8.0"
 
 
 from .adapters import (
-    FormAdapterMixin,
-    JSONAdapterMixin,
-    PydanticAdapterMixin,
     TapiocaAdapter,
-    XMLAdapterMixin,
-    generate_wrapper_from_adapter,
+    TapiocaAdapterForm,
+    TapiocaAdapterFormMixin,
+    TapiocaAdapterJSON,
+    TapiocaAdapterJSONMixin,
+    TapiocaAdapterPydantic,
+    TapiocaAdapterPydanticMixin,
+    TapiocaAdapterXML,
+    TapiocaAdapterXMLMixin,
 )
+from .exceptions import (
+    ClientError,
+    ResponseProcessException,
+    ServerError,
+    TapiocaException,
+)
+from .generate import generate_wrapper_from_adapter
 from .serializers import BaseSerializer, SimpleSerializer
 
 __all__ = (
-    "generate_wrapper_from_adapter",
     "TapiocaAdapter",
-    "FormAdapterMixin",
-    "JSONAdapterMixin",
-    "XMLAdapterMixin",
-    "PydanticAdapterMixin",
+    "TapiocaAdapterForm",
+    "TapiocaAdapterFormMixin",
+    "TapiocaAdapterJSON",
+    "TapiocaAdapterJSONMixin",
+    "TapiocaAdapterPydantic",
+    "TapiocaAdapterPydanticMixin",
+    "TapiocaAdapterXML",
+    "TapiocaAdapterXMLMixin",
+    "ClientError",
+    "ResponseProcessException",
+    "ServerError",
+    "TapiocaException",
+    "generate_wrapper_from_adapter",
     "BaseSerializer",
     "SimpleSerializer",
 )
