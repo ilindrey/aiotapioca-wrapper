@@ -22,7 +22,7 @@ from .base import (
 class TapiocaClient(BaseTapiocaClient):
     def __dir__(self):
         resource_mapping = self._api.get_resource_mapping(self._api_params)
-        if self._api and self._data is None:
+        if self._api:
             return [key for key in resource_mapping.keys()]
         return []
 
@@ -109,12 +109,11 @@ class TapiocaClientResource(BaseTapiocaResourceClient):
         resource = copy(self._resource or {})
         docs = (
             "Automatic generated __doc__ from resource_mapping.\n"
-            "Resource: %s\n"
-            "Docs: %s\n"
-            % (resource.pop("resource", ""), resource.pop("docs", ""))
+            f"Resource: {resource.pop('resource', '')}\n"
+            f"Docs: {resource.pop('docs', '')}\n"
         )
         for key, value in sorted(resource.items()):
-            docs += "%s: %s\n" % (key.title(), value)
+            docs += f"{key.title()}: {value}\n"
         docs = docs.strip()
         return docs
 
@@ -134,7 +133,7 @@ class TapiocaClientResource(BaseTapiocaResourceClient):
 
 class TapiocaClientExecutor(BaseTapiocaExecutorClient):
     def __str__(self):
-        return f"<{type(self).__name__} object: {self._response or ''}>"
+        return f"<{type(self).__name__} object: {self._path}>"
 
     def __getitem__(self, key):
         raise TapiocaException(
@@ -364,12 +363,7 @@ class TapiocaClientExecutor(BaseTapiocaExecutorClient):
 
 class TapiocaClientResponse(BaseTapiocaResponseClient):
     def __str__(self):
-        if type(self._data) is OrderedDict:
-            return f"<{type(self).__name__} object, printing as dict: {dumps(self._data).decode('utf-8')}>"
-        else:
-            from pprint import PrettyPrinter
-            pp = PrettyPrinter(indent=4)
-            return f"<{type(self).__name__} object: {pp.pformat(self._data)}>"
+        return f"<{type(self).__name__} object: {self._response}>"
 
     def __call__(self, *args, **kwargs):
         return self._wrap_in_tapioca_executor()

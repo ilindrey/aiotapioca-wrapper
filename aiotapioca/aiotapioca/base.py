@@ -1,6 +1,7 @@
 
 from aiohttp import ClientSession
 
+
 class BaseTapiocaClient:
     def __init__(self, api, session=None, api_params=None, *args, **kwargs):
         self._api = api
