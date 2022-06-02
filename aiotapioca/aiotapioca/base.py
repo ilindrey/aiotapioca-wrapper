@@ -1,4 +1,5 @@
 
+from aiohttp import ClientSession
 
 class BaseTapiocaClient:
     def __init__(self, api, session=None, api_params=None, *args, **kwargs):
@@ -8,6 +9,15 @@ class BaseTapiocaClient:
 
     def __str__(self):
         return f"<{type(self).__name__} object>"
+
+    @property
+    def closed(self):
+        return self._session is None or self._session.closed
+
+    async def initialize(self):
+        if self.closed:
+            self._session = ClientSession()
+        return self
 
     def _repr_pretty_(self, p, cycle):  # IPython
         p.text(self.__str__())
@@ -28,11 +38,17 @@ class BaseTapiocaClient:
 
 
 class BaseTapiocaResourceClient(BaseTapiocaClient):
-    def __init__(self, path=None, resource=None, resource_name=None, *args, **kwargs):
+    def __init__(self, client = None, path=None, resource=None, resource_name=None, *args, **kwargs):
+        self._client = client
         self._path = path
         self._resource = resource
         self._resource_name = resource_name
         super().__init__(*args, **kwargs)
+
+    async def initialize(self):
+        await super().initialize()
+        self._client._session = self._session
+        return self._client
 
     def _wrap_in_tapioca_executor(self, *args, **kwargs):
         context = self._get_context(**kwargs)

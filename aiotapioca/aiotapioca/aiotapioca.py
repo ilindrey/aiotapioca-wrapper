@@ -1,7 +1,6 @@
 import re
 import webbrowser
-from asyncio import Semaphore, gather
-from asyncio import run as asyncio_run
+from asyncio import Semaphore, gather, get_event_loop
 from collections import OrderedDict
 from copy import copy
 from functools import partial
@@ -27,13 +26,6 @@ class TapiocaClient(BaseTapiocaClient):
             return [key for key in resource_mapping.keys()]
         return []
 
-    async def __aenter__(self):
-        await self._init_session()
-        return self
-
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        await self._close_session()
-
     def __getattr__(self, name):
         # Fix to be pickle-able:
         # return None for all unimplemented dunder methods
@@ -44,16 +36,29 @@ class TapiocaClient(BaseTapiocaClient):
             raise AttributeError(name)
         return result
 
-    # def __del__(self):
-    #     asyncio_run(self._close_session())
+    async def __aenter__(self):
+        return await self.initialize()
 
-    async def _init_session(self):
-        if self._session is None:
-            self._session = ClientSession()
-        return self._session
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self.close()
 
-    async def _close_session(self):
-        if self._session is not None:
+    def __await__(self):
+        return self.initialize().__await__()
+
+    def __del__(self):
+        try:
+            if not self.closed:
+                loop = get_event_loop()
+                coro = self.close()
+                if loop.is_running():
+                    loop.create_task(coro)
+                else:
+                    loop.run_until_complete(coro)
+        except Exception:
+            pass
+
+    async def close(self):
+        if not self.closed:
             await self._session.close()
 
     def _get_client_resource_from_name_or_fallback(self, name):
@@ -69,6 +74,11 @@ class TapiocaClient(BaseTapiocaClient):
             )
 
         return None
+
+    def _get_context(self, **kwargs):
+        context = super()._get_context(**kwargs)
+        context['client'] = self
+        return context
 
 
 class TapiocaClientResource(BaseTapiocaResourceClient):
@@ -266,6 +276,7 @@ class TapiocaClientExecutor(BaseTapiocaExecutorClient):
         response = context["response"]
 
         try:
+            await self.initialize()
             request_kwargs = self._api.get_request_kwargs(*args, **context)
             response = await self._session.request(request_method, **request_kwargs)
             context.update({"response": response, "request_kwargs": request_kwargs})
@@ -275,13 +286,12 @@ class TapiocaClientExecutor(BaseTapiocaExecutorClient):
 
             repeat_number += 1
 
-            executor = self._wrap_in_tapioca_executor(
-                data=ex.data, response=response, request_kwargs=request_kwargs
-            )
+            self._response = response
+            self._data = getattr(ex, 'data', None)
+            self._request_kwargs = request_kwargs
 
             context.update(
                 {
-                    "executor": executor,
                     "response": response,
                     "request_kwargs": request_kwargs,
                     "repeat_number": repeat_number,
@@ -355,10 +365,9 @@ class TapiocaClientExecutor(BaseTapiocaExecutorClient):
 class TapiocaClientResponse(BaseTapiocaResponseClient):
     def __str__(self):
         if type(self._data) is OrderedDict:
-            return f"<{type(self).__name__} object, printing as dict: {dumps(self._data, indent=4).decode('utf-8')}>"
+            return f"<{type(self).__name__} object, printing as dict: {dumps(self._data).decode('utf-8')}>"
         else:
             from pprint import PrettyPrinter
-
             pp = PrettyPrinter(indent=4)
             return f"<{type(self).__name__} object: {pp.pformat(self._data)}>"
 
