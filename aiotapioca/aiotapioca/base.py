@@ -1,6 +1,7 @@
 
 from aiohttp import ClientSession
 from orjson import dumps
+from asyncio_atexit import register as atexit_register
 
 
 class BaseTapiocaClient:
@@ -19,7 +20,12 @@ class BaseTapiocaClient:
     async def initialize(self):
         if self.closed:
             self._session = ClientSession(json_serialize=dumps)
+            atexit_register(self.close)
         return self
+
+    async def close(self):
+        if not self.closed:
+            await self._session.close()
 
     def _repr_pretty_(self, p, cycle):  # IPython
         p.text(self.__str__())

@@ -28,6 +28,7 @@ requirements = [
     "orjson>=3.0.0",
     "pydantic>=1.0.0",
     "xmltodict>=0.9.2",
+    "asyncio_atexit>=1.0,<2.0"
 ]
 test_requirements = [
     "aioresponses>=0.7",

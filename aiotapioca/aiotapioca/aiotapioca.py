@@ -57,10 +57,6 @@ class TapiocaClient(BaseTapiocaClient):
         except Exception:
             pass
 
-    async def close(self):
-        if not self.closed:
-            await self._session.close()
-
     def _get_client_resource_from_name_or_fallback(self, name):
 
         # if could not access, falback to resource mapping
