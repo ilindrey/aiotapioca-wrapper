@@ -1,5 +1,6 @@
 
 from aiohttp import ClientSession
+from orjson import dumps
 
 
 class BaseTapiocaClient:
@@ -17,7 +18,7 @@ class BaseTapiocaClient:
 
     async def initialize(self):
         if self.closed:
-            self._session = ClientSession()
+            self._session = ClientSession(json_serialize=dumps)
         return self
 
     def _repr_pretty_(self, p, cycle):  # IPython
