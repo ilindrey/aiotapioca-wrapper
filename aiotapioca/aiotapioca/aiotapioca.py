@@ -1,28 +1,23 @@
 import re
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
-from collections import OrderedDict
-from copy import copy
 from functools import partial
 from inspect import isclass, iscoroutinefunction, isfunction
-
-from aiohttp import ClientSession
-from orjson import dumps
 
 from aiotapioca.exceptions import ResponseProcessException, TapiocaException
 
 from .base import (
     BaseTapiocaClient,
-    BaseTapiocaExecutorClient,
-    BaseTapiocaResourceClient,
-    BaseTapiocaResponseClient,
+    BaseTapiocaClientExecutor,
+    BaseTapiocaClientResource,
+    BaseTapiocaClientResponse,
 )
 
 
 class TapiocaClient(BaseTapiocaClient):
     def __dir__(self):
         resource_mapping = self._api.get_resource_mapping(self._api_params)
-        if self._api:
+        if resource_mapping:
             return [key for key in resource_mapping.keys()]
         return []
 
@@ -57,6 +52,11 @@ class TapiocaClient(BaseTapiocaClient):
         except Exception:
             pass
 
+    def _get_context(self, **kwargs):
+        context = super()._get_context(**kwargs)
+        context['client'] = self
+        return context
+
     def _get_client_resource_from_name_or_fallback(self, name):
 
         # if could not access, falback to resource mapping
@@ -71,13 +71,8 @@ class TapiocaClient(BaseTapiocaClient):
 
         return None
 
-    def _get_context(self, **kwargs):
-        context = super()._get_context(**kwargs)
-        context['client'] = self
-        return context
 
-
-class TapiocaClientResource(BaseTapiocaResourceClient):
+class TapiocaClientResource(BaseTapiocaClientResource):
     def __str__(self):
         return f"<{type(self).__name__} object: {self._resource['resource']}>"
 
@@ -101,33 +96,8 @@ class TapiocaClientResource(BaseTapiocaResourceClient):
 
         return self._wrap_in_tapioca_executor(path=path)
 
-    def _get_doc(self):
-        resource = copy(self._resource or {})
-        docs = (
-            "Automatic generated __doc__ from resource_mapping.\n"
-            f"Resource: {resource.pop('resource', '')}\n"
-            f"Docs: {resource.pop('docs', '')}\n"
-        )
-        for key, value in sorted(resource.items()):
-            docs += f"{key.title()}: {value}\n"
-        docs = docs.strip()
-        return docs
 
-    __doc__ = property(_get_doc)
-
-    def open_docs(self):
-        if not self._resource:
-            raise ValueError()
-
-        new = 2  # open in new tab
-        webbrowser.open(self._resource["docs"], new=new)
-
-    def open_in_browser(self):
-        new = 2  # open in new tab
-        webbrowser.open(self._data, new=new)
-
-
-class TapiocaClientExecutor(BaseTapiocaExecutorClient):
+class TapiocaClientExecutor(BaseTapiocaClientExecutor):
     def __str__(self):
         return f"<{type(self).__name__} object: {self._path}>"
 
@@ -357,7 +327,7 @@ class TapiocaClientExecutor(BaseTapiocaExecutorClient):
         return result
 
 
-class TapiocaClientResponse(BaseTapiocaResponseClient):
+class TapiocaClientResponse(BaseTapiocaClientResponse):
     def __str__(self):
         return f"<{type(self).__name__} object: {self._response}>"
 
@@ -378,7 +348,7 @@ class TapiocaClientResponse(BaseTapiocaResponseClient):
         if name.startswith("to_"):  # deserializing
             method = self._resource.get(name)
             kwargs = method.get("params", {}) if method else {}
-            return self._api._get_to_native_method(name, self._data, **kwargs)
+            return self._api.get_to_native_method(name, self._data, **kwargs)
         return self._wrap_in_tapioca_response(getattr(self._data, name))
 
     def __getitem__(self, key):
@@ -401,6 +371,10 @@ class TapiocaClientResponse(BaseTapiocaResponseClient):
 
     def __contains__(self, key):
         return key in self._data
+
+    def open_in_browser(self):
+        new = 2  # open in new tab
+        webbrowser.open(self._data, new=new)
 
     @property
     def data(self):

@@ -14,6 +14,8 @@ class TapiocaAdapter:
     max_retries_requests = 10
     semaphore = 10
     refresh_token = False
+    resource_mapping = None
+    api_root = None
 
     def __init__(self, serializer_class=None, *args, **kwargs):
         if serializer_class:
@@ -21,34 +23,34 @@ class TapiocaAdapter:
         else:
             self.serializer = self.get_serializer()
 
-    def _get_to_native_method(self, method_name, value, **default_kwargs):
+    def get_api_root(self, api_params, **kwargs):
+        return self.api_root or ''
+
+    def get_resource_mapping(self, api_params, **kwargs):
+        return self.resource_mapping or {}
+
+    def get_serializer(self):
+        if self.serializer_class:
+            return self.serializer_class()
+
+    def get_to_native_method(self, method_name, value, **default_kwargs):
         if not self.serializer:
             raise NotImplementedError("This client does not have a serializer")
 
         def to_native_wrapper(**kwargs):
             params = default_kwargs or {}
             params.update(kwargs)
-            return self._value_to_native(method_name, value, **params)
+            return self.value_to_native(method_name, value, **params)
 
         return to_native_wrapper
 
-    def _value_to_native(self, method_name, value, **kwargs):
+    def value_to_native(self, method_name, value, **kwargs):
         return self.serializer.deserialize(method_name, value, **kwargs)
-
-    def get_serializer(self):
-        if self.serializer_class:
-            return self.serializer_class()
 
     def serialize_data(self, data, **kwargs):
         if self.serializer:
             return self.serializer.serialize(data)
         return data
-
-    def get_api_root(self, api_params, **kwargs):
-        return self.api_root
-
-    def get_resource_mapping(self, api_params, **kwargs):
-        return self.resource_mapping
 
     def fill_resource_template_url(self, template, url_params, **kwargs):
         if isinstance(template, str):
@@ -79,14 +81,14 @@ class TapiocaAdapter:
     def response_to_native(self, response, **kwargs):
         raise NotImplementedError()
 
+    def get_error_message(self, data, response, **kwargs):
+        return str(data)
+
     def raise_response_error(self, message, data, response, **kwargs):
         if 400 <= response.status < 500:
             raise ClientError(message, data, response, **kwargs)
         elif 500 <= response.status < 600:
             raise ServerError(message, data, response, **kwargs)
-
-    def get_error_message(self, data, response, **kwargs):
-        return str(data)
 
     def get_iterator_list(self, data, **kwargs):
         raise NotImplementedError()
