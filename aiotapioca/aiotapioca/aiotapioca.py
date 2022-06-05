@@ -233,7 +233,6 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
             repeat_number=repeat_number,
             request_kwargs={**request_kwargs},
         )
-        # del context["client"]
         del context["data"]
 
         data = None
@@ -242,7 +241,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
         try:
             await self.initialize()
-            request_kwargs = self._api.get_request_kwargs(*args, **context)
+            request_kwargs = await self._coro_wrap(self._api.get_request_kwargs, *args, **context)
             response = await self._session.request(request_method, **request_kwargs)
             context.update({"response": response, "request_kwargs": request_kwargs})
             data = await self._coro_wrap(self._api.process_response, **context)

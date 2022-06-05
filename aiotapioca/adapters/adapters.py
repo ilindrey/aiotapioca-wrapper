@@ -1,5 +1,6 @@
 from aiotapioca.exceptions import ClientError, ServerError
 from aiotapioca.serializers import SimpleSerializer
+from asyncio import to_thread
 
 from .mixins import (
     TapiocaAdapterFormMixin,
@@ -16,6 +17,8 @@ class TapiocaAdapter:
     refresh_token = False
     resource_mapping = None
     api_root = None
+    to_thread_data_to_request = True
+    to_thread_response_to_native = True
 
     def __init__(self, serializer_class=None, *args, **kwargs):
         if serializer_class:
@@ -47,7 +50,7 @@ class TapiocaAdapter:
     def value_to_native(self, method_name, value, **kwargs):
         return self.serializer.deserialize(method_name, value, **kwargs)
 
-    def serialize_data(self, data, **kwargs):
+    def serialize_data(self, data, *args, **kwargs):
         if self.serializer:
             return self.serializer.serialize(data)
         return data
@@ -58,27 +61,52 @@ class TapiocaAdapter:
         else:
             return template
 
-    def get_request_kwargs(self, *args, **kwargs):
+    async def get_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
-        serialized = self.serialize_data(request_kwargs.get("data"), **kwargs)
-        request_kwargs.update(
-            {
-                "data": self.format_data_to_request(serialized, *args, **kwargs),
-            }
-        )
+        request_kwargs.update(await self.prepare_request_kwargs(*args, **kwargs))
+        request_kwargs['data'] = await self.data_to_request(request_kwargs.get("data"), *args, **kwargs)
         return request_kwargs
+
+    async def prepare_request_kwargs(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    async def data_to_request(self, data, *args, **kwargs):
+        if not data:
+            return None
+        if self.to_thread_data_to_request:
+            data = await to_thread(self.prepare_request_data, data, *args, **kwargs)
+        else:
+            data = self.prepare_request_data(data, *args, **kwargs)
+        return data
+
+    def prepare_request_data(self, data, *args, **kwargs):
+        serialized = self.serialize_data(data, *args, **kwargs)
+        return self.format_data_to_request(serialized, *args, **kwargs)
 
     def format_data_to_request(self, data, *args, **kwargs):
         raise NotImplementedError()
 
     async def process_response(self, response, **kwargs):
-        data = await self.response_to_native(response, **kwargs)
+        non_native_data = await self.get_response_data(response, **kwargs)
+        data = await self.response_to_native(non_native_data, response, **kwargs)
         if 400 <= response.status < 600:
             message = self.get_error_message(data, response, **kwargs)
             self.raise_response_error(message, data, response, **kwargs)
         return data
 
-    def response_to_native(self, response, **kwargs):
+    async def get_response_data(self, response, **kwargs):
+        return await response.text()
+
+    async def response_to_native(self, non_native_data, response, **kwargs):
+        if not non_native_data:
+            return None
+        if self.to_thread_response_to_native:
+            data = await to_thread(self.format_response_data_to_native, non_native_data, response, **kwargs)
+        else:
+            data = self.format_response_data_to_native(non_native_data, response,  **kwargs)
+        return data
+
+    def format_response_data_to_native(self, non_native_data, response, **kwargs):
         raise NotImplementedError()
 
     def get_error_message(self, data, response, **kwargs):
@@ -112,18 +140,20 @@ class TapiocaAdapter:
 
 
 class TapiocaAdapterForm(TapiocaAdapterFormMixin, TapiocaAdapter):
+
     pass
 
 
 class TapiocaAdapterJSON(TapiocaAdapterJSONMixin, TapiocaAdapter):
-    def get_request_kwargs(self, *args, **kwargs):
-        request_kwargs = super().get_request_kwargs(*args, **kwargs)
-        return request_kwargs
+
+    pass
 
 
-class TapiocaAdapterPydantic(TapiocaAdapterPydanticMixin, TapiocaAdapterJSON):
+class TapiocaAdapterPydantic(TapiocaAdapterPydanticMixin, TapiocaAdapter):
+
     pass
 
 
 class TapiocaAdapterXML(TapiocaAdapterXMLMixin, TapiocaAdapter):
+
     pass

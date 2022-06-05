@@ -10,12 +10,12 @@ class TapiocaAdapterFormMixin:
     def format_data_to_request(self, data, *args, **kwargs):
         return data
 
-    async def response_to_native(self, response, **kwargs):
-        return {"text": await response.text()}
+    def format_response_data_to_native(self, non_native_data, response, **kwargs):
+        return {"text": non_native_data}
 
 
 class TapiocaAdapterJSONMixin:
-    def get_request_kwargs(self, *args, **kwargs):
+    async def prepare_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
         if "headers" not in request_kwargs:
             request_kwargs["headers"] = {}
@@ -26,14 +26,13 @@ class TapiocaAdapterJSONMixin:
         if data:
             return dumps(data)
 
-    async def response_to_native(self, response, **kwargs):
-        text = await response.text()
-        if not text:
+    def format_response_data_to_native(self, non_native_data, response, **kwargs):
+        if not non_native_data:
             return None
         try:
-            return loads(text)
+            return loads(non_native_data)
         except JSONDecodeError:
-            return text
+            return non_native_data
 
     def get_error_message(self, data, response, **kwargs):
         if isinstance(data, dict):
@@ -64,8 +63,10 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
                 return dumps(asdict(data))
             return dumps(data)
 
-    async def response_to_native(self, response, **kwargs):
-        data = await super().response_to_native(response, **kwargs)
+    def format_response_data_to_native(self, non_native_data, response, **kwargs):
+        data = super().format_response_data_to_native(non_native_data, response, **kwargs)
+        if not data:
+            return None
         if isinstance(data, str):
             return data
         if self.validate_data_received and response.status == 200:
@@ -148,7 +149,7 @@ class TapiocaAdapterXMLMixin:
                 "in xmltodict spec: \n%s" % e.message
             )
 
-    def get_request_kwargs(self, *args, **kwargs):
+    def prepare_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
 
         # stores kwargs prefixed with 'xmltodict_unparse__' for use by xmltodict.unparse
@@ -175,9 +176,8 @@ class TapiocaAdapterXMLMixin:
         if data:
             return self._input_branches_to_xml_bytestring(data)
 
-    async def response_to_native(self, response, **kwargs):
-        if response:
-            text = await response.text()
+    def format_response_data_to_native(self, non_native_data, response, **kwargs):
+        if non_native_data:
             if "xml" in response.headers["content-type"]:
-                return xmltodict.parse(text, **self._xmltodict_parse_kwargs)
-            return text
+                return xmltodict.parse(non_native_data, **self._xmltodict_parse_kwargs)
+            return non_native_data
