@@ -18,7 +18,7 @@ class BaseTapiocaClient:
 
     @property
     def closed(self):
-        return self._session is None or hasattr(self._session, 'closed') and self._session.closed
+        return self._session is None or type(self._session) is ClientSession and self._session.closed
 
     async def initialize(self):
         if self.closed:
