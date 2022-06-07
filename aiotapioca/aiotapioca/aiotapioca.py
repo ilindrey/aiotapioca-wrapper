@@ -6,6 +6,7 @@ from inspect import isclass, iscoroutinefunction, isfunction
 
 from aiotapioca.exceptions import ResponseProcessException, TapiocaException
 
+from ..utils import coro_wrap
 from .base import (
     BaseTapiocaClient,
     BaseTapiocaClientExecutor,
@@ -241,10 +242,10 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
         try:
             await self.initialize()
-            request_kwargs = await self._coro_wrap(self._api.get_request_kwargs, *args, **context)
+            request_kwargs = await coro_wrap(self._api.prepare_request_kwargs, *args, **context)
             response = await self._session.request(request_method, **request_kwargs)
             context.update({"response": response, "request_kwargs": request_kwargs})
-            data = await self._coro_wrap(self._api.process_response, **context)
+            data = await coro_wrap(self._api.process_response, **context)
             context["data"] = data
         except ResponseProcessException as ex:
 
@@ -264,15 +265,15 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
             )
 
             if repeat_number > self._api.max_retries_requests:
-                await self._coro_wrap(self._api.error_handling, ex, **context)
+                await coro_wrap(self._api.error_handling, ex, **context)
 
             propagate_exception = True
 
-            auth_expired = await self._coro_wrap(
+            auth_expired = await coro_wrap(
                 self._api.is_authentication_expired, ex, **context
             )
             if refresh_token and auth_expired:
-                self._refresh_data = await self._coro_wrap(
+                self._refresh_data = await coro_wrap(
                     self._api.refresh_authentication, ex, **context
                 )
                 if self._refresh_data:
@@ -285,7 +286,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
                         **kwargs,
                     )
 
-            if await self._coro_wrap(self._api.retry_request, ex, **context):
+            if await coro_wrap(self._api.retry_request, ex, **context):
                 propagate_exception = False
                 return await self._make_request(
                     request_method,
@@ -296,10 +297,10 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
                 )
 
             if propagate_exception:
-                await self._coro_wrap(self._api.error_handling, ex, **context)
+                await coro_wrap(self._api.error_handling, ex, **context)
 
         except Exception as ex:
-            await self._coro_wrap(self._api.error_handling, ex, *args, **context)
+            await coro_wrap(self._api.error_handling, ex, *args, **context)
 
         return self._wrap_in_tapioca_response(data=data, response=response, request_kwargs=request_kwargs)
 
@@ -313,17 +314,9 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         return self._api.get_iterator_list(**self._get_context())
 
     async def _get_iterator_next_request_kwargs(self):
-        return await self._coro_wrap(
+        return await coro_wrap(
             self._api.get_iterator_next_request_kwargs, **self._get_context()
         )
-
-    @staticmethod
-    async def _coro_wrap(func, *args, **kwargs):
-        if iscoroutinefunction(func):
-            result = await func(*args, **kwargs)
-        else:
-            result = func(*args, **kwargs)
-        return result
 
 
 class TapiocaClientResponse(BaseTapiocaClientResponse):

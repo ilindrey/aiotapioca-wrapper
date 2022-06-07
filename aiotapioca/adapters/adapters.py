@@ -2,6 +2,7 @@ from aiotapioca.exceptions import ClientError, ServerError
 from aiotapioca.serializers import SimpleSerializer
 from asyncio import to_thread
 
+from ..utils import coro_wrap
 from .mixins import (
     TapiocaAdapterFormMixin,
     TapiocaAdapterJSONMixin,
@@ -61,13 +62,14 @@ class TapiocaAdapter:
         else:
             return template
 
-    async def get_request_kwargs(self, *args, **kwargs):
+    async def prepare_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
-        request_kwargs.update(await self.prepare_request_kwargs(*args, **kwargs))
+        request_params = await coro_wrap(self.get_request_kwargs, *args, **kwargs)
+        request_kwargs.update(request_params)
         request_kwargs['data'] = await self.data_to_request(request_kwargs.get("data"), *args, **kwargs)
         return request_kwargs
 
-    async def prepare_request_kwargs(self, *args, **kwargs):
+    def get_request_kwargs(self, *args, **kwargs):
         raise NotImplementedError()
 
     async def data_to_request(self, data, *args, **kwargs):

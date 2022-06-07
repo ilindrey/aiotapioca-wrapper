@@ -15,7 +15,7 @@ class TapiocaAdapterFormMixin:
 
 
 class TapiocaAdapterJSONMixin:
-    async def prepare_request_kwargs(self, *args, **kwargs):
+    def get_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
         if "headers" not in request_kwargs:
             request_kwargs["headers"] = {}
@@ -149,7 +149,7 @@ class TapiocaAdapterXMLMixin:
                 "in xmltodict spec: \n%s" % e.message
             )
 
-    def prepare_request_kwargs(self, *args, **kwargs):
+    def get_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
 
         # stores kwargs prefixed with 'xmltodict_unparse__' for use by xmltodict.unparse
