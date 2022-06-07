@@ -86,26 +86,6 @@ class BaseTapiocaClientResource(BaseTapiocaClient):
         self._client._session = self._session
         return self._client
 
-    def _get_doc(self):
-        resource = copy(self._resource or {})
-        docs = (
-            "Automatic generated __doc__ from resource_mapping.\n"
-            f"Resource: {resource.pop('resource', '')}\n"
-            f"Docs: {resource.pop('docs', '')}\n"
-        )
-        for key, value in sorted(resource.items()):
-            docs += f"{key.title()}: {value}\n"
-        docs = docs.strip()
-        return docs
-
-    __doc__ = property(_get_doc)
-
-    def open_docs(self):
-        if not self._resource:
-            raise ValueError()
-        new = 2  # open in new tab
-        webbrowser.open(self._resource["docs"], new=new)
-
     def _wrap_in_tapioca_executor(self, **kwargs) -> "TapiocaClientExecutor":
         context = self._get_context(**kwargs)
         from .aiotapioca import TapiocaClientExecutor

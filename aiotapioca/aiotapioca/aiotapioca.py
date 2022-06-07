@@ -72,7 +72,6 @@ class TapiocaClient(BaseTapiocaClient):
 
         return None
 
-
 class TapiocaClientResource(BaseTapiocaClientResource):
     def __str__(self):
         return f"<{type(self).__name__} object: {self._resource['resource']}>"
@@ -97,6 +96,26 @@ class TapiocaClientResource(BaseTapiocaClientResource):
 
         return self._wrap_in_tapioca_executor(path=path)
 
+    def _get_doc(self):
+        from copy import copy
+        resource = copy(self._resource or {})
+        docs = (
+            "Automatic generated __doc__ from resource_mapping.\n"
+            f"Resource: {resource.pop('resource', '')}\n"
+            f"Docs: {resource.pop('docs', '')}\n"
+        )
+        for key, value in sorted(resource.items()):
+            docs += f"{key.title()}: {value}\n"
+        docs = docs.strip()
+        return docs
+
+    __doc__ = property(_get_doc)
+
+    def open_docs(self):
+        if not self._resource:
+            raise ValueError()
+        new = 2  # open in new tab
+        webbrowser.open(self._resource["docs"], new=new)
 
 class TapiocaClientExecutor(BaseTapiocaClientExecutor):
     def __str__(self):

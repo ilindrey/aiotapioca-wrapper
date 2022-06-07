@@ -65,8 +65,6 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
         data = super().format_response_data_to_native(non_native_data, response, **kwargs)
-        if not data:
-            return None
         if isinstance(data, str):
             return data
         if self.validate_data_received and response.status == 200:
