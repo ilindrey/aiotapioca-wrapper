@@ -2,7 +2,7 @@ import re
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
 from functools import partial
-from inspect import isclass, iscoroutinefunction, isfunction
+from inspect import isclass, isfunction
 
 from aiotapioca.exceptions import ResponseProcessException, TapiocaException
 
@@ -367,24 +367,6 @@ class TapiocaClientResponse(BaseTapiocaClientResponse):
     def open_in_browser(self):
         new = 2  # open in new tab
         webbrowser.open(self._data, new=new)
-
-    @property
-    def data(self):
-        return self._data
-
-    @property
-    def response(self):
-        if self._response is None:
-            raise TapiocaException("This instance has no response object.")
-        return self._response
-
-    @property
-    def status(self):
-        return self.response.status
-
-    @property
-    def url(self):
-        return self.response.url
 
     def _to_camel_case(self, name):
         """

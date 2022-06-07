@@ -6,6 +6,7 @@ from aiohttp import ClientSession
 from orjson import dumps
 from asyncio_atexit import register as atexit_register
 
+from aiotapioca.exceptions import TapiocaException
 
 class BaseTapiocaClient:
     def __init__(self, api, session=None, api_params=None, *args, **kwargs):
@@ -15,6 +16,14 @@ class BaseTapiocaClient:
 
     def __str__(self):
         return f"<{type(self).__name__} object>"
+
+    @property
+    def session(self):
+        return self._session
+
+    @property
+    def api_params(self):
+        return self._api_params
 
     @property
     def closed(self):
@@ -50,11 +59,27 @@ class BaseTapiocaClient:
 
 class BaseTapiocaClientResource(BaseTapiocaClient):
     def __init__(self, client, path=None, resource=None, resource_name=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._client = client
         self._path = path or ''
         self._resource = resource or {}
         self._resource_name = resource_name
-        super().__init__(*args, **kwargs)
+
+    @property
+    def client(self):
+        return self._client
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def resource(self):
+        return self._resource
+
+    @property
+    def resource_name(self):
+        return self._resource_name
 
     async def initialize(self):
         await super().initialize()
@@ -89,10 +114,32 @@ class BaseTapiocaClientResource(BaseTapiocaClient):
 
 class BaseTapiocaClientExecutor(BaseTapiocaClientResource):
     def __init__(self, response=None, data=None, request_kwargs=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._response = response
         self._data = data
         self._request_kwargs = request_kwargs or {}
-        super().__init__(*args, **kwargs)
+
+    @property
+    def response(self):
+        if self._response is None:
+            raise TapiocaException("This instance has no response object.")
+        return self._response
+
+    @property
+    def status(self):
+        return self.response.status
+
+    @property
+    def url(self):
+        return self.response.url
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def request_kwargs(self):
+        return self._request_kwargs
 
     def _wrap_in_tapioca_response(self, **kwargs) -> "TapiocaClientResponse":
         context = self._get_context(**kwargs)
@@ -103,3 +150,4 @@ class BaseTapiocaClientExecutor(BaseTapiocaClientResource):
 class BaseTapiocaClientResponse(BaseTapiocaClientExecutor):
 
     pass
+
