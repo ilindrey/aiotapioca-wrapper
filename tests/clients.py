@@ -1,9 +1,8 @@
 from aiotapioca import (
-    JSONAdapterMixin,
-    PydanticAdapterMixin,
+    TapiocaAdapterJSON,
+    TapiocaAdapterPydantic,
+    TapiocaAdapterXML,
     SimpleSerializer,
-    TapiocaAdapter,
-    XMLAdapterMixin,
     generate_wrapper_from_adapter,
 )
 
@@ -43,7 +42,7 @@ RESOURCE_MAPPING = {
 }
 
 
-class SimpleClientAdapter(JSONAdapterMixin, TapiocaAdapter):
+class SimpleClientAdapter(TapiocaAdapterJSON):
     serializer_class = None
     api_root = "https://api.example.org"
     resource_mapping = RESOURCE_MAPPING
@@ -91,7 +90,7 @@ class SerializerClientAdapter(SimpleClientAdapter):
 SerializerClient = generate_wrapper_from_adapter(SerializerClientAdapter)
 
 
-class XMLClientAdapter(XMLAdapterMixin, TapiocaAdapter):
+class XMLClientAdapter(TapiocaAdapterXML):
     api_root = "https://api.example.org"
     resource_mapping = RESOURCE_MAPPING
 
@@ -194,7 +193,7 @@ DictParserClient = generate_wrapper_from_adapter(DictParserClientAdapter)
 # pydantic
 
 
-class PydanticDefaultClientAdapter(PydanticAdapterMixin, TapiocaAdapter):
+class PydanticDefaultClientAdapter(TapiocaAdapterPydantic):
     api_root = "https://api.example.org"
     resource_mapping = {
         "test": {

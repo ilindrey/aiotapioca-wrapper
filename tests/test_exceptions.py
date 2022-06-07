@@ -8,7 +8,7 @@ from .clients import SimpleClientAdapter
 
 async def test_exception_contain_data(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": {"key": "value"}}',
         status=400,
         content_type="application/json",
@@ -20,7 +20,7 @@ async def test_exception_contain_data(mocked, client):
 
 
 async def test_exception_contain_response(mocked, client):
-    mocked.get(client.test().data, body="", status=400, content_type="application/json")
+    mocked.get(client.test().path, body="", status=400, content_type="application/json")
     try:
         await client.test().get()
     except ResponseProcessException as ex:
@@ -29,7 +29,7 @@ async def test_exception_contain_response(mocked, client):
 
 
 async def test_exception_message(mocked, client):
-    mocked.get(client.test().data, body="", status=400, content_type="application/json")
+    mocked.get(client.test().path, body="", status=400, content_type="application/json")
     try:
         await client.test().get()
     except ResponseProcessException as ex:
@@ -38,33 +38,33 @@ async def test_exception_message(mocked, client):
 
 async def test_adapter_raises_response_process_exception_on_400s(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"errors": "Server Error"}',
         status=400,
         content_type="application/json",
     )
     async with aiohttp.ClientSession() as session:
-        response = await session.get(client.test().data)
+        response = await session.get(client.test().path)
     with pytest.raises(ResponseProcessException):
         await SimpleClientAdapter().process_response(response)
 
 
 async def test_adapter_raises_response_process_exception_on_500s(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"errors": "Server Error"}',
         status=500,
         content_type="application/json",
     )
     async with aiohttp.ClientSession() as session:
-        response = await session.get(client.test().data)
+        response = await session.get(client.test().path)
     with pytest.raises(ResponseProcessException):
         await SimpleClientAdapter().process_response(response)
 
 
 async def test_thrown_tapioca_exception_with_client_error_data(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"error": "bad request test"}',
         status=400,
         content_type="application/json",
@@ -76,7 +76,7 @@ async def test_thrown_tapioca_exception_with_client_error_data(mocked, client):
 
 async def test_thrown_tapioca_exception_with_server_error_data(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"error": "server error test"}',
         status=500,
         content_type="application/json",
