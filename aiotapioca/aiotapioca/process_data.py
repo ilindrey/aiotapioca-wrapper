@@ -2,6 +2,9 @@ import re
 import webbrowser
 from functools import partial
 from inspect import isclass, isfunction
+from collections import OrderedDict
+
+from orjson import dumps
 
 
 class ProcessData:
@@ -28,6 +31,14 @@ class ProcessData:
             methods += [m.__name__ for m in parsers if not isinstance(parsers, dict)]
         methods += [m for m in dir(self._api.serializer) if m.startswith("to_")]
         return methods
+
+    def __str__(self):
+        if type(self._data) == OrderedDict:
+            return f"<{type(self).__name__} object, printing as dict:\n{dumps(self._data).decode('utf-8')}>"
+        else:
+            from pprint import PrettyPrinter
+            pp = PrettyPrinter(indent=4)
+            return f"<{type(self).__name__} object:\n{pp.pformat(self._data)}>"
 
     def __getattr__(self, name):
         # Fix to be pickle-able:
