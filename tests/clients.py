@@ -65,7 +65,7 @@ class SimpleClientAdapter(TapiocaAdapterJSON):
         url = paging.get("next")
 
         if url:
-            return {"url": url}
+            return { **request_kwargs, "url": url}
 
 
 SimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter)

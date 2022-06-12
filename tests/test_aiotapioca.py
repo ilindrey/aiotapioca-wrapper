@@ -1,39 +1,26 @@
 import pickle
-from collections import OrderedDict
 from itertools import product
 
 import orjson
 import pytest
 import pytest_asyncio
-import xmltodict
-from aiohttp.client_reqrep import ClientResponse
-from pydantic import BaseModel
-from yarl import URL
 
-from aiotapioca.adapters import TapiocaAdapter, generate_wrapper_from_adapter
-from aiotapioca.aiotapioca import TapiocaClient, TapiocaClientExecutor
 from aiotapioca.exceptions import ClientError, ServerError
-from aiotapioca.serializers import SimpleSerializer
+from aiotapioca.aiotapioca import TapiocaClientResponse
+from aiotapioca.aiotapioca.process_data import ProcessData
 
 from .callbacks import callback_201, callback_401
 from .clients import (
     ClassParserClient,
-    CustomModel,
-    CustomModelDT,
     DictParserClient,
     FailTokenRefreshClient,
     FuncParserClient,
     NoneSemaphoreClient,
-    PydanticDefaultClientAdapter,
-    PydanticForcedClient,
     RetryRequestClient,
-    RootModel,
-    RootModelDT,
     SimpleClient,
     StaticMethodParserClient,
     TokenRefreshByDefaultClient,
     TokenRefreshClient,
-    XMLClient,
 )
 
 
@@ -41,13 +28,6 @@ from .clients import (
 async def retry_request_client():
     async with RetryRequestClient() as c:
         yield c
-
-
-@pytest_asyncio.fixture
-async def xml_client():
-    async with XMLClient() as c:
-        yield c
-
 
 @pytest_asyncio.fixture
 async def token_refresh_by_default_client():
@@ -62,36 +42,33 @@ def refresh_token_possible_false_values():
     }
 
 
-def check_response(response, data, status=200, refresh_data=None):
-    executor = response()
-    assert type(response) == TapiocaClient
-    assert type(executor) == TapiocaClientExecutor
-    assert executor.data == data
-    assert executor.refresh_data == refresh_data
-    assert isinstance(executor.response, ClientResponse)
-    assert executor.status == status
+def check_response(current_data, expected_data, response, status=200):
+    assert type(current_data) is ProcessData
+    assert type(response) is TapiocaClientResponse
+    assert current_data() == expected_data
+    assert response.status == status
 
 
 async def check_pages_responses(
     response, total_pages=1, max_pages=None, max_items=None
 ):
     result_response = {
-        response: {
+        response.data: {
             "data": [{"key": "value"}],
             "paging": {"next": "http://api.example.org/next_batch"},
         },
-        response.data: [{"key": "value"}],
-        response.paging: {"next": "http://api.example.org/next_batch"},
-        response.paging.next: "http://api.example.org/next_batch",
+        response.data.data: [{"key": "value"}],
+        response.data.paging: {"next": "http://api.example.org/next_batch"},
+        response.data.paging.next: "http://api.example.org/next_batch",
     }
-    for resp, data in result_response.items():
-        check_response(resp, data)
+    for current_data, expected_data in result_response.items():
+        check_response(current_data, expected_data, response)
 
     iterations_count = 0
-    async for item in response().pages(max_pages=max_pages, max_items=max_items):
-        result_page = {item: {"key": "value"}, item.key: "value"}
-        for resp, data in result_page.items():
-            check_response(resp, data)
+    async for page in response().pages(max_pages=max_pages, max_items=max_items):
+        result_page = {page.data: {"key": "value"}, page.data.key: "value"}
+        for current_data, expected_data in result_page.items():
+            check_response(current_data, expected_data, page)
         iterations_count += 1
     assert iterations_count == total_pages
 
@@ -101,131 +78,20 @@ test TapiocaClient
 """
 
 
-def test_adapter_class_default_attributes():
-
-    assert isinstance(TapiocaAdapter.refresh_token, bool)
-    assert isinstance(TapiocaAdapter.semaphore, int)
-    assert isinstance(TapiocaAdapter.serializer_class, object)
-
-    assert TapiocaAdapter.refresh_token is False
-    assert TapiocaAdapter.semaphore == 10
-    assert TapiocaAdapter.serializer_class == SimpleSerializer
-
-
 def test_fill_url_template(client):
     expected_url = "https://api.example.org/user/123/"
-    resource = client.user(id="123")
-    assert resource.data == expected_url
+    executor = client.user(id="123")
+    assert executor.path == expected_url
 
 
 def test_fill_another_root_url_template(client):
     expected_url = "https://api.another.com/another-root/"
     resource = client.another_root()
-    assert resource.data == expected_url
-
-
-def test_calling_len_on_tapioca_list(client):
-    wrap_client = client._wrap_in_tapioca([0, 1, 2])
-    assert len(wrap_client) == 3
-
-
-def test_iterated_client_items_should_be_tapioca_instances(client):
-    wrap_client = client._wrap_in_tapioca([0, 1, 2])
-
-    for item in wrap_client:
-        assert isinstance(item, TapiocaClient)
-
-
-def test_iterated_client_items_should_contain_list_items(client):
-    wrap_client = client._wrap_in_tapioca([0, 1, 2])
-
-    for i, item in enumerate(wrap_client):
-        assert item().data == i
-
-
-async def test_in_operator(mocked, client):
-    mocked.get(
-        client.test().data,
-        body='{"data": 1, "other": 2}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    assert "data" in response
-    assert "other" in response
-    assert "wat" not in response
-
-
-async def test_transform_camelCase_in_snake_case(mocked, client):
-    next_url = "http://api.example.org/next_batch"
-
-    response_data = {
-        "data": {
-            "key_snake": "value",
-            "camelCase": "data in camel case",
-            "NormalCamelCase": "data in camel case",
-        },
-        "paging": {"next": "%s" % next_url},
-    }
-    mocked.add(
-        client.test().data,
-        body=orjson.dumps(response_data),
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    assert response.data.key_snake().data == "value"
-    assert response.data.camel_case().data == "data in camel case"
-    assert response.data.normal_camel_case().data == "data in camel case"
-
-
-async def test_should_be_able_to_access_by_index(mocked, client):
-    mocked.get(
-        client.test().data,
-        body='["a", "b", "c"]',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    assert response[0]().data == "a"
-    assert response[1]().data == "b"
-    assert response[2]().data == "c"
-
-
-async def test_accessing_index_out_of_bounds_should_raise_index_error(mocked, client):
-    mocked.get(
-        client.test().data,
-        body='["a", "b", "c"]',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    with pytest.raises(IndexError):
-        response[3]
-
-
-async def test_accessing_empty_list_should_raise_index_error(mocked, client):
-    mocked.get(
-        client.test().data, body="[]", status=200, content_type="application/json"
-    )
-
-    response = await client.test().get()
-
-    with pytest.raises(IndexError):
-        response[3]
-
+    assert resource.path == expected_url
 
 def test_fill_url_from_default_params():
     client = SimpleClient(default_url_params={"id": 123})
-    assert client.user().data == "https://api.example.org/user/123/"
+    assert client.user().path == "https://api.example.org/user/123/"
 
 
 async def test_is_pickleable(mocked):
@@ -235,7 +101,7 @@ async def test_is_pickleable(mocked):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        pickle_client.test().data,
+        pickle_client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -252,8 +118,8 @@ async def test_is_pickleable(mocked):
         response = await pickle_client.test().get()
 
         iterations_count = 0
-        async for item in response().pages():
-            assert "value" in item.key().data
+        async for page in response().pages():
+            assert page.data.key() == "value"
             iterations_count += 1
         assert iterations_count == 2
 
@@ -263,72 +129,26 @@ test TapiocaExecutor
 """
 
 
-def test_resource_executor_data_should_be_composed_url(client):
+def test_resource_executor_path_should_be_composed_url(client):
     expected_url = "https://api.example.org/test/"
     resource = client.test()
-    assert resource.data == expected_url
+    assert resource.path == expected_url
 
 
 def test_docs(client):
-    assert "\n".join(client.resource.__doc__.split("\n")[1:]) == (
-        "Resource: " + client.resource._resource["resource"] + "\n"
-        "Docs: " + client.resource._resource["docs"] + "\n"
-        "Foo: " + client.resource._resource["foo"] + "\n"
-        "Spam: " + client.resource._resource["spam"]
+    expected = (
+        f"Resource: {client.resource.resource['resource']}\n"
+        f"Docs: {client.resource.resource['docs']}\n"
+        f"Foo: {client.resource.resource['foo']}\n"
+        f"Spam: {client.resource.resource['spam']}"
     )
-
-
-def test_access_data_attributres_through_executor(client):
-    wrap_client = client._wrap_in_tapioca({"test": "value"})
-
-    items = wrap_client().items()
-
-    assert isinstance(items, TapiocaClient)
-
-    data = dict(items().data)
-
-    assert data == {"test": "value"}
-
-
-def test_is_possible_to_reverse_a_list_through_executor(client):
-    wrap_client = client._wrap_in_tapioca([0, 1, 2])
-    wrap_client().reverse()
-    assert wrap_client().data == [2, 1, 0]
-
-
-def test_cannot__getittem__(client):
-    wrap_client = client._wrap_in_tapioca([0, 1, 2])
-    with pytest.raises(Exception):
-        wrap_client()[0]
-
-
-def test_cannot_iterate(client):
-    wrap_client = client._wrap_in_tapioca([0, 1, 2])
-    with pytest.raises(Exception):
-        for item in wrap_client():
-            pass
-
-
-def test_dir_call_returns_executor_methods(client):
-    wrap_client = client._wrap_in_tapioca([0, 1, 2])
-
-    e_dir = dir(wrap_client())
-
-    assert "data" in e_dir
-    assert "response" in e_dir
-    assert "get" in e_dir
-    assert "post" in e_dir
-    assert "post_batch" in e_dir
-    assert "pages" in e_dir
-    assert "open_docs" in e_dir
-    assert "open_in_browser" in e_dir
-
+    assert "\n".join(client.resource.__doc__.split("\n")[1:]) == expected
 
 async def test_response_executor_object_has_a_response(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -343,22 +163,13 @@ async def test_response_executor_object_has_a_response(mocked, client):
 
     response = await client.test().get()
 
-    executor = response()
-
-    assert executor.response is not None
-    assert executor._response is not None
-    assert executor.response.status == 200
-    assert executor._response.status == 200
-
-
-def test_raises_error_if_executor_does_not_have_a_response_object(client):
-    with pytest.raises(Exception):
-        client().response
+    assert response.response is not None
+    assert response.status == 200
 
 
 async def test_response_executor_has_a_status_code(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": {"key": "value"}}',
         status=200,
         content_type="application/json",
@@ -366,7 +177,7 @@ async def test_response_executor_has_a_status_code(mocked, client):
 
     response = await client.test().get()
 
-    assert response().status == 200
+    assert response.status == 200
 
 
 """
@@ -385,7 +196,7 @@ def test_when_executor_has_no_response(client):
 
 async def test_access_response_field(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": {"key": "value"}}',
         status=200,
         content_type="application/json",
@@ -393,14 +204,12 @@ async def test_access_response_field(mocked, client):
 
     response = await client.test().get()
 
-    response_data = response.data()
-
-    assert response_data.data == {"key": "value"}
+    assert response.data.data() == {"key": "value"}
 
 
 async def test_carries_request_kwargs_over_calls(mocked, client):
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": {"key": "value"}}',
         status=200,
         content_type="application/json",
@@ -408,7 +217,7 @@ async def test_carries_request_kwargs_over_calls(mocked, client):
 
     response = await client.test().get()
 
-    request_kwargs = response.data.key()._request_kwargs
+    request_kwargs = response.request_kwargs
 
     assert "url" in request_kwargs
     assert "data" in request_kwargs
@@ -418,7 +227,7 @@ async def test_carries_request_kwargs_over_calls(mocked, client):
 async def test_retry_request(mocked, retry_request_client):
     for _ in range(11):
         mocked.get(
-            retry_request_client.test().data,
+            retry_request_client.test().path,
             body='{"error": "bad request test"}',
             status=400,
             content_type="application/json",
@@ -429,14 +238,14 @@ async def test_retry_request(mocked, retry_request_client):
 
     for _ in range(10):
         mocked.get(
-            retry_request_client.test().data,
+            retry_request_client.test().path,
             body='{"error": "bad request test"}',
             status=400,
             content_type="application/json",
         )
 
     mocked.get(
-        retry_request_client.test().data,
+        retry_request_client.test().path,
         body='{"data": "success!"}',
         status=200,
         content_type="application/json",
@@ -444,18 +253,18 @@ async def test_retry_request(mocked, retry_request_client):
 
     response = await retry_request_client.test().get()
 
-    assert response.data().data == "success!"
+    assert response.data.data() == "success!"
 
     for _ in range(3):
         mocked.get(
-            retry_request_client.test().data,
+            retry_request_client.test().path,
             body='{"error": "bad request test"}',
             status=400,
             content_type="application/json",
         )
 
     mocked.get(
-        retry_request_client.test().data,
+        retry_request_client.test().path,
         body='{"data": "success!"}',
         status=200,
         content_type="application/json",
@@ -463,11 +272,11 @@ async def test_retry_request(mocked, retry_request_client):
 
     response = await retry_request_client.test().get()
 
-    assert response.data().data == "success!"
+    assert response.data.data() == "success!"
 
     for _ in range(3):
         mocked.get(
-            retry_request_client.test().data,
+            retry_request_client.test().path,
             body='{"error": "bad request test"}',
             status=403,
             content_type="application/json",
@@ -491,7 +300,7 @@ async def test_requests(mocked, client):
         executor_method = getattr(executor, type_request)
 
         mocked_method(
-            executor.data,
+            executor.path,
             body='{"data": {"key": "value"}}',
             status=status,
             content_type="application/json",
@@ -504,13 +313,13 @@ async def test_requests(mocked, client):
         response = await executor_method(**kwargs)
 
         result_response = {
-            response: {"data": {"key": "value"}},
-            response.data: {"key": "value"},
-            response.data.key: "value",
+            response.data: {"data": {"key": "value"}},
+            response.data.data: {"key": "value"},
+            response.data.data.key: "value",
         }
 
-        for response, data in result_response.items():
-            check_response(response, data, status)
+        for current_data, expected_data in result_response.items():
+            check_response(current_data, expected_data, response, status)
 
 
 async def test_batch_requests(mocked, client):
@@ -529,7 +338,7 @@ async def test_batch_requests(mocked, client):
 
         for data_row in response_data:
             mocked_method(
-                executor.data,
+                executor.path,
                 body=orjson.dumps(data_row),
                 status=201,
                 content_type="application/json",
@@ -543,17 +352,17 @@ async def test_batch_requests(mocked, client):
 
         for i, response in enumerate(results):
             result_response = {
-                response: response_data[i],
-                response.data: response_data[i]["data"],
-                response.data.key: response_data[i]["data"]["key"],
+                response.data: response_data[i],
+                response.data.data: response_data[i]["data"],
+                response.data.data.key: response_data[i]["data"]["key"],
             }
-            for resp, data in result_response.items():
-                check_response(resp, data, 201)
+            for current_data, expected_data in result_response.items():
+                check_response(current_data, expected_data, response, 201)
 
         assert len(results) == len(response_data)
 
 
-async def test_as_api_params_requests(mocked):
+async def test_pass_api_params_in_requests(mocked):
 
     semaphores = (4, None, False)
     types_request = ("get", "post", "put", "patch", "delete")
@@ -570,7 +379,7 @@ async def test_as_api_params_requests(mocked):
             executor_method = getattr(executor, type_request)
 
             mocked_method(
-                executor.data,
+                executor.path,
                 body='{"data": {"key": "value"}}',
                 status=status,
                 content_type="application/json",
@@ -581,17 +390,17 @@ async def test_as_api_params_requests(mocked):
             response = await executor_method(**kwargs)
 
             result_response = {
-                response: {"data": {"key": "value"}},
-                response.data: {"key": "value"},
-                response.data.key: "value",
+                response.data: {"data": {"key": "value"}},
+                response.data.data: {"key": "value"},
+                response.data.data.key: "value",
             }
 
-            for response, data in result_response.items():
-                check_response(response, data, status)
-                assert response()._api_params.get("semaphore") == semaphore
+            for current_data, expected_data in result_response.items():
+                check_response(current_data, expected_data, response, status)
+                assert response.api_params.get("semaphore") == semaphore
 
 
-async def test_as_api_params_batch_requests(mocked):
+async def test_pass_api_params_in_batch_requests(mocked):
     response_data = [
         {"data": {"key": "value"}},
         {"data": {"key": "value"}},
@@ -611,7 +420,7 @@ async def test_as_api_params_batch_requests(mocked):
 
             for data_row in response_data:
                 mocked_method(
-                    executor.data,
+                    executor.path,
                     body=orjson.dumps(data_row),
                     status=201,
                     content_type="application/json",
@@ -625,13 +434,13 @@ async def test_as_api_params_batch_requests(mocked):
 
             for i, response in enumerate(results):
                 result_response = {
-                    response: response_data[i],
-                    response.data: response_data[i]["data"],
-                    response.data.key: response_data[i]["data"]["key"],
+                    response.data: response_data[i],
+                    response.data.data: response_data[i]["data"],
+                    response.data.data.key: response_data[i]["data"]["key"],
                 }
-                for resp, data in result_response.items():
-                    check_response(resp, data, 201)
-                    assert resp()._api_params.get("semaphore") == semaphore
+                for current_data, expected_data in result_response.items():
+                    check_response(current_data, expected_data, response, 201)
+                    assert response.api_params.get("semaphore") == semaphore
 
             assert len(results) == len(response_data)
 
@@ -640,7 +449,7 @@ async def test_failed_semaphore(mocked):
 
     async with NoneSemaphoreClient() as none_semaphore_client:
         mocked.get(
-            none_semaphore_client.test().data,
+            none_semaphore_client.test().path,
             body='{"data": {"key": "value"}}',
             status=200,
             content_type="application/json",
@@ -659,7 +468,7 @@ async def test_simple_pages_iterator(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -681,7 +490,7 @@ async def test_simple_pages_with_max_pages_iterator(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -718,7 +527,7 @@ async def test_simple_pages_with_max_items_iterator(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -755,7 +564,7 @@ async def test_simple_pages_with_max_pages_and_max_items_iterator(mocked, client
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -777,7 +586,7 @@ async def test_simple_pages_max_pages_zero_iterator(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -799,7 +608,7 @@ async def test_simple_pages_max_items_zero_iterator(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -821,7 +630,7 @@ async def test_simple_pages_max_pages_ans_max_items_zero_iterator(mocked, client
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -843,7 +652,7 @@ async def test_pages_iterator_with_client_error(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -872,23 +681,23 @@ async def test_pages_iterator_with_client_error(mocked, client):
 
     response = await client.test().get()
     result_response = {
-        response: {
+        response.data: {
             "data": [{"key": "value"}],
             "paging": {"next": "http://api.example.org/next_batch"},
         },
-        response.data: [{"key": "value"}],
-        response.paging: {"next": "http://api.example.org/next_batch"},
-        response.paging.next: "http://api.example.org/next_batch",
+        response.data.data: [{"key": "value"}],
+        response.data.paging: {"next": "http://api.example.org/next_batch"},
+        response.data.paging.next: "http://api.example.org/next_batch",
     }
-    for resp, data in result_response.items():
-        check_response(resp, data)
+    for current_data, expected_data in result_response.items():
+        check_response(current_data, expected_data, response)
 
     iterations_count = 0
     with pytest.raises(ClientError):
         async for item in response().pages():
-            result_page = {item: {"key": "value"}, item.key: "value"}
-            for resp, data in result_page.items():
-                check_response(resp, data)
+            result_page = {item.data: {"key": "value"}, item.data.key: "value"}
+            for current_data, expected_data in result_page.items():
+                check_response(current_data, expected_data, response)
             iterations_count += 1
     assert iterations_count == 2
 
@@ -897,7 +706,7 @@ async def test_pages_iterator_with_server_error(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -926,23 +735,23 @@ async def test_pages_iterator_with_server_error(mocked, client):
 
     response = await client.test().get()
     result_response = {
-        response: {
+        response.data: {
             "data": [{"key": "value"}],
             "paging": {"next": "http://api.example.org/next_batch"},
         },
-        response.data: [{"key": "value"}],
-        response.paging: {"next": "http://api.example.org/next_batch"},
-        response.paging.next: "http://api.example.org/next_batch",
+        response.data.data: [{"key": "value"}],
+        response.data.paging: {"next": "http://api.example.org/next_batch"},
+        response.data.paging.next: "http://api.example.org/next_batch",
     }
-    for resp, data in result_response.items():
-        check_response(resp, data)
+    for current_data, expected_data in result_response.items():
+        check_response(current_data, expected_data, response)
 
     iterations_count = 0
     with pytest.raises(ServerError):
         async for item in response().pages():
-            result_page = {item: {"key": "value"}, item.key: "value"}
-            for resp, data in result_page.items():
-                check_response(resp, data)
+            result_page = {item.data: {"key": "value"}, item.data.key: "value"}
+            for current_data, expected_data in result_page.items():
+                check_response(current_data, expected_data, response)
             iterations_count += 1
     assert iterations_count == 2
 
@@ -951,7 +760,7 @@ async def test_pages_iterator_with_error_on_single_page(mocked, client):
     next_url = "http://api.example.org/next_batch"
 
     mocked.get(
-        client.test().data,
+        client.test().path,
         body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
         status=200,
         content_type="application/json",
@@ -980,150 +789,29 @@ async def test_pages_iterator_with_error_on_single_page(mocked, client):
 
     response = await client.test().get()
     result_response = {
-        response: {
+        response.data: {
             "data": [{"key": "value"}],
             "paging": {"next": "http://api.example.org/next_batch"},
         },
-        response.data: [{"key": "value"}],
-        response.paging: {"next": "http://api.example.org/next_batch"},
-        response.paging.next: "http://api.example.org/next_batch",
+        response.data.data: [{"key": "value"}],
+        response.data.paging: {"next": "http://api.example.org/next_batch"},
+        response.data.paging.next: "http://api.example.org/next_batch",
     }
-    for resp, data in result_response.items():
-        check_response(resp, data)
+    for current_data, expected_data in result_response.items():
+        check_response(current_data, expected_data, response)
 
     iterations_count = 0
     async for item in response().pages():
         if iterations_count == 2:
             status = 204
-            result_page = {item: dict()}
+            result_page = {item.data: dict()}
         else:
             status = 200
-            result_page = {item: {"key": "value"}, item.key: "value"}
-        for resp, data in result_page.items():
-            check_response(resp, data, status)
+            result_page = {item.data: {"key": "value"}, item.data.key: "value"}
+        for current_data, expected_data in result_page.items():
+            check_response(current_data, expected_data, item, status)
         iterations_count += 1
     assert iterations_count == 4
-
-
-"""
-test XML requests
-"""
-
-
-async def test_xml_post_string(mocked, xml_client):
-    mocked.post(
-        xml_client.test().data,
-        body="Any response",
-        status=200,
-        content_type="application/json",
-    )
-
-    data = '<tag1 attr1="val1">' "<tag2>text1</tag2>" "<tag3>text2</tag3>" "</tag1>"
-
-    await xml_client.test().post(data=data)
-
-    request_body = mocked.requests[("POST", URL(xml_client.test().data))][0].kwargs[
-        "data"
-    ]
-
-    assert request_body == data.encode("utf-8")
-
-
-async def test_xml_post_dict(mocked, xml_client):
-    mocked.post(
-        xml_client.test().data,
-        body="Any response",
-        status=200,
-        content_type="application/json",
-    )
-
-    data = OrderedDict(
-        [
-            (
-                "tag1",
-                OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-            )
-        ]
-    )
-
-    await xml_client.test().post(data=data)
-
-    request_body = mocked.requests[("POST", URL(xml_client.test().data))][0].kwargs[
-        "data"
-    ]
-
-    assert request_body == xmltodict.unparse(data).encode("utf-8")
-
-
-async def test_xml_post_dict_passes_unparse_param(mocked, xml_client):
-    mocked.post(
-        xml_client.test().data,
-        body="Any response",
-        status=200,
-        content_type="application/json",
-    )
-
-    data = OrderedDict(
-        [
-            (
-                "tag1",
-                OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-            )
-        ]
-    )
-
-    await xml_client.test().post(data=data, xmltodict_unparse__full_document=False)
-
-    request_body = mocked.requests[("POST", URL(xml_client.test().data))][0].kwargs[
-        "data"
-    ]
-
-    assert request_body == xmltodict.unparse(data, full_document=False).encode("utf-8")
-
-
-async def test_xml_returns_text_if_response_not_xml(mocked, xml_client):
-    mocked.post(
-        xml_client.test().data,
-        body="Any response",
-        status=200,
-        content_type="any content",
-    )
-
-    data = OrderedDict(
-        [
-            (
-                "tag1",
-                OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-            )
-        ]
-    )
-
-    response = await xml_client.test().post(data=data)
-
-    assert "Any response" == response().data
-
-
-async def test_xml_post_dict_returns_dict_if_response_xml(mocked, xml_client):
-    xml_body = '<tag1 attr1="val1">text1</tag1>'
-    mocked.post(
-        xml_client.test().data,
-        body=xml_body,
-        status=200,
-        content_type="application/xml",
-    )
-
-    data = OrderedDict(
-        [
-            (
-                "tag1",
-                OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-            )
-        ]
-    )
-
-    response = await xml_client.test().post(data=data)
-
-    assert response().data == xmltodict.parse(xml_body)
 
 
 """
@@ -1135,7 +823,7 @@ async def test_not_token_refresh_client_propagates_client_error(mocked, client):
     no_refresh_client = client
 
     mocked.post(
-        no_refresh_client.test().data,
+        no_refresh_client.test().path,
         callback=callback_401,
         content_type="application/json",
     )
@@ -1148,7 +836,7 @@ async def test_disable_token_refreshing(mocked, refresh_token_possible_false_val
 
     async with TokenRefreshClient(token="token") as token_refreshing_client:
         mocked.post(
-            token_refreshing_client.test().data,
+            token_refreshing_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
@@ -1161,7 +849,7 @@ async def test_disable_token_refreshing(mocked, refresh_token_possible_false_val
             token="token", refresh_token=refresh_token
         ) as token_refreshing_client:
             mocked.post(
-                token_refreshing_client.test().data,
+                token_refreshing_client.test().path,
                 callback=callback_401,
                 content_type="application/json",
             )
@@ -1171,7 +859,7 @@ async def test_disable_token_refreshing(mocked, refresh_token_possible_false_val
 
         async with TokenRefreshClient(token="token") as token_refreshing_client:
             mocked.post(
-                token_refreshing_client.test().data,
+                token_refreshing_client.test().path,
                 callback=callback_401,
                 content_type="application/json",
             )
@@ -1185,13 +873,13 @@ async def test_token_expired_automatically_refresh_authentication(mocked):
     async with TokenRefreshClient(token="token") as token_refresh_client:
 
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
 
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_201,
             content_type="application/json",
         )
@@ -1199,15 +887,15 @@ async def test_token_expired_automatically_refresh_authentication(mocked):
         response = await token_refresh_client.test().post(refresh_token=True)
 
         # refresh_authentication method should be able to update api_params
-        assert response._api_params["token"] == "new_token"
+        assert response.api_params["token"] == "new_token"
 
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
@@ -1220,13 +908,13 @@ async def test_token_expired_automatically_refresh_authentication(mocked):
         token="token", refresh_token=True
     ) as token_refresh_client:
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
 
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_201,
             content_type="application/json",
         )
@@ -1234,15 +922,15 @@ async def test_token_expired_automatically_refresh_authentication(mocked):
         response = await token_refresh_client.test().post()
 
         # refresh_authentication method should be able to update api_params
-        assert response._api_params["token"] == "new_token"
+        assert response.api_params["token"] == "new_token"
 
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
         mocked.post(
-            token_refresh_client.test().data,
+            token_refresh_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
@@ -1257,13 +945,13 @@ async def test_token_expired_automatically_refresh_authentication_by_default(
 ):
 
     mocked.post(
-        token_refresh_by_default_client.test().data,
+        token_refresh_by_default_client.test().path,
         callback=callback_401,
         content_type="application/json",
     )
 
     mocked.post(
-        token_refresh_by_default_client.test().data,
+        token_refresh_by_default_client.test().path,
         callback=callback_201,
         content_type="application/json",
     )
@@ -1274,12 +962,12 @@ async def test_token_expired_automatically_refresh_authentication_by_default(
     assert response._api_params["token"] == "new_token"
 
     mocked.post(
-        token_refresh_by_default_client.test().data,
+        token_refresh_by_default_client.test().path,
         callback=callback_401,
         content_type="application/json",
     )
     mocked.post(
-        token_refresh_by_default_client.test().data,
+        token_refresh_by_default_client.test().path,
         callback=callback_401,
         content_type="application/json",
     )
@@ -1295,7 +983,7 @@ async def test_raises_error_if_refresh_authentication_method_returns_false_value
     async with FailTokenRefreshClient(token="token") as fail_client:
 
         mocked.post(
-            fail_client.test().data,
+            fail_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
@@ -1310,7 +998,7 @@ async def test_raises_error_if_refresh_authentication_method_returns_false_value
         ) as fail_client:
 
             mocked.post(
-                fail_client.test().data,
+                fail_client.test().path,
                 callback=callback_401,
                 content_type="application/json",
             )
@@ -1321,7 +1009,7 @@ async def test_raises_error_if_refresh_authentication_method_returns_false_value
         async with FailTokenRefreshClient(token="token") as fail_client:
 
             mocked.post(
-                fail_client.test().data,
+                fail_client.test().path,
                 callback=callback_401,
                 content_type="application/json",
             )
@@ -1330,294 +1018,90 @@ async def test_raises_error_if_refresh_authentication_method_returns_false_value
                 await fail_client.test().post(refresh_token=refresh_token)
 
 
-"""
-Test PydanticAdapterMixin.
-"""
+class TestProcessData:
 
-
-async def test_pydantic_model_not_found(mocked):
-    async with PydanticForcedClient() as client:
+    async def test_in_operator(self, mocked, client):
         mocked.get(
-            client.test_not_found().data,
-            body="{}",
+            client.test().path,
+            body='{"data": 1, "other": 2}',
             status=200,
             content_type="application/json",
-        )
-        with pytest.raises(ValueError):
-            await client.test_not_found().get()
+            )
 
+        response = await client.test().get()
 
-async def test_bad_pydantic_model(mocked):
-    async with PydanticForcedClient() as client:
-        mocked.get(
-            client.test_bad_pydantic_model().data,
-            body="{}",
+        assert "data" in response.data
+        assert "other" in response.data
+        assert "wat" not in response.data
+
+    async def test_transform_camelCase_in_snake_case(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+
+        response_data = {
+            "data": {
+                "key_snake": "value",
+                "camelCase": "data in camel case",
+                "NormalCamelCase": "data in camel case",
+                },
+            "paging": {"next": "%s" % next_url},
+            }
+        mocked.add(
+            client.test().path,
+            body=orjson.dumps(response_data),
             status=200,
             content_type="application/json",
-        )
-        with pytest.raises(ValueError):
-            await client.test_bad_pydantic_model().get()
+            )
 
+        response = await client.test().get()
 
-async def test_bad_dataclass_model(mocked):
-    async with PydanticForcedClient() as client:
+        assert response.data() == response_data
+
+        assert response.data.paging.next() == next_url
+        assert response.data.data.key_snake() == "value"
+        assert response.data.data.camel_case() == "data in camel case"
+        assert response.data.data.normal_camel_case() == "data in camel case"
+
+    async def test_should_be_able_to_access_by_index(self, mocked, client):
+        response_data = ["a", "b", "c"]
         mocked.get(
-            client.test_bad_dataclass_model().data,
-            body="{}",
+            client.test().path,
+            body=orjson.dumps(response_data),
             status=200,
             content_type="application/json",
-        )
-        with pytest.raises(TypeError):
-            await client.test_bad_dataclass_model().get()
-
-
-async def test_pydantic_mixin_response_to_native(mocked):
-    response_body_root = (
-        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
-    )
-    response_body = '{"data": %s}' % response_body_root
-
-    validate_data_received_list = [True, False]
-    validate_data_sending_list = [True, False]
-    extract_root_list = [True, False]
-    convert_to_dict_list = [True, False]
-
-    for validate_received, validate_sending, extract, convert in product(
-        validate_data_received_list,
-        validate_data_sending_list,
-        extract_root_list,
-        convert_to_dict_list,
-    ):
-
-        class PidanticClientAdapter(PydanticDefaultClientAdapter):
-            validate_data_received = validate_received
-            validate_data_sending = validate_sending
-            extract_root = extract
-            convert_to_dict = convert
-
-        PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
-
-        async with PydanticClient() as client:
-            mocked.get(
-                client.test().data,
-                body=response_body,
-                status=200,
-                content_type="application/json",
             )
-            response = await client.test().get()
-            if convert or not validate_received:
-                assert isinstance(response().data, dict)
-                assert response().data == orjson.loads(response_body)
-            else:
-                assert isinstance(response().data, BaseModel)
-                assert response().data.dict() == orjson.loads(response_body)
 
-            mocked.get(
-                client.test_root().data,
-                body=response_body_root,
-                status=200,
-                content_type="application/json",
+        response = await client.test().get()
+
+        assert response.data() == response_data
+
+        assert response.data[0]() == "a"
+        assert response.data[1]() == "b"
+        assert response.data[2]() == "c"
+
+    async def test_accessing_index_out_of_bounds_should_raise_index_error(self, mocked, client):
+        response_data = ["a", "b", "c"]
+        mocked.get(
+            client.test().path,
+            body=orjson.dumps(response_data),
+            status=200,
+            content_type="application/json",
             )
-            response = await client.test_root().get()
-            data = response().data
-            if extract:
-                assert isinstance(data, list)
-            else:
-                if not validate_received:
-                    assert isinstance(data, list)
-                elif convert:
-                    assert isinstance(data, dict)
-                    data = data["__root__"]
-                else:
-                    assert isinstance(data, BaseModel)
-                    data = data.__root__
-            for response_data, expected_data in zip(
-                data, orjson.loads(response_body_root)
-            ):
-                if convert or not validate_received:
-                    assert isinstance(response_data, dict)
-                    assert response_data == expected_data
-                else:
-                    assert isinstance(response_data, BaseModel)
-                    assert response_data.dict() == expected_data
 
-            mocked.get(
-                client.test_dataclass().data,
-                body=response_body,
-                status=200,
-                content_type="application/json",
+        response = await client.test().get()
+
+        with pytest.raises(IndexError):
+            response.data[3]
+
+    async def test_accessing_empty_list_should_raise_index_error(self, mocked, client):
+        mocked.get(
+            client.test().path, body="[]", status=200, content_type="application/json"
             )
-            response = await client.test_dataclass().get()
-            if convert or not validate_received:
-                assert isinstance(response().data, dict)
-                assert response().data == orjson.loads(response_body)
-            else:
-                assert isinstance(response().data, BaseModel)
-                assert response().data.dict() == orjson.loads(response_body)
 
-            mocked.get(
-                client.test_dataclass_root().data,
-                body=response_body_root,
-                status=200,
-                content_type="application/json",
-            )
-            response = await client.test_dataclass_root().get()
-            data = response().data
-            if extract:
-                assert isinstance(data, list)
-            else:
-                if not validate_received:
-                    assert isinstance(data, list)
-                elif convert:
-                    assert isinstance(data, dict)
-                    data = data["__root__"]
-                else:
-                    assert isinstance(data, BaseModel)
-                    data = data.__root__
-            for response_data, expected_data in zip(
-                data, orjson.loads(response_body_root)
-            ):
-                if convert or not validate_received:
-                    assert isinstance(response_data, dict)
-                    assert response_data == expected_data
-                else:
-                    assert isinstance(response_data, BaseModel)
-                    assert response_data.dict() == expected_data
+        response = await client.test().get()
 
-
-async def test_pydantic_mixin_format_data_to_request(mocked):
-    response_body_root = (
-        '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
-    )
-    response_body = '{"data": %s}' % response_body_root
-
-    validate_data_received_list = [True, False]
-    validate_data_sending_list = [True, False]
-    extract_root_list = [True, False]
-    convert_to_dict_list = [True, False]
-
-    for validate_received, validate_sending, extract, convert in product(
-        validate_data_received_list,
-        validate_data_sending_list,
-        extract_root_list,
-        convert_to_dict_list,
-    ):
-
-        class PidanticClientAdapter(PydanticDefaultClientAdapter):
-            validate_data_received = validate_received
-            validate_data_sending = validate_sending
-            extract_root = extract
-            convert_to_dict = convert
-
-        PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
-
-        async with PydanticClient() as client:
-
-            mocked.post(
-                client.test().data,
-                body='{"id": 100500}',
-                status=200,
-                content_type="application/json",
-            )
-            if validate_sending:
-                data = orjson.loads(response_body)
-                response = await client.test().post(data=data)
-                assert response().data == {"id": 100500}
-            else:
-                data = CustomModel.parse_raw(response_body)
-                response = await client.test().post(data=data)
-                assert response().data == {"id": 100500}
-
-            if validate_sending:
-                data = orjson.loads(response_body_root)
-                for _ in range(len(data)):
-                    mocked.post(
-                        client.test_root().data,
-                        body='{"id": 100500}',
-                        status=200,
-                        content_type="application/json",
-                    )
-                responses = await client.test_root().post_batch(data=data)
-                assert len(responses) == len(data)
-                for response in responses:
-                    assert response().data == {"id": 100500}
-            else:
-                data = RootModel.parse_raw(response_body_root)
-                for _ in range(len(data.__root__)):
-                    mocked.post(
-                        client.test_root().data,
-                        body='{"id": 100500}',
-                        status=200,
-                        content_type="application/json",
-                    )
-                responses = await client.test_root().post_batch(data=data.__root__)
-                assert len(responses) == len(data.__root__)
-                for response in responses:
-                    assert response().data == {"id": 100500}
-
-            mocked.post(
-                client.test().data,
-                body='{"id": 100500}',
-                status=200,
-                content_type="application/json",
-            )
-            if validate_sending:
-                data = orjson.loads(response_body)
-                response = await client.test_dataclass().post(data=data)
-                assert response().data == {"id": 100500}
-            else:
-                data = CustomModelDT.__pydantic_model__.parse_raw(response_body)
-                response = await client.test_dataclass().post(data=data)
-                assert response().data == {"id": 100500}
-
-            if validate_sending:
-                data = orjson.loads(response_body_root)
-                for _ in range(len(data)):
-                    mocked.post(
-                        client.test_root().data,
-                        body='{"id": 100500}',
-                        status=200,
-                        content_type="application/json",
-                    )
-                responses = await client.test_root().post_batch(data=data)
-                assert len(responses) == len(data)
-                for response in responses:
-                    assert response().data == {"id": 100500}
-            else:
-                data = RootModelDT.__pydantic_model__.parse_raw(response_body_root)
-                for _ in range(len(data.__root__)):
-                    mocked.post(
-                        client.test_root().data,
-                        body='{"id": 100500}',
-                        status=200,
-                        content_type="application/json",
-                    )
-                responses = await client.test_root().post_batch(data=data.__root__)
-                assert len(responses) == len(data.__root__)
-                for response in responses:
-                    assert response().data == {"id": 100500}
-
-    class PidanticClientAdapter(PydanticDefaultClientAdapter):
-        forced_to_have_model = True
-        validate_data_sending = False
-        validate_data_received = False
-
-    PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
-
-    async with PydanticClient() as client:
-        data = orjson.loads(response_body_root)
-        for _ in range(len(data)):
-            mocked.post(
-                client.test_root().data,
-                body='{"id": 100500}',
-                status=200,
-                content_type="application/json",
-            )
-        responses = await client.test_root().post_batch(data=data)
-        assert len(responses) == len(data)
-        for response in responses:
-            assert response().data == {"id": 100500}
-
+        with pytest.raises(IndexError):
+            response.data[3]
+7
 
 class TestParsers:
     @pytest_asyncio.fixture
@@ -1642,7 +1126,7 @@ class TestParsers:
 
     async def test_parsers_not_found(self, mocked, func_parser_client):
         mocked.get(
-            func_parser_client.test().data,
+            func_parser_client.test().path,
             body='["a", "b", "c"]',
             status=200,
             content_type="application/json",
@@ -1650,50 +1134,50 @@ class TestParsers:
         response = await func_parser_client.test().get()
 
         with pytest.raises(AttributeError):
-            response().blablabla()
+            response.data.blablabla()
 
     async def test_func_parser(self, mocked, func_parser_client):
         mocked.get(
-            func_parser_client.test().data,
+            func_parser_client.test().path,
             body='["a", "b", "c"]',
             status=200,
             content_type="application/json",
         )
         response = await func_parser_client.test().get()
 
-        assert response().foo_parser() == ["a", "b", "c"]
-        assert response().foo_parser(0) == "a"
-        assert response().foo_parser(1) == "b"
-        assert response().foo_parser(2) == "c"
+        assert response.data.foo_parser() == ["a", "b", "c"]
+        assert response.data.foo_parser(0) == "a"
+        assert response.data.foo_parser(1) == "b"
+        assert response.data.foo_parser(2) == "c"
         with pytest.raises(IndexError):
-            response().foo_parser(3)
+            response.data.foo_parser(3)
 
     async def test_static_method_parser(self, mocked, static_method_parser_client):
         mocked.get(
-            static_method_parser_client.test().data,
+            static_method_parser_client.test().path,
             body='["a", "b", "c"]',
             status=200,
             content_type="application/json",
         )
         response = await static_method_parser_client.test().get()
 
-        assert response().foo() == ["a", "b", "c"]
-        assert response().foo(0) == "a"
-        assert response().foo(1) == "b"
-        assert response().foo(2) == "c"
+        assert response.data.foo() == ["a", "b", "c"]
+        assert response.data.foo(0) == "a"
+        assert response.data.foo(1) == "b"
+        assert response.data.foo(2) == "c"
         with pytest.raises(IndexError):
-            response().foo(3)
+            response.data.foo(3)
 
     async def test_class_parser(self, mocked, class_parser_client):
         mocked.get(
-            class_parser_client.test().data,
+            class_parser_client.test().path,
             body='["a", "b", "c"]',
             status=200,
             content_type="application/json",
         )
         response = await class_parser_client.test().get()
 
-        parser = response().foo_parser()
+        parser = response.data.foo_parser()
         assert parser.bar() == ["a", "b", "c"]
         assert parser.bar(0) == "a"
         assert parser.bar(1) == "b"
@@ -1703,18 +1187,18 @@ class TestParsers:
 
     async def test_dict_parser(self, mocked, dict_parser_client):
         mocked.get(
-            dict_parser_client.test().data,
+            dict_parser_client.test().path,
             body='["a", "b", "c"]',
             status=200,
             content_type="application/json",
         )
         response = await dict_parser_client.test().get()
 
-        assert response().func_parser() == ["a", "b", "c"]
-        assert response().func_parser(1) == "b"
+        assert response.data.func_parser() == ["a", "b", "c"]
+        assert response.data.func_parser(1) == "b"
 
-        assert response().static_method_parser() == ["a", "b", "c"]
-        assert response().static_method_parser(1) == "b"
+        assert response.data.static_method_parser() == ["a", "b", "c"]
+        assert response.data.static_method_parser(1) == "b"
 
-        assert response().class_parser().bar() == ["a", "b", "c"]
-        assert response().class_parser().bar(1) == "b"
+        assert response.data.class_parser().bar() == ["a", "b", "c"]
+        assert response.data.class_parser().bar(1) == "b"

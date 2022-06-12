@@ -65,7 +65,7 @@ async def test_executor_dir_returns_serializer_methods(mocked, serializer_client
 
     response = await serializer_client.test().get()
 
-    e_dir = dir(response)
+    e_dir = dir(response.data)
 
     assert "to_decimal" in e_dir
 
@@ -84,7 +84,7 @@ async def test_convert_to_decimal(mocked, serializer_client):
     )
 
     response = await serializer_client.test().get()
-    assert response.decimal_value.to_decimal() == Decimal("10.51")
+    assert response.data.decimal_value.to_decimal() == Decimal("10.51")
 
 
 async def test_call_non_existent_conversion(mocked, serializer_client):
@@ -97,7 +97,7 @@ async def test_call_non_existent_conversion(mocked, serializer_client):
 
     response = await serializer_client.test().get()
     with pytest.raises(NotImplementedError):
-        response.any_data.to_blablabla()
+        response.data.any_data.to_blablabla()
 
 
 async def test_call_conversion_with_no_serializer(mocked, client):
@@ -110,7 +110,7 @@ async def test_call_conversion_with_no_serializer(mocked, client):
 
     response = await client.test().get()
     with pytest.raises(NotImplementedError):
-        response.any_data.to_datetime()
+        response.data.any_data.to_datetime()
 
 
 async def test_pass_kwargs(mocked, serializer_client):
@@ -123,7 +123,7 @@ async def test_pass_kwargs(mocked, serializer_client):
 
     response = await serializer_client.test().get()
 
-    assert response.decimal_value.to_kwargs(some_key="some value") == {
+    assert response.data.decimal_value.to_kwargs(some_key="some value") == {
         "some_key": "some value"
     }
 
