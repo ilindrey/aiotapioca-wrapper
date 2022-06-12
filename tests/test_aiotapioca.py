@@ -24,24 +24,6 @@ from .clients import (
 )
 
 
-@pytest_asyncio.fixture
-async def retry_request_client():
-    async with RetryRequestClient() as c:
-        yield c
-
-@pytest_asyncio.fixture
-async def token_refresh_by_default_client():
-    async with TokenRefreshByDefaultClient(token="token") as c:
-        yield c
-
-
-@pytest.fixture
-def refresh_token_possible_false_values():
-    yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {
-        "key": "value"
-    }
-
-
 def check_response(current_data, expected_data, response, status=200):
     assert type(current_data) is ProcessData
     assert type(response) is TapiocaClientResponse
@@ -73,305 +55,208 @@ async def check_pages_responses(
     assert iterations_count == total_pages
 
 
-"""
-test TapiocaClient
-"""
+class TestTapiocaClient:
 
+    async def test_is_pickleable(self, mocked):
+        pickle_client = pickle.loads(pickle.dumps(SimpleClient()))
 
-def test_fill_url_template(client):
-    expected_url = "https://api.example.org/user/123/"
-    executor = client.user(id="123")
-    assert executor.path == expected_url
+        # ensure requests keep working after pickle:
+        next_url = "http://api.example.org/next_batch"
 
-
-def test_fill_another_root_url_template(client):
-    expected_url = "https://api.another.com/another-root/"
-    resource = client.another_root()
-    assert resource.path == expected_url
-
-def test_fill_url_from_default_params():
-    client = SimpleClient(default_url_params={"id": 123})
-    assert client.user().path == "https://api.example.org/user/123/"
-
-
-async def test_is_pickleable(mocked):
-    pickle_client = pickle.loads(pickle.dumps(SimpleClient()))
-
-    # ensure requests keep working after pickle:
-    next_url = "http://api.example.org/next_batch"
-
-    mocked.get(
-        pickle_client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    async with pickle_client:
-        response = await pickle_client.test().get()
-
-        iterations_count = 0
-        async for page in response().pages():
-            assert page.data.key() == "value"
-            iterations_count += 1
-        assert iterations_count == 2
-
-
-"""
-test TapiocaExecutor
-"""
-
-
-def test_resource_executor_path_should_be_composed_url(client):
-    expected_url = "https://api.example.org/test/"
-    resource = client.test()
-    assert resource.path == expected_url
-
-
-def test_docs(client):
-    expected = (
-        f"Resource: {client.resource.resource['resource']}\n"
-        f"Docs: {client.resource.resource['docs']}\n"
-        f"Foo: {client.resource.resource['foo']}\n"
-        f"Spam: {client.resource.resource['spam']}"
-    )
-    assert "\n".join(client.resource.__doc__.split("\n")[1:]) == expected
-
-async def test_response_executor_object_has_a_response(mocked, client):
-    next_url = "http://api.example.org/next_batch"
-
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    assert response.response is not None
-    assert response.status == 200
-
-
-async def test_response_executor_has_a_status_code(mocked, client):
-    mocked.get(
-        client.test().path,
-        body='{"data": {"key": "value"}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    assert response.status == 200
-
-
-"""
-test TapiocaExecutor requests
-"""
-
-
-def test_when_executor_has_no_response(client):
-    with pytest.raises(Exception) as context:
-        client.test().response
-
-        exception = context.exception
-
-        assert "has no response" == str(exception)
-
-
-async def test_access_response_field(mocked, client):
-    mocked.get(
-        client.test().path,
-        body='{"data": {"key": "value"}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    assert response.data.data() == {"key": "value"}
-
-
-async def test_carries_request_kwargs_over_calls(mocked, client):
-    mocked.get(
-        client.test().path,
-        body='{"data": {"key": "value"}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    request_kwargs = response.request_kwargs
-
-    assert "url" in request_kwargs
-    assert "data" in request_kwargs
-    assert "headers" in request_kwargs
-
-
-async def test_retry_request(mocked, retry_request_client):
-    for _ in range(11):
         mocked.get(
-            retry_request_client.test().path,
-            body='{"error": "bad request test"}',
-            status=400,
+            pickle_client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
             content_type="application/json",
         )
 
-    with pytest.raises(ClientError):
-        await retry_request_client.test().get()
-
-    for _ in range(10):
         mocked.get(
-            retry_request_client.test().path,
-            body='{"error": "bad request test"}',
-            status=400,
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
             content_type="application/json",
         )
 
-    mocked.get(
-        retry_request_client.test().path,
-        body='{"data": "success!"}',
-        status=200,
-        content_type="application/json",
-    )
+        async with pickle_client:
+            response = await pickle_client.test().get()
 
-    response = await retry_request_client.test().get()
+            iterations_count = 0
+            async for page in response().pages():
+                assert page.data.key() == "value"
+                iterations_count += 1
+            assert iterations_count == 2
 
-    assert response.data.data() == "success!"
 
-    for _ in range(3):
+class TestTapiocaResource:
+
+    def test_fill_url_template(self, client):
+        expected_url = "https://api.example.org/user/123/"
+        executor = client.user(id="123")
+        assert executor.path == expected_url
+
+    def test_fill_another_root_url_template(self, client):
+        expected_url = "https://api.another.com/another-root/"
+        resource = client.another_root()
+        assert resource.path == expected_url
+
+    def test_fill_url_from_default_params(self):
+        client = SimpleClient(default_url_params={"id": 123})
+        assert client.user().path == "https://api.example.org/user/123/"
+
+    def test_docs(self, client):
+        expected = (
+            f"Resource: {client.resource.resource['resource']}\n"
+            f"Docs: {client.resource.resource['docs']}\n"
+            f"Foo: {client.resource.resource['foo']}\n"
+            f"Spam: {client.resource.resource['spam']}"
+        )
+        assert "\n".join(client.resource.__doc__.split("\n")[1:]) == expected
+
+
+class TestTapiocaExecutor:
+
+    def test_resource_executor_path_should_be_composed_url(self, client):
+        expected_url = "https://api.example.org/test/"
+        resource = client.test()
+        assert resource.path == expected_url
+
+    async def test_response_executor_object_has_a_response(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+
         mocked.get(
-            retry_request_client.test().path,
-            body='{"error": "bad request test"}',
-            status=400,
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
             content_type="application/json",
         )
 
-    mocked.get(
-        retry_request_client.test().path,
-        body='{"data": "success!"}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await retry_request_client.test().get()
-
-    assert response.data.data() == "success!"
-
-    for _ in range(3):
         mocked.get(
-            retry_request_client.test().path,
-            body='{"error": "bad request test"}',
-            status=403,
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
             content_type="application/json",
         )
 
-    with pytest.raises(ClientError):
-        await retry_request_client.test().get()
+        response = await client.test().get()
+
+        assert response.response is not None
+        assert response.status == 200
 
 
-async def test_requests(mocked, client):
-
-    semaphores = (3, None)
-    types_request = ("get", "post", "put", "patch", "delete")
-    for semaphore, type_request in product(semaphores, types_request):
-
-        executor = client.test()
-
-        status = 200 if type_request == "get" else 201
-
-        mocked_method = getattr(mocked, type_request)
-        executor_method = getattr(executor, type_request)
-
-        mocked_method(
-            executor.path,
+    async def test_response_executor_has_a_status_code(self, mocked, client):
+        mocked.get(
+            client.test().path,
             body='{"data": {"key": "value"}}',
-            status=status,
+            status=200,
             content_type="application/json",
         )
 
-        kwargs = {}
-        if semaphore:
-            kwargs.update({"semaphore": semaphore})
+        response = await client.test().get()
 
-        response = await executor_method(**kwargs)
-
-        result_response = {
-            response.data: {"data": {"key": "value"}},
-            response.data.data: {"key": "value"},
-            response.data.data.key: "value",
-        }
-
-        for current_data, expected_data in result_response.items():
-            check_response(current_data, expected_data, response, status)
+        assert response.status == 200
 
 
-async def test_batch_requests(mocked, client):
-    response_data = [
-        {"data": {"key": "value"}},
-        {"data": {"key": "value"}},
-        {"data": {"key": "value"}},
-    ]
-    semaphores = (3, None)
-    types_request = ("post", "put", "patch", "delete")
-    for semaphore, type_request in product(semaphores, types_request):
+    async def test_access_response_field(self, mocked, client):
+        mocked.get(
+            client.test().path,
+            body='{"data": {"key": "value"}}',
+            status=200,
+            content_type="application/json",
+        )
 
-        executor = client.test()
-        mocked_method = getattr(mocked, type_request)
-        executor_method = getattr(executor, type_request + "_batch")
+        response = await client.test().get()
 
-        for data_row in response_data:
-            mocked_method(
-                executor.path,
-                body=orjson.dumps(data_row),
-                status=201,
+        assert response.data.data() == {"key": "value"}
+
+
+    async def test_carries_request_kwargs_over_calls(self, mocked, client):
+        mocked.get(
+            client.test().path,
+            body='{"data": {"key": "value"}}',
+            status=200,
+            content_type="application/json",
+        )
+
+        response = await client.test().get()
+
+        request_kwargs = response.request_kwargs
+
+        assert "url" in request_kwargs
+        assert "data" in request_kwargs
+        assert "headers" in request_kwargs
+
+
+    async def test_retry_request(self, mocked):
+
+        async with RetryRequestClient() as client:
+            for _ in range(11):
+                mocked.get(
+                    client.test().path,
+                    body='{"error": "bad request test"}',
+                    status=400,
+                    content_type="application/json",
+                )
+
+            with pytest.raises(ClientError):
+                await client.test().get()
+
+            for _ in range(10):
+                mocked.get(
+                    client.test().path,
+                    body='{"error": "bad request test"}',
+                    status=400,
+                    content_type="application/json",
+                )
+
+            mocked.get(
+                client.test().path,
+                body='{"data": "success!"}',
+                status=200,
                 content_type="application/json",
             )
 
-        kwargs = dict(data=response_data)
-        if semaphore:
-            kwargs.update({"semaphore": semaphore})
+            response = await client.test().get()
 
-        results = await executor_method(**kwargs)
+            assert response.data.data() == "success!"
 
-        for i, response in enumerate(results):
-            result_response = {
-                response.data: response_data[i],
-                response.data.data: response_data[i]["data"],
-                response.data.data.key: response_data[i]["data"]["key"],
-            }
-            for current_data, expected_data in result_response.items():
-                check_response(current_data, expected_data, response, 201)
+            for _ in range(3):
+                mocked.get(
+                    client.test().path,
+                    body='{"error": "bad request test"}',
+                    status=400,
+                    content_type="application/json",
+                )
 
-        assert len(results) == len(response_data)
+            mocked.get(
+                client.test().path,
+                body='{"data": "success!"}',
+                status=200,
+                content_type="application/json",
+            )
+
+            response = await client.test().get()
+
+            assert response.data.data() == "success!"
+
+            for _ in range(3):
+                mocked.get(
+                    client.test().path,
+                    body='{"error": "bad request test"}',
+                    status=403,
+                    content_type="application/json",
+                )
+
+            with pytest.raises(ClientError):
+                await client.test().get()
 
 
-async def test_pass_api_params_in_requests(mocked):
+    async def test_requests(self, mocked, client):
 
-    semaphores = (4, None, False)
-    types_request = ("get", "post", "put", "patch", "delete")
+        semaphores = (3, None)
+        types_request = ("get", "post", "put", "patch", "delete")
+        for semaphore, type_request in product(semaphores, types_request):
 
-    for semaphore, type_request in product(semaphores, types_request):
-
-        async with SimpleClient(semaphore=semaphore) as simple_client:
-
-            executor = simple_client.test()
+            executor = client.test()
 
             status = 200 if type_request == "get" else 201
 
@@ -385,7 +270,9 @@ async def test_pass_api_params_in_requests(mocked):
                 content_type="application/json",
             )
 
-            kwargs = dict()
+            kwargs = {}
+            if semaphore:
+                kwargs.update({"semaphore": semaphore})
 
             response = await executor_method(**kwargs)
 
@@ -397,24 +284,19 @@ async def test_pass_api_params_in_requests(mocked):
 
             for current_data, expected_data in result_response.items():
                 check_response(current_data, expected_data, response, status)
-                assert response.api_params.get("semaphore") == semaphore
 
 
-async def test_pass_api_params_in_batch_requests(mocked):
-    response_data = [
-        {"data": {"key": "value"}},
-        {"data": {"key": "value"}},
-        {"data": {"key": "value"}},
-    ]
+    async def test_batch_requests(self, mocked, client):
+        response_data = [
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+        ]
+        semaphores = (3, None)
+        types_request = ("post", "put", "patch", "delete")
+        for semaphore, type_request in product(semaphores, types_request):
 
-    semaphores = (4, None, False)
-    types_request = ("post", "put", "patch", "delete")
-
-    for semaphore, type_request in product(semaphores, types_request):
-
-        async with SimpleClient(semaphore=semaphore) as simple_client:
-
-            executor = simple_client.test()
+            executor = client.test()
             mocked_method = getattr(mocked, type_request)
             executor_method = getattr(executor, type_request + "_batch")
 
@@ -440,582 +322,658 @@ async def test_pass_api_params_in_batch_requests(mocked):
                 }
                 for current_data, expected_data in result_response.items():
                     check_response(current_data, expected_data, response, 201)
-                    assert response.api_params.get("semaphore") == semaphore
 
             assert len(results) == len(response_data)
 
 
-async def test_failed_semaphore(mocked):
+    async def test_pass_api_params_in_requests(self, mocked):
 
-    async with NoneSemaphoreClient() as none_semaphore_client:
+        semaphores = (4, None, False)
+        types_request = ("get", "post", "put", "patch", "delete")
+
+        for semaphore, type_request in product(semaphores, types_request):
+
+            async with SimpleClient(semaphore=semaphore) as simple_client:
+
+                executor = simple_client.test()
+
+                status = 200 if type_request == "get" else 201
+
+                mocked_method = getattr(mocked, type_request)
+                executor_method = getattr(executor, type_request)
+
+                mocked_method(
+                    executor.path,
+                    body='{"data": {"key": "value"}}',
+                    status=status,
+                    content_type="application/json",
+                )
+
+                kwargs = dict()
+
+                response = await executor_method(**kwargs)
+
+                result_response = {
+                    response.data: {"data": {"key": "value"}},
+                    response.data.data: {"key": "value"},
+                    response.data.data.key: "value",
+                }
+
+                for current_data, expected_data in result_response.items():
+                    check_response(current_data, expected_data, response, status)
+                    assert response.api_params.get("semaphore") == semaphore
+
+
+    async def test_pass_api_params_in_batch_requests(self, mocked):
+        response_data = [
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+        ]
+
+        semaphores = (4, None, False)
+        types_request = ("post", "put", "patch", "delete")
+
+        for semaphore, type_request in product(semaphores, types_request):
+
+            async with SimpleClient(semaphore=semaphore) as simple_client:
+
+                executor = simple_client.test()
+                mocked_method = getattr(mocked, type_request)
+                executor_method = getattr(executor, type_request + "_batch")
+
+                for data_row in response_data:
+                    mocked_method(
+                        executor.path,
+                        body=orjson.dumps(data_row),
+                        status=201,
+                        content_type="application/json",
+                    )
+
+                kwargs = dict(data=response_data)
+                if semaphore:
+                    kwargs.update({"semaphore": semaphore})
+
+                results = await executor_method(**kwargs)
+
+                for i, response in enumerate(results):
+                    result_response = {
+                        response.data: response_data[i],
+                        response.data.data: response_data[i]["data"],
+                        response.data.data.key: response_data[i]["data"]["key"],
+                    }
+                    for current_data, expected_data in result_response.items():
+                        check_response(current_data, expected_data, response, 201)
+                        assert response.api_params.get("semaphore") == semaphore
+
+                assert len(results) == len(response_data)
+
+
+    async def test_failed_semaphore(self, mocked):
+
+        async with NoneSemaphoreClient() as none_semaphore_client:
+            mocked.get(
+                none_semaphore_client.test().path,
+                body='{"data": {"key": "value"}}',
+                status=200,
+                content_type="application/json",
+            )
+
+            with pytest.raises(TypeError):
+                await none_semaphore_client.test().get()
+
+
+class TestExecutorIteratorFeatures:
+
+    async def test_simple_pages_iterator(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+
         mocked.get(
-            none_semaphore_client.test().path,
-            body='{"data": {"key": "value"}}',
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
             status=200,
             content_type="application/json",
         )
 
-        with pytest.raises(TypeError):
-            await none_semaphore_client.test().get()
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
+
+        response = await client.test().get()
+
+        await check_pages_responses(response, total_pages=2)
 
 
-"""
-test iterator features
-"""
+    async def test_simple_pages_with_max_pages_iterator(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
+            % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
+            % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
+
+        response = await client.test().get()
+
+        await check_pages_responses(response, total_pages=7, max_pages=3)
 
 
-async def test_simple_pages_iterator(mocked, client):
-    next_url = "http://api.example.org/next_batch"
+    async def test_simple_pages_with_max_items_iterator(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
 
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
+            % next_url,
+            status=200,
+            content_type="application/json",
+        )
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
+            % next_url,
+            status=200,
+            content_type="application/json",
+        )
 
-    response = await client.test().get()
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
 
-    await check_pages_responses(response, total_pages=2)
+        response = await client.test().get()
 
-
-async def test_simple_pages_with_max_pages_iterator(mocked, client):
-    next_url = "http://api.example.org/next_batch"
-
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-        % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-        % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    await check_pages_responses(response, total_pages=7, max_pages=3)
+        await check_pages_responses(response, total_pages=3, max_items=3)
 
 
-async def test_simple_pages_with_max_items_iterator(mocked, client):
-    next_url = "http://api.example.org/next_batch"
+    async def test_simple_pages_with_max_pages_and_max_items_iterator(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
 
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-        % next_url,
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-        % next_url,
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
+        response = await client.test().get()
 
-    response = await client.test().get()
-
-    await check_pages_responses(response, total_pages=3, max_items=3)
+        await check_pages_responses(response, total_pages=3, max_pages=2, max_items=3)
 
 
-async def test_simple_pages_with_max_pages_and_max_items_iterator(mocked, client):
-    next_url = "http://api.example.org/next_batch"
+    async def test_simple_pages_max_pages_zero_iterator(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
 
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
+        mocked.add(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
 
-    response = await client.test().get()
+        response = await client.test().get()
 
-    await check_pages_responses(response, total_pages=3, max_pages=2, max_items=3)
-
-
-async def test_simple_pages_max_pages_zero_iterator(mocked, client):
-    next_url = "http://api.example.org/next_batch"
-
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.add(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    await check_pages_responses(response, total_pages=0, max_pages=0)
+        await check_pages_responses(response, total_pages=0, max_pages=0)
 
 
-async def test_simple_pages_max_items_zero_iterator(mocked, client):
-    next_url = "http://api.example.org/next_batch"
+    async def test_simple_pages_max_items_zero_iterator(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
 
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
 
-    response = await client.test().get()
+        response = await client.test().get()
 
-    await check_pages_responses(response, total_pages=0, max_items=0)
-
-
-async def test_simple_pages_max_pages_ans_max_items_zero_iterator(mocked, client):
-    next_url = "http://api.example.org/next_batch"
-
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-
-    await check_pages_responses(response, total_pages=0, max_pages=0, max_items=0)
+        await check_pages_responses(response, total_pages=0, max_items=0)
 
 
-async def test_pages_iterator_with_client_error(mocked, client):
-    next_url = "http://api.example.org/next_batch"
+    async def test_simple_pages_max_pages_ans_max_items_zero_iterator(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
 
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=408,
-        content_type="application/json",
-    )
+        response = await client.test().get()
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
+        await check_pages_responses(response, total_pages=0, max_pages=0, max_items=0)
 
-    response = await client.test().get()
-    result_response = {
-        response.data: {
-            "data": [{"key": "value"}],
-            "paging": {"next": "http://api.example.org/next_batch"},
-        },
-        response.data.data: [{"key": "value"}],
-        response.data.paging: {"next": "http://api.example.org/next_batch"},
-        response.data.paging.next: "http://api.example.org/next_batch",
-    }
-    for current_data, expected_data in result_response.items():
-        check_response(current_data, expected_data, response)
 
-    iterations_count = 0
-    with pytest.raises(ClientError):
+    async def test_pages_iterator_with_client_error(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=408,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
+
+        response = await client.test().get()
+        result_response = {
+            response.data: {
+                "data": [{"key": "value"}],
+                "paging": {"next": "http://api.example.org/next_batch"},
+            },
+            response.data.data: [{"key": "value"}],
+            response.data.paging: {"next": "http://api.example.org/next_batch"},
+            response.data.paging.next: "http://api.example.org/next_batch",
+        }
+        for current_data, expected_data in result_response.items():
+            check_response(current_data, expected_data, response)
+
+        iterations_count = 0
+        with pytest.raises(ClientError):
+            async for item in response().pages():
+                result_page = {item.data: {"key": "value"}, item.data.key: "value"}
+                for current_data, expected_data in result_page.items():
+                    check_response(current_data, expected_data, response)
+                iterations_count += 1
+        assert iterations_count == 2
+
+
+    async def test_pages_iterator_with_server_error(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=504,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
+
+        response = await client.test().get()
+        result_response = {
+            response.data: {
+                "data": [{"key": "value"}],
+                "paging": {"next": "http://api.example.org/next_batch"},
+            },
+            response.data.data: [{"key": "value"}],
+            response.data.paging: {"next": "http://api.example.org/next_batch"},
+            response.data.paging.next: "http://api.example.org/next_batch",
+        }
+        for current_data, expected_data in result_response.items():
+            check_response(current_data, expected_data, response)
+
+        iterations_count = 0
+        with pytest.raises(ServerError):
+            async for item in response().pages():
+                result_page = {item.data: {"key": "value"}, item.data.key: "value"}
+                for current_data, expected_data in result_page.items():
+                    check_response(current_data, expected_data, response)
+                iterations_count += 1
+        assert iterations_count == 2
+
+
+    async def test_pages_iterator_with_error_on_single_page(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{}], "paging": {"next": "%s"}}' % next_url,
+            status=204,
+            content_type="application/json",
+        )
+
+        mocked.get(
+            next_url,
+            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            status=200,
+            content_type="application/json",
+        )
+
+        response = await client.test().get()
+        result_response = {
+            response.data: {
+                "data": [{"key": "value"}],
+                "paging": {"next": "http://api.example.org/next_batch"},
+            },
+            response.data.data: [{"key": "value"}],
+            response.data.paging: {"next": "http://api.example.org/next_batch"},
+            response.data.paging.next: "http://api.example.org/next_batch",
+        }
+        for current_data, expected_data in result_response.items():
+            check_response(current_data, expected_data, response)
+
+        iterations_count = 0
         async for item in response().pages():
-            result_page = {item.data: {"key": "value"}, item.data.key: "value"}
+            if iterations_count == 2:
+                status = 204
+                result_page = {item.data: dict()}
+            else:
+                status = 200
+                result_page = {item.data: {"key": "value"}, item.data.key: "value"}
             for current_data, expected_data in result_page.items():
-                check_response(current_data, expected_data, response)
+                check_response(current_data, expected_data, item, status)
             iterations_count += 1
-    assert iterations_count == 2
+        assert iterations_count == 4
 
 
-async def test_pages_iterator_with_server_error(mocked, client):
-    next_url = "http://api.example.org/next_batch"
+class TestTokenRefreshing:
 
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
+    @pytest.fixture
+    def possible_false_values(self):
+        yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {
+            "key": "value"
+            }
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
+    async def test_not_token_refresh_client_propagates_client_error(self, mocked, client):
+        no_refresh_client = client
 
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=504,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-    result_response = {
-        response.data: {
-            "data": [{"key": "value"}],
-            "paging": {"next": "http://api.example.org/next_batch"},
-        },
-        response.data.data: [{"key": "value"}],
-        response.data.paging: {"next": "http://api.example.org/next_batch"},
-        response.data.paging.next: "http://api.example.org/next_batch",
-    }
-    for current_data, expected_data in result_response.items():
-        check_response(current_data, expected_data, response)
-
-    iterations_count = 0
-    with pytest.raises(ServerError):
-        async for item in response().pages():
-            result_page = {item.data: {"key": "value"}, item.data.key: "value"}
-            for current_data, expected_data in result_page.items():
-                check_response(current_data, expected_data, response)
-            iterations_count += 1
-    assert iterations_count == 2
-
-
-async def test_pages_iterator_with_error_on_single_page(mocked, client):
-    next_url = "http://api.example.org/next_batch"
-
-    mocked.get(
-        client.test().path,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-        status=200,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{}], "paging": {"next": "%s"}}' % next_url,
-        status=204,
-        content_type="application/json",
-    )
-
-    mocked.get(
-        next_url,
-        body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
-        status=200,
-        content_type="application/json",
-    )
-
-    response = await client.test().get()
-    result_response = {
-        response.data: {
-            "data": [{"key": "value"}],
-            "paging": {"next": "http://api.example.org/next_batch"},
-        },
-        response.data.data: [{"key": "value"}],
-        response.data.paging: {"next": "http://api.example.org/next_batch"},
-        response.data.paging.next: "http://api.example.org/next_batch",
-    }
-    for current_data, expected_data in result_response.items():
-        check_response(current_data, expected_data, response)
-
-    iterations_count = 0
-    async for item in response().pages():
-        if iterations_count == 2:
-            status = 204
-            result_page = {item.data: dict()}
-        else:
-            status = 200
-            result_page = {item.data: {"key": "value"}, item.data.key: "value"}
-        for current_data, expected_data in result_page.items():
-            check_response(current_data, expected_data, item, status)
-        iterations_count += 1
-    assert iterations_count == 4
-
-
-"""
-test token refreshing
-"""
-
-
-async def test_not_token_refresh_client_propagates_client_error(mocked, client):
-    no_refresh_client = client
-
-    mocked.post(
-        no_refresh_client.test().path,
-        callback=callback_401,
-        content_type="application/json",
-    )
-
-    with pytest.raises(ClientError):
-        await no_refresh_client.test().post()
-
-
-async def test_disable_token_refreshing(mocked, refresh_token_possible_false_values):
-
-    async with TokenRefreshClient(token="token") as token_refreshing_client:
         mocked.post(
-            token_refreshing_client.test().path,
+            no_refresh_client.test().path,
             callback=callback_401,
             content_type="application/json",
         )
 
         with pytest.raises(ClientError):
-            await token_refreshing_client.test().post()
+            await no_refresh_client.test().post()
 
-    for refresh_token in refresh_token_possible_false_values:
+
+    async def test_disable_token_refreshing(self, mocked, possible_false_values):
+
+        async with TokenRefreshClient(token="token") as client:
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            with pytest.raises(ClientError):
+                await client.test().post()
+
+        for refresh_token in possible_false_values:
+            async with TokenRefreshClient(token="token", refresh_token=refresh_token) as client:
+                mocked.post(
+                    client.test().path,
+                    callback=callback_401,
+                    content_type="application/json",
+                )
+
+                with pytest.raises(ClientError):
+                    await client.test().post()
+
+            async with TokenRefreshClient(token="token") as client:
+                mocked.post(
+                    client.test().path,
+                    callback=callback_401,
+                    content_type="application/json",
+                )
+
+                with pytest.raises(ClientError):
+                    await client.test().post(refresh_token=refresh_token)
+
+
+    async def test_token_expired_automatically_refresh_authentication(self, mocked):
+
+        async with TokenRefreshClient(token="token") as client:
+
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            mocked.post(
+                client.test().path,
+                callback=callback_201,
+                content_type="application/json",
+            )
+
+            response = await client.test().post(refresh_token=True)
+
+            # refresh_authentication method should be able to update api_params
+            assert response.api_params["token"] == "new_token"
+
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            # check that the refresh_token flag is not cyclic
+            with pytest.raises(ClientError):
+                await client.test().post(refresh_token=True)
+
         async with TokenRefreshClient(
-            token="token", refresh_token=refresh_token
-        ) as token_refreshing_client:
+            token="token", refresh_token=True
+        ) as client:
             mocked.post(
-                token_refreshing_client.test().path,
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            mocked.post(
+                client.test().path,
+                callback=callback_201,
+                content_type="application/json",
+            )
+
+            response = await client.test().post()
+
+            # refresh_authentication method should be able to update api_params
+            assert response.api_params["token"] == "new_token"
+
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            # check that the refresh_token flag is not cyclic
+            with pytest.raises(ClientError):
+                await client.test().post()
+
+
+    async def test_token_expired_automatically_refresh_authentication_by_default(self, mocked):
+        async with TokenRefreshByDefaultClient(token="token") as client:
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            mocked.post(
+                client.test().path,
+                callback=callback_201,
+                content_type="application/json",
+            )
+
+            response = await client.test().post()
+
+            # refresh_authentication method should be able to update api_params
+            assert response._api_params["token"] == "new_token"
+
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+            mocked.post(
+                client.test().path,
+                callback=callback_401,
+                content_type="application/json",
+            )
+
+            # check that the refresh_token flag is not cyclic
+            with pytest.raises(ClientError):
+                await client.test().post()
+
+
+    async def test_raises_error_if_refresh_authentication_method_returns_false_value(self, mocked, possible_false_values):
+        async with FailTokenRefreshClient(token="token") as client:
+
+            mocked.post(
+                client.test().path,
                 callback=callback_401,
                 content_type="application/json",
             )
 
             with pytest.raises(ClientError):
-                await token_refreshing_client.test().post()
+                await client.test().post()
 
-        async with TokenRefreshClient(token="token") as token_refreshing_client:
-            mocked.post(
-                token_refreshing_client.test().path,
-                callback=callback_401,
-                content_type="application/json",
-            )
+        for refresh_token in (True, *possible_false_values):
 
-            with pytest.raises(ClientError):
-                await token_refreshing_client.test().post(refresh_token=refresh_token)
+            async with FailTokenRefreshClient(
+                token="token", refresh_token=refresh_token
+            ) as client:
 
+                mocked.post(
+                    client.test().path,
+                    callback=callback_401,
+                    content_type="application/json",
+                )
 
-async def test_token_expired_automatically_refresh_authentication(mocked):
+                with pytest.raises(ClientError):
+                    await client.test().post()
 
-    async with TokenRefreshClient(token="token") as token_refresh_client:
+            async with FailTokenRefreshClient(token="token") as client:
 
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_401,
-            content_type="application/json",
-        )
+                mocked.post(
+                    client.test().path,
+                    callback=callback_401,
+                    content_type="application/json",
+                )
 
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_201,
-            content_type="application/json",
-        )
-
-        response = await token_refresh_client.test().post(refresh_token=True)
-
-        # refresh_authentication method should be able to update api_params
-        assert response.api_params["token"] == "new_token"
-
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_401,
-            content_type="application/json",
-        )
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_401,
-            content_type="application/json",
-        )
-
-        # check that the refresh_token flag is not cyclic
-        with pytest.raises(ClientError):
-            await token_refresh_client.test().post(refresh_token=True)
-
-    async with TokenRefreshClient(
-        token="token", refresh_token=True
-    ) as token_refresh_client:
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_401,
-            content_type="application/json",
-        )
-
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_201,
-            content_type="application/json",
-        )
-
-        response = await token_refresh_client.test().post()
-
-        # refresh_authentication method should be able to update api_params
-        assert response.api_params["token"] == "new_token"
-
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_401,
-            content_type="application/json",
-        )
-        mocked.post(
-            token_refresh_client.test().path,
-            callback=callback_401,
-            content_type="application/json",
-        )
-
-        # check that the refresh_token flag is not cyclic
-        with pytest.raises(ClientError):
-            await token_refresh_client.test().post()
-
-
-async def test_token_expired_automatically_refresh_authentication_by_default(
-    mocked, token_refresh_by_default_client
-):
-
-    mocked.post(
-        token_refresh_by_default_client.test().path,
-        callback=callback_401,
-        content_type="application/json",
-    )
-
-    mocked.post(
-        token_refresh_by_default_client.test().path,
-        callback=callback_201,
-        content_type="application/json",
-    )
-
-    response = await token_refresh_by_default_client.test().post()
-
-    # refresh_authentication method should be able to update api_params
-    assert response._api_params["token"] == "new_token"
-
-    mocked.post(
-        token_refresh_by_default_client.test().path,
-        callback=callback_401,
-        content_type="application/json",
-    )
-    mocked.post(
-        token_refresh_by_default_client.test().path,
-        callback=callback_401,
-        content_type="application/json",
-    )
-
-    # check that the refresh_token flag is not cyclic
-    with pytest.raises(ClientError):
-        await token_refresh_by_default_client.test().post()
-
-
-async def test_raises_error_if_refresh_authentication_method_returns_false_value(
-    mocked, refresh_token_possible_false_values
-):
-    async with FailTokenRefreshClient(token="token") as fail_client:
-
-        mocked.post(
-            fail_client.test().path,
-            callback=callback_401,
-            content_type="application/json",
-        )
-
-        with pytest.raises(ClientError):
-            await fail_client.test().post()
-
-    for refresh_token in (True, *refresh_token_possible_false_values):
-
-        async with FailTokenRefreshClient(
-            token="token", refresh_token=refresh_token
-        ) as fail_client:
-
-            mocked.post(
-                fail_client.test().path,
-                callback=callback_401,
-                content_type="application/json",
-            )
-
-            with pytest.raises(ClientError):
-                await fail_client.test().post()
-
-        async with FailTokenRefreshClient(token="token") as fail_client:
-
-            mocked.post(
-                fail_client.test().path,
-                callback=callback_401,
-                content_type="application/json",
-            )
-
-            with pytest.raises(ClientError):
-                await fail_client.test().post(refresh_token=refresh_token)
+                with pytest.raises(ClientError):
+                    await client.test().post(refresh_token=refresh_token)
 
 
 class TestProcessData:
