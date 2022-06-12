@@ -100,28 +100,6 @@ class BaseTapiocaClientExecutor(BaseTapiocaClientResource):
         self._data = data
         self._request_kwargs = request_kwargs or {}
 
-    @property
-    def response(self):
-        if self._response is None:
-            raise TapiocaException("This instance has no response object.")
-        return self._response
-
-    @property
-    def status(self):
-        return self.response.status
-
-    @property
-    def url(self):
-        return self.response.url
-
-    @property
-    def data(self):
-        return self._data
-
-    @property
-    def request_kwargs(self):
-        return self._request_kwargs
-
     def _wrap_in_tapioca_response(self, **kwargs) -> "TapiocaClientResponse":
         context = self._get_context(**kwargs)
         from .aiotapioca import TapiocaClientResponse

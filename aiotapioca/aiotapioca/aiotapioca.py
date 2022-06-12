@@ -167,12 +167,12 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         item_count = 0
 
         while iterator_list:
-            for _ in iterator_list:
+            for item in iterator_list:
                 if executor._reached_max_limits(
                     page_count, item_count, max_pages, max_items
                 ):
                     break
-                yield executor._wrap_in_tapioca_response()
+                yield executor._wrap_in_tapioca_response(data=item)
                 item_count += 1
 
             page_count += 1
@@ -242,13 +242,13 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         if "url" not in kwargs:
             kwargs["url"] = self._path
 
-        request_kwargs = self._request_kwargs or kwargs
+        self._request_kwargs = kwargs
 
         context = self._get_context(
             request_method=request_method,
             refresh_token=refresh_token,
             repeat_number=repeat_number,
-            request_kwargs={**request_kwargs},
+            request_kwargs={**self._request_kwargs},
         )
         del context["data"]
 
@@ -258,8 +258,8 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
         try:
             await self.initialize()
-            request_kwargs = await coro_wrap(self._api.prepare_request_kwargs, *args, **context)
-            response = await self._session.request(request_method, **request_kwargs)
+            self._request_kwargs = await coro_wrap(self._api.prepare_request_kwargs, *args, **context)
+            response = await self._session.request(request_method, **self._request_kwargs)
             context.update({"response": response, "request_kwargs": request_kwargs})
             data = await coro_wrap(self._api.process_response, **context)
             context["data"] = data
@@ -318,7 +318,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         except Exception as ex:
             await coro_wrap(self._api.error_handling, ex, *args, **context)
 
-        return self._wrap_in_tapioca_response(data=data, response=response, request_kwargs=request_kwargs)
+        return self._wrap_in_tapioca_response(data=data, response=response, request_kwargs=self._request_kwargs)
 
     @staticmethod
     def _reached_max_limits(page_count, item_count, max_pages, max_items):
@@ -342,6 +342,24 @@ class TapiocaClientResponse(BaseTapiocaClientResponse):
 
     def __call__(self, *args, **kwargs):
         return self._wrap_in_tapioca_executor()
+
+    @property
+    def response(self):
+        if self._response is None:
+            raise TapiocaException("This instance has no response object.")
+        return self._response
+
+    @property
+    def status(self):
+        return self.response.status
+
+    @property
+    def url(self):
+        return self.response.url
+
+    @property
+    def request_kwargs(self):
+        return self._request_kwargs
 
     @property
     def data(self):
