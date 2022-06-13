@@ -13,5 +13,4 @@ def mocked():
 
 @pytest_asyncio.fixture
 async def client():
-    async with SimpleClient() as c:
-        yield c
+    yield SimpleClient()

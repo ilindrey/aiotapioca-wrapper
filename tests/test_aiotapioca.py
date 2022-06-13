@@ -4,9 +4,10 @@ from itertools import product
 import orjson
 import pytest
 import pytest_asyncio
+from aiohttp import ClientSession
 
 from aiotapioca.exceptions import ClientError, ServerError
-from aiotapioca.aiotapioca import TapiocaClientResponse
+from aiotapioca.aiotapioca import TapiocaClientResponse, TapiocaClientExecutor
 from aiotapioca.aiotapioca.process_data import ProcessData
 
 from .callbacks import callback_201, callback_401
@@ -57,6 +58,48 @@ async def check_pages_responses(
 
 class TestTapiocaClient:
 
+    def test_available_attributes(self, client):
+        dir_c = dir(client)
+
+        resources = client._api.get_resource_mapping(client._api_params)
+        methods = [
+            *resources,
+            'api_params',
+            'close',
+            'closed',
+            'initialize',
+            'session'
+            ]
+        for resource_key, client_attr in zip(sorted(methods), dir_c):
+            assert resource_key == client_attr
+
+    async def test_await_initialize(self):
+        client = await SimpleClient()
+        assert isinstance(client.session, ClientSession) and not client.session.closed
+        assert not client.closed
+
+    async def test_close_session(self):
+        client = await SimpleClient()
+
+        assert not client.closed
+
+        await client.close()
+
+        assert client.closed
+        assert client.session is None
+
+    async def test_initialize_with_context_manager(self):
+        client = SimpleClient()
+        await client.__aenter__()
+
+        assert isinstance(client.session, ClientSession) and not client.session.closed
+        assert not client.closed
+
+        await client.__aexit__(None, None, None)
+
+        assert client.closed
+        assert client.session is None
+
     async def test_is_pickleable(self, mocked):
         pickle_client = pickle.loads(pickle.dumps(SimpleClient()))
 
@@ -87,21 +130,33 @@ class TestTapiocaClient:
             assert iterations_count == 2
 
 
-class TestTapiocaResource:
+class TestTapiocaClientResource:
+
+    def test_available_attributes(self, client):
+        dir_r = dir(client.test)
+        expected_methods = sorted(['api_params', 'client', 'open_docs', 'path', 'resource', 'resource_name', 'session', 'test'])
+        for attr, expected in zip(dir_r, expected_methods):
+            assert attr == expected
 
     def test_fill_url_template(self, client):
         expected_url = "https://api.example.org/user/123/"
         executor = client.user(id="123")
         assert executor.path == expected_url
 
+    def test_fill_url_from_default_params(self):
+        client = SimpleClient(default_url_params={"id": 123})
+        assert client.user().path == "https://api.example.org/user/123/"
+
     def test_fill_another_root_url_template(self, client):
         expected_url = "https://api.another.com/another-root/"
         resource = client.another_root()
         assert resource.path == expected_url
 
-    def test_fill_url_from_default_params(self):
-        client = SimpleClient(default_url_params={"id": 123})
-        assert client.user().path == "https://api.example.org/user/123/"
+    def test_contains(self, client):
+        assert 'resource' in client.resource
+        assert 'docs' in client.resource
+        assert 'foo' in client.resource
+        assert 'spam' in client.resource
 
     def test_docs(self, client):
         expected = (
@@ -113,12 +168,31 @@ class TestTapiocaResource:
         assert "\n".join(client.resource.__doc__.split("\n")[1:]) == expected
 
 
-class TestTapiocaExecutor:
+class TestTapiocaClientExecutor:
 
-    def test_resource_executor_path_should_be_composed_url(self, client):
-        expected_url = "https://api.example.org/test/"
-        resource = client.test()
-        assert resource.path == expected_url
+    def test_available_attributes(self, client):
+        dir_e = dir(client.test())
+        expected_methods = sorted(['get', 'post', 'options', 'put', 'patch', 'delete', 'post_batch', 'put_batch', 'patch_batch', 'delete_batch', 'pages','api_params', 'client', 'path', 'resource', 'resource_name', 'session'])
+        for attr, expected in zip(dir_e, expected_methods):
+            assert attr == expected
+
+    async def test_request_with_context_manager(self, mocked):
+
+        async with SimpleClient() as client:
+
+            next_url = "http://api.example.org/next_batch"
+
+            mocked.get(
+                client.test().path,
+                body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+                status=200,
+                content_type="application/json",
+            )
+
+            response = await client.test().get()
+
+            assert response.response is not None
+            assert response.status == 200
 
     async def test_response_executor_object_has_a_response(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
@@ -126,13 +200,6 @@ class TestTapiocaExecutor:
         mocked.get(
             client.test().path,
             body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
-            status=200,
-            content_type="application/json",
-        )
-
-        mocked.get(
-            next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
             status=200,
             content_type="application/json",
         )
@@ -423,7 +490,7 @@ class TestTapiocaExecutor:
                 await none_semaphore_client.test().get()
 
 
-class TestExecutorIteratorFeatures:
+class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_simple_pages_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
@@ -774,6 +841,33 @@ class TestExecutorIteratorFeatures:
             iterations_count += 1
         assert iterations_count == 4
 
+
+class TestTapiocaClientResponse:
+
+    async def test_available_attributes(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test().get()
+        dir_r = dir(response)
+        expected_methods = sorted(['api_params', 'client', 'path', 'resource', 'resource_name', 'session', 'response', 'status', 'url', 'request_kwargs', 'data'])
+        for attr, expected in zip(dir_r, expected_methods):
+            assert attr == expected
+
+    async def test_callable_executor_from_response(self, mocked, client):
+        next_url = "http://api.example.org/next_batch"
+        mocked.get(
+            client.test().path,
+            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            status=200,
+            content_type="application/json",
+        )
+        response = await client.test().get()
+        assert type(response()) is TapiocaClientExecutor
 
 class TestTokenRefreshing:
 
