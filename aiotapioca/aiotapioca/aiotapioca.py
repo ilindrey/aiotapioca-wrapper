@@ -18,10 +18,18 @@ from .process_data import ProcessData
 
 class TapiocaClient(BaseTapiocaClient):
     def __dir__(self):
+        methods = [
+            'api_params',
+            'close',
+            'closed',
+            'initialize',
+            'session'
+            ]
         resource_mapping = self._api.get_resource_mapping(self._api_params)
         if resource_mapping:
-            return [key for key in resource_mapping.keys()]
-        return []
+            methods.extend([key for key in resource_mapping.keys()])
+            return methods
+        return methods
 
     def __getattr__(self, name):
         # Fix to be pickle-able:
@@ -61,7 +69,7 @@ class TapiocaClient(BaseTapiocaClient):
 
     def _get_client_resource_from_name_or_fallback(self, name):
 
-        # if could not access, falback to resource mapping
+        # if could not access, faдlback to resource mapping
         resource_mapping = self._api.get_resource_mapping(self._api_params)
         if name in resource_mapping:
             resource = resource_mapping[name]
@@ -75,15 +83,17 @@ class TapiocaClient(BaseTapiocaClient):
 
 class TapiocaClientResource(BaseTapiocaClientResource):
     def __str__(self):
-        return f"<{type(self).__name__} object: {self._resource['resource']}>"
+        return f"<{type(self).__name__} object: {self._resource_name}>"
 
     def __contains__(self, key):
         return key in self._resource
 
     def __dir__(self):
+        methods = ['api_params', 'client', 'path', 'resource', 'resource_name', 'session', 'open_docs']
         if self._resource_name is not None:
-            return [self._resource_name]
-        return []
+            methods.extend([self._resource_name])
+            return methods
+        return methods
 
     def __call__(self, *args, **kwargs):
         path = self._path
@@ -122,13 +132,12 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
     def __str__(self):
         return f"<{type(self).__name__} object: {self._path}>"
 
-    def __getitem__(self, key):
-        raise TapiocaException(
-            "This operation cannot be done on a TapiocaClientExecutor object."
-        )
-
-    def __iter__(self):
-        raise TapiocaException("Cannot iterate over a TapiocaClientExecutor object.")
+    def __dir__(self):
+        methods = [
+            m for m in type(self).__dict__.keys() if not m.startswith("_")
+            ]
+        methods.extend(['api_params', 'client', 'path', 'resource', 'resource_name', 'session'])
+        return methods
 
     async def get(self, *args, **kwargs):
         return await self._send("GET", *args, **kwargs)
@@ -342,6 +351,13 @@ class TapiocaClientResponse(BaseTapiocaClientResponse):
 
     def __call__(self, *args, **kwargs):
         return self._wrap_in_tapioca_executor()
+
+    def __dir__(self):
+        methods = [
+            m for m in type(self).__dict__.keys() if not m.startswith("_")
+            ]
+        methods.extend(['api_params', 'client', 'path', 'resource', 'resource_name', 'session'])
+        return methods
 
     @property
     def response(self):

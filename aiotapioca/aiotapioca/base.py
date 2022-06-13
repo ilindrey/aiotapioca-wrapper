@@ -2,8 +2,6 @@ from aiohttp import ClientSession
 from orjson import dumps
 from asyncio_atexit import register as atexit_register
 
-from aiotapioca.exceptions import TapiocaException
-
 
 class BaseTapiocaClient:
     def __init__(self, api, session=None, api_params=None, *args, **kwargs):
@@ -13,10 +11,6 @@ class BaseTapiocaClient:
 
     def __str__(self):
         return f"<{type(self).__name__} object>"
-
-    def __dir__(self):
-        methods = [m for m in type(self).__dict__.keys() if not m.startswith("_")]
-        return methods
 
     @property
     def session(self):
