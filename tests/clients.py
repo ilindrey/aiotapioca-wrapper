@@ -153,7 +153,6 @@ class FuncParserClientAdapter(SimpleClientAdapter):
 
 FuncParserClient = generate_wrapper_from_adapter(FuncParserClientAdapter)
 
-
 class StaticMethodParserClientAdapter(SimpleClientAdapter):
     def get_resource_mapping(self, api_params, **kwargs):
         resource_mapping = super().get_resource_mapping(api_params, **kwargs)
@@ -165,6 +164,16 @@ StaticMethodParserClient = generate_wrapper_from_adapter(
     StaticMethodParserClientAdapter
 )
 
+class ClassMethodParserClientAdapter(SimpleClientAdapter):
+    def get_resource_mapping(self, api_params, **kwargs):
+        resource_mapping = super().get_resource_mapping(api_params, **kwargs)
+        resource_mapping["test"]["parsers"] = FooParser.spam
+        return resource_mapping
+
+
+ClassMethodParserClient = generate_wrapper_from_adapter(
+    ClassMethodParserClientAdapter
+)
 
 class ClassParserClientAdapter(SimpleClientAdapter):
     def get_resource_mapping(self, api_params, **kwargs):

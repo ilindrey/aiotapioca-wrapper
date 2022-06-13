@@ -1,7 +1,7 @@
 import re
 import webbrowser
 from functools import partial
-from inspect import isclass, isfunction
+from inspect import isclass, isfunction, ismethod
 from collections import OrderedDict
 
 from orjson import dumps
@@ -133,6 +133,8 @@ class ProcessData:
         if parsers is None:
             return None
         elif isfunction(parsers) and name == parsers.__name__:
+            return partial(parsers, self._data)
+        elif ismethod(parsers) and hasattr(parsers, '__self__'):
             return partial(parsers, self._data)
         elif isclass(parsers) and name == self._to_snake_case(parsers.__name__):
             parsers.data = self._data

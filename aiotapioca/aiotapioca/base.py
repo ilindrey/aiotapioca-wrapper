@@ -1,6 +1,8 @@
 from aiohttp import ClientSession
 from orjson import dumps
 from asyncio_atexit import register as atexit_register
+from aiotapioca.exceptions import TapiocaException
+from .process_data import ProcessData
 
 
 class BaseTapiocaClient:
@@ -102,4 +104,24 @@ class BaseTapiocaClientExecutor(BaseTapiocaClientResource):
 
 class BaseTapiocaClientResponse(BaseTapiocaClientExecutor):
 
-    pass
+    @property
+    def response(self):
+        if self._response is None:
+            raise TapiocaException("This instance has no response object.")
+        return self._response
+
+    @property
+    def status(self):
+        return self.response.status
+
+    @property
+    def url(self):
+        return self.response.url
+
+    @property
+    def request_kwargs(self):
+        return self._request_kwargs
+
+    @property
+    def data(self):
+        return ProcessData(self._api, self._data, self._resource)

@@ -20,6 +20,7 @@ from .clients import (
     RetryRequestClient,
     SimpleClient,
     StaticMethodParserClient,
+    ClassMethodParserClient,
     TokenRefreshByDefaultClient,
     TokenRefreshClient,
 )
@@ -59,19 +60,19 @@ async def check_pages_responses(
 class TestTapiocaClient:
 
     def test_available_attributes(self, client):
-        dir_c = dir(client)
-
+        dir_var = dir(client)
         resources = client._api.get_resource_mapping(client._api_params)
-        methods = [
+        expected_methods = sorted([
             *resources,
             'api_params',
             'close',
             'closed',
             'initialize',
             'session'
-            ]
-        for resource_key, client_attr in zip(sorted(methods), dir_c):
-            assert resource_key == client_attr
+            ])
+        assert len(dir_var) == len(expected_methods)
+        for attr, expected in zip(dir_var, expected_methods):
+            assert attr == expected
 
     async def test_await_initialize(self):
         client = await SimpleClient()
@@ -133,9 +134,10 @@ class TestTapiocaClient:
 class TestTapiocaClientResource:
 
     def test_available_attributes(self, client):
-        dir_r = dir(client.test)
+        dir_var = dir(client.test)
         expected_methods = sorted(['api_params', 'client', 'open_docs', 'path', 'resource', 'resource_name', 'session', 'test'])
-        for attr, expected in zip(dir_r, expected_methods):
+        assert len(dir_var) == len(expected_methods)
+        for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
 
     def test_fill_url_template(self, client):
@@ -171,9 +173,10 @@ class TestTapiocaClientResource:
 class TestTapiocaClientExecutor:
 
     def test_available_attributes(self, client):
-        dir_e = dir(client.test())
+        dir_var = dir(client.test())
         expected_methods = sorted(['get', 'post', 'options', 'put', 'patch', 'delete', 'post_batch', 'put_batch', 'patch_batch', 'delete_batch', 'pages','api_params', 'client', 'path', 'resource', 'resource_name', 'session'])
-        for attr, expected in zip(dir_e, expected_methods):
+        assert len(dir_var) == len(expected_methods)
+        for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
 
     async def test_request_with_context_manager(self, mocked):
@@ -853,9 +856,10 @@ class TestTapiocaClientResponse:
             content_type="application/json",
         )
         response = await client.test().get()
-        dir_r = dir(response)
+        dir_var = dir(response)
         expected_methods = sorted(['api_params', 'client', 'path', 'resource', 'resource_name', 'session', 'response', 'status', 'url', 'request_kwargs', 'data'])
-        for attr, expected in zip(dir_r, expected_methods):
+        assert len(dir_var) == len(expected_methods)
+        for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
 
     async def test_callable_executor_from_response(self, mocked, client):
@@ -1167,6 +1171,11 @@ class TestParsers:
             yield client
 
     @pytest_asyncio.fixture
+    async def class_method_parser_client(self):
+        async with ClassMethodParserClient() as client:
+            yield client
+
+    @pytest_asyncio.fixture
     async def class_parser_client(self):
         async with ClassParserClient() as client:
             yield client
@@ -1219,6 +1228,22 @@ class TestParsers:
         assert response.data.foo(2) == "c"
         with pytest.raises(IndexError):
             response.data.foo(3)
+
+    async def test_class_method_parser(self, mocked, class_method_parser_client):
+        mocked.get(
+            class_method_parser_client.test().path,
+            body='["a", "b", "c"]',
+            status=200,
+            content_type="application/json",
+        )
+        response = await class_method_parser_client.test().get()
+
+        assert response.data.spam() == ["a", "b", "c"]
+        assert response.data.spam(0) == "a"
+        assert response.data.spam(1) == "b"
+        assert response.data.spam(2) == "c"
+        with pytest.raises(IndexError):
+            response.data.spam(3)
 
     async def test_class_parser(self, mocked, class_parser_client):
         mocked.get(

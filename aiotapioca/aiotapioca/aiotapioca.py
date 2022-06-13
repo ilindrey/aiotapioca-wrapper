@@ -356,27 +356,5 @@ class TapiocaClientResponse(BaseTapiocaClientResponse):
         methods = [
             m for m in type(self).__dict__.keys() if not m.startswith("_")
             ]
-        methods.extend(['api_params', 'client', 'path', 'resource', 'resource_name', 'session'])
+        methods.extend(['api_params', 'client', 'path', 'resource', 'resource_name', 'session', 'response', 'url', 'status', 'request_kwargs', 'data'])
         return methods
-
-    @property
-    def response(self):
-        if self._response is None:
-            raise TapiocaException("This instance has no response object.")
-        return self._response
-
-    @property
-    def status(self):
-        return self.response.status
-
-    @property
-    def url(self):
-        return self.response.url
-
-    @property
-    def request_kwargs(self):
-        return self._request_kwargs
-
-    @property
-    def data(self):
-        return ProcessData(self._api, self._data, self._resource)
