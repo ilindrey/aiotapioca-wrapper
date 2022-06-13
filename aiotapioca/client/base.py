@@ -50,7 +50,7 @@ class BaseTapiocaClient:
 
     def _wrap_in_tapioca_resource(self, **kwargs) -> "TapiocaClientResource":
         context = self._get_context(**kwargs)
-        from .aiotapioca import TapiocaClientResource
+        from .client import TapiocaClientResource
         return TapiocaClientResource(**context)
 
 
@@ -85,7 +85,7 @@ class BaseTapiocaClientResource(BaseTapiocaClient):
 
     def _wrap_in_tapioca_executor(self, **kwargs) -> "TapiocaClientExecutor":
         context = self._get_context(**kwargs)
-        from .aiotapioca import TapiocaClientExecutor
+        from .client import TapiocaClientExecutor
         return TapiocaClientExecutor(**context)
 
 
@@ -98,7 +98,7 @@ class BaseTapiocaClientExecutor(BaseTapiocaClientResource):
 
     def _wrap_in_tapioca_response(self, **kwargs) -> "TapiocaClientResponse":
         context = self._get_context(**kwargs)
-        from .aiotapioca import TapiocaClientResponse
+        from .client import TapiocaClientResponse
         return TapiocaClientResponse(**context)
 
 

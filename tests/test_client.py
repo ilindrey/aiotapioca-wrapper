@@ -7,8 +7,7 @@ import pytest_asyncio
 from aiohttp import ClientSession
 
 from aiotapioca.exceptions import ClientError, ServerError
-from aiotapioca.aiotapioca import TapiocaClientResponse, TapiocaClientExecutor
-from aiotapioca.aiotapioca.process_data import ProcessData
+from aiotapioca.client import TapiocaClientResponse, TapiocaClientExecutor, ProcessData
 
 from .callbacks import callback_201, callback_401
 from .clients import (

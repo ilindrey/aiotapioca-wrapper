@@ -1,4 +1,4 @@
-from .aiotapioca import TapiocaClient
+from .client import TapiocaClient
 
 
 def generate_wrapper_from_adapter(adapter_class, session=None):
