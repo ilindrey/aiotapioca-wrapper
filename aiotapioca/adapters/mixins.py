@@ -3,7 +3,7 @@ from dataclasses import asdict, is_dataclass
 
 import xmltodict
 from orjson import JSONDecodeError, dumps, loads
-from pydantic import BaseModel
+from pydantic import BaseModel, parse_obj_as
 
 
 class TapiocaAdapterFormMixin:
@@ -69,10 +69,11 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             return data
         if self.validate_data_received and response.status == 200:
             data = self.convert_data_to_pydantic_model("response", data, **kwargs)
-            if isinstance(data, BaseModel):
+
+            if isinstance(data, BaseModel) or is_dataclass(data):
                 if self.convert_to_dict:
-                    data = data.dict()
-                if self.extract_root:
+                    data = data.dict() if isinstance(data, BaseModel) else asdict(data)
+                if self.extract_root and not is_dataclass(data):
                     if hasattr(data, "__root__"):
                         return data.__root__
                     elif "__root__" in data:
@@ -83,24 +84,24 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
 
     def convert_data_to_pydantic_model(self, type_convert, data, **kwargs):
         model = self.get_pydantic_model(type_convert, **kwargs)
-        if type(model) == type(BaseModel):
-            return model.parse_obj(data)
+        if model:
+            return parse_obj_as(model, data)
         return data
 
     def get_pydantic_model(self, type_convert, resource, request_method, **kwargs):
         model = None
         models = resource.get("pydantic_models")
-        if type(models) == type(BaseModel) or is_dataclass(models):
+        if type(models) is type(BaseModel) or is_dataclass(models):
             model = models
         elif isinstance(models, dict):
             method = request_method.upper()
             if "request" in models or "response" in models:
                 models = models.get(type_convert)
-            if type(models) == type(BaseModel) or is_dataclass(models):
+            if type(models) is type(BaseModel) or is_dataclass(models):
                 model = models
             elif isinstance(models, dict):
                 for key, value in models.items():
-                    if type(key) == type(BaseModel) or is_dataclass(key):
+                    if type(key) is type(BaseModel) or is_dataclass(key):
                         if isinstance(value, str) and value.upper() == method:
                             model = key
                             break
@@ -118,18 +119,14 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
                     if value is None:
                         model = key
                         break
-        if self.forced_to_have_model and not model:
-            raise ValueError(
-                "Pydantic model not found."
-                " Specify the pydantic models in the pydantic_models parameter in resource_mapping"
-            )
-        if is_dataclass(model):
-            if hasattr(model, "__pydantic_model__"):
-                model = model.__pydantic_model__
-            else:
-                raise TypeError(f"It isn't pydantic dataclass: {model}.")
-        if self.forced_to_have_model and type(model) != type(BaseModel):
-            raise TypeError(f"It isn't pydantic model: {model}.")
+        if self.forced_to_have_model:
+            if not model:
+                raise ValueError(
+                    "Pydantic model not found."
+                    " Specify the pydantic models in the pydantic_models parameter in resource_mapping"
+                )
+            if type(model) is not type(BaseModel) or is_dataclass(model) and not hasattr(model, "__pydantic_model__"):
+                raise TypeError(f"It isn't pydantic model or dataclass: {model}.")
         return model
 
 

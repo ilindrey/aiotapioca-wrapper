@@ -24,14 +24,9 @@ class DetailDT:
 
 @dataclasses.dataclass
 class CustomModelDT:
-    data: list[Detail]
-
-
-@dataclasses.dataclass
-class RootModelDT:
-    __root__: list[Detail]
+    data: list[DetailDT]
 
 
 @dataclass
-class BadModelDT:
-    data: list[Detail]
+class NotPydanticDT:
+    data: list[DetailDT]

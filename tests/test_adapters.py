@@ -1,5 +1,6 @@
 
-from pydantic import BaseModel
+from pydantic import BaseModel, parse_raw_as
+from dataclasses import asdict, is_dataclass
 
 from aiotapioca import generate_wrapper_from_adapter, TapiocaAdapterPydantic
 from .models import (
@@ -7,7 +8,6 @@ from .models import (
     CustomModel,
     CustomModelDT,
     RootModel,
-    RootModelDT,
 )
 from .clients import PydanticDefaultClientAdapter, PydanticForcedClient,XMLClient
 
@@ -151,7 +151,7 @@ class TestTapiocaAdapterPydantic:
         }
 
         model = TapiocaAdapterPydantic().get_pydantic_model("response", resource, "GET")
-        assert model == CustomModelDT.__pydantic_model__
+        assert model == CustomModelDT
 
         resource["pydantic_models"] = CustomModel
         model = TapiocaAdapterPydantic().get_pydantic_model("response", resource, "GET")
@@ -335,37 +335,8 @@ class TestTapiocaAdapterPydantic:
                     assert isinstance(response.data(), dict)
                     assert response.data() == orjson.loads(response_body)
                 else:
-                    assert isinstance(response.data(), BaseModel)
-                    assert response.data().dict() == orjson.loads(response_body)
-
-                mocked.get(
-                    client.test_dataclass_root().path,
-                    body=response_body_root,
-                    status=200,
-                    content_type="application/json",
-                )
-                response = await client.test_dataclass_root().get()
-                data = response.data()
-                if extract:
-                    assert isinstance(data, list)
-                else:
-                    if not validate_received:
-                        assert isinstance(data, list)
-                    elif convert:
-                        assert isinstance(data, dict)
-                        data = data["__root__"]
-                    else:
-                        assert isinstance(data, BaseModel)
-                        data = data.__root__
-                for response_data, expected_data in zip(
-                    data, orjson.loads(response_body_root)
-                ):
-                    if convert or not validate_received:
-                        assert isinstance(response_data, dict)
-                        assert response_data == expected_data
-                    else:
-                        assert isinstance(response_data, BaseModel)
-                        assert response_data.dict() == expected_data
+                    assert is_dataclass(response.data())
+                    assert asdict(response.data()) == orjson.loads(response_body)
 
 
     async def test_pydantic_mixin_format_data_to_request(self, mocked):
@@ -449,36 +420,9 @@ class TestTapiocaAdapterPydantic:
                     response = await client.test_dataclass().post(data=data)
                     assert response.data() == {"id": 100500}
                 else:
-                    data = CustomModelDT.__pydantic_model__.parse_raw(response_body)
+                    data = parse_raw_as(CustomModelDT, response_body)
                     response = await client.test_dataclass().post(data=data)
                     assert response.data() == {"id": 100500}
-
-                if validate_sending:
-                    data = orjson.loads(response_body_root)
-                    for _ in range(len(data)):
-                        mocked.post(
-                            client.test_root().path,
-                            body='{"id": 100500}',
-                            status=200,
-                            content_type="application/json",
-                        )
-                    responses = await client.test_root().post_batch(data=data)
-                    assert len(responses) == len(data)
-                    for response in responses:
-                        assert response.data() == {"id": 100500}
-                else:
-                    data = RootModelDT.__pydantic_model__.parse_raw(response_body_root)
-                    for _ in range(len(data.__root__)):
-                        mocked.post(
-                            client.test_root().path,
-                            body='{"id": 100500}',
-                            status=200,
-                            content_type="application/json",
-                        )
-                    responses = await client.test_root().post_batch(data=data.__root__)
-                    assert len(responses) == len(data.__root__)
-                    for response in responses:
-                        assert response.data() == {"id": 100500}
 
         class PidanticClientAdapter(PydanticDefaultClientAdapter):
             forced_to_have_model = True

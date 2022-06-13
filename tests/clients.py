@@ -7,13 +7,11 @@ from aiotapioca import (
 )
 
 from .models import (
-    BadModelDT,
+    NotPydanticDT,
     CustomModel,
     CustomModelDT,
     Detail,
-    DetailDT,
     RootModel,
-    RootModelDT,
 )
 from .parsers import FooParser, foo_parser
 
@@ -226,13 +224,6 @@ class PydanticDefaultClientAdapter(TapiocaAdapterPydantic):
                 "response": {CustomModelDT: ["GET"]},
             },
         },
-        "test_dataclass_root": {
-            **test,
-            "pydantic_models": {
-                "request": {DetailDT: "POST"},
-                "response": {RootModelDT: "GET"},
-            },
-        },
     }
 
 
@@ -244,7 +235,7 @@ class PydanticForcedClientAdapter(PydanticDefaultClientAdapter):
     resource_mapping = {
         "test_not_found": {**test, "pydantic_models": None},
         "test_bad_pydantic_model": {**test, "pydantic_models": 100500},
-        "test_bad_dataclass_model": {**test, "pydantic_models": BadModelDT},
+        "test_bad_dataclass_model": {**test, "pydantic_models": NotPydanticDT},
     }
 
 
