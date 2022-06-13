@@ -18,8 +18,6 @@ class TapiocaAdapter:
     refresh_token = False
     resource_mapping = None
     api_root = None
-    to_thread_data_to_request = True
-    to_thread_response_to_native = True
 
     def __init__(self, serializer_class=None, *args, **kwargs):
         if serializer_class:
@@ -75,10 +73,7 @@ class TapiocaAdapter:
     async def data_to_request(self, data, *args, **kwargs):
         if not data:
             return None
-        if self.to_thread_data_to_request:
-            data = await to_thread(self.prepare_request_data, data, *args, **kwargs)
-        else:
-            data = self.prepare_request_data(data, *args, **kwargs)
+        data = await to_thread(self.prepare_request_data, data, *args, **kwargs)
         return data
 
     def prepare_request_data(self, data, *args, **kwargs):
@@ -102,10 +97,7 @@ class TapiocaAdapter:
     async def response_to_native(self, non_native_data, response, **kwargs):
         if not non_native_data:
             return None
-        if self.to_thread_response_to_native:
-            data = await to_thread(self.format_response_data_to_native, non_native_data, response, **kwargs)
-        else:
-            data = self.format_response_data_to_native(non_native_data, response,  **kwargs)
+        data = await to_thread(self.format_response_data_to_native, non_native_data, response, **kwargs)
         return data
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
