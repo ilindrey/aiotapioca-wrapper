@@ -89,7 +89,7 @@ class TapiocaClientResource(BaseTapiocaClientResource):
         return key in self._resource
 
     def __dir__(self):
-        methods = ['api_params', 'client', 'path', 'resource', 'resource_name', 'session', 'open_docs']
+        methods = ['api_params', 'path', 'resource', 'resource_name', 'session', 'open_docs']
         if self._resource_name is not None:
             methods.extend([self._resource_name])
             return methods
@@ -136,7 +136,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         methods = [
             m for m in type(self).__dict__.keys() if not m.startswith("_")
             ]
-        methods.extend(['api_params', 'client', 'path', 'resource', 'resource_name', 'session'])
+        methods.extend(['api_params', 'path', 'resource', 'resource_name', 'session'])
         return methods
 
     async def get(self, *args, **kwargs):
@@ -356,5 +356,5 @@ class TapiocaClientResponse(BaseTapiocaClientResponse):
         methods = [
             m for m in type(self).__dict__.keys() if not m.startswith("_")
             ]
-        methods.extend(['api_params', 'client', 'path', 'resource', 'resource_name', 'session', 'response', 'url', 'status', 'request_kwargs', 'data'])
+        methods.extend(['api_params', 'path', 'resource', 'resource_name', 'session', 'response', 'url', 'status', 'request_kwargs', 'data'])
         return methods

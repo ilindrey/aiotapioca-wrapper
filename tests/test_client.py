@@ -134,7 +134,7 @@ class TestTapiocaClientResource:
 
     def test_available_attributes(self, client):
         dir_var = dir(client.test)
-        expected_methods = sorted(['api_params', 'client', 'open_docs', 'path', 'resource', 'resource_name', 'session', 'test'])
+        expected_methods = sorted(['api_params', 'open_docs', 'path', 'resource', 'resource_name', 'session', 'test'])
         assert len(dir_var) == len(expected_methods)
         for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
@@ -173,7 +173,7 @@ class TestTapiocaClientExecutor:
 
     def test_available_attributes(self, client):
         dir_var = dir(client.test())
-        expected_methods = sorted(['get', 'post', 'options', 'put', 'patch', 'delete', 'post_batch', 'put_batch', 'patch_batch', 'delete_batch', 'pages','api_params', 'client', 'path', 'resource', 'resource_name', 'session'])
+        expected_methods = sorted(['get', 'post', 'options', 'put', 'patch', 'delete', 'post_batch', 'put_batch', 'patch_batch', 'delete_batch', 'pages','api_params', 'path', 'resource', 'resource_name', 'session'])
         assert len(dir_var) == len(expected_methods)
         for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
@@ -856,7 +856,7 @@ class TestTapiocaClientResponse:
         )
         response = await client.test().get()
         dir_var = dir(response)
-        expected_methods = sorted(['api_params', 'client', 'path', 'resource', 'resource_name', 'session', 'response', 'status', 'url', 'request_kwargs', 'data'])
+        expected_methods = sorted(['api_params', 'path', 'resource', 'resource_name', 'session', 'response', 'status', 'url', 'request_kwargs', 'data'])
         assert len(dir_var) == len(expected_methods)
         for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected

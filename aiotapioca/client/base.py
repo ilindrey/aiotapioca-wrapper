@@ -63,10 +63,6 @@ class BaseTapiocaClientResource(BaseTapiocaClient):
         self._resource_name = resource_name
 
     @property
-    def client(self):
-        return self._client
-
-    @property
     def path(self):
         return self._path
 
