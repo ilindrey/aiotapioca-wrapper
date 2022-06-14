@@ -1,3 +1,7 @@
+
+__all__ = ('TapiocaException', 'ResponseProcessException', 'ClientError', 'ServerError')
+
+
 class TapiocaException(Exception):
     pass
 

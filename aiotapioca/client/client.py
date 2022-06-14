@@ -15,6 +15,7 @@ from .base import (
 )
 from .process_data import ProcessData
 
+__all__ = ('TapiocaClient', 'TapiocaClientResource', 'TapiocaClientExecutor', 'TapiocaClientResponse')
 
 class TapiocaClient(BaseTapiocaClient):
     def __dir__(self):

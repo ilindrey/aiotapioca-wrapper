@@ -7,6 +7,9 @@ from collections import OrderedDict
 from orjson import dumps
 
 
+__all__ = ('ProcessData',)
+
+
 class ProcessData:
 
     def __init__(self, api, data, resource):

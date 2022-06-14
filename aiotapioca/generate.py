@@ -1,5 +1,7 @@
 from .client import TapiocaClient
 
+__all__ = ('generate_wrapper_from_adapter', 'TapiocaInstantiator')
+
 
 def generate_wrapper_from_adapter(adapter_class, session=None):
     return TapiocaInstantiator(adapter_class, session)

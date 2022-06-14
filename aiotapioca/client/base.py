@@ -5,6 +5,9 @@ from aiotapioca.exceptions import TapiocaException
 from .process_data import ProcessData
 
 
+__all__ = ('BaseTapiocaClient', 'BaseTapiocaClientResource', 'BaseTapiocaClientExecutor', 'BaseTapiocaClientResponse')
+
+
 class BaseTapiocaClient:
     def __init__(self, api, session=None, api_params=None, *args, **kwargs):
         self._api = api

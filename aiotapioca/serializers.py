@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+__all__ = ('BaseSerializer', 'SimpleSerializer')
 
 class BaseSerializer:
     def deserialize(self, method_name, value, **kwargs):
