@@ -1,5 +1,4 @@
-
-__all__ = ('TapiocaException', 'ResponseProcessException', 'ClientError', 'ServerError')
+__all__ = ("TapiocaException", "ResponseProcessException", "ClientError", "ServerError")
 
 
 class TapiocaException(Exception):

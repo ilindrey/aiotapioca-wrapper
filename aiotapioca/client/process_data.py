@@ -1,17 +1,15 @@
 import re
 import webbrowser
+from collections import OrderedDict
 from functools import partial
 from inspect import isclass, isfunction, ismethod
-from collections import OrderedDict
 
 from orjson import dumps
 
-
-__all__ = ('ProcessData',)
+__all__ = ("ProcessData",)
 
 
 class ProcessData:
-
     def __init__(self, api, data, resource):
         self._api = api
         self._data = data
@@ -40,6 +38,7 @@ class ProcessData:
             return f"<{type(self).__name__} object, printing as dict:\n{dumps(self._data).decode('utf-8')}>"
         else:
             from pprint import PrettyPrinter
+
             pp = PrettyPrinter(indent=4)
             return f"<{type(self).__name__} object:\n{pp.pformat(self._data)}>"
 
@@ -137,7 +136,7 @@ class ProcessData:
             return None
         elif isfunction(parsers) and name == parsers.__name__:
             return partial(parsers, self._data)
-        elif ismethod(parsers) and hasattr(parsers, '__self__'):
+        elif ismethod(parsers) and hasattr(parsers, "__self__"):
             return partial(parsers, self._data)
         elif isclass(parsers) and name == self._to_snake_case(parsers.__name__):
             parsers.data = self._data
@@ -152,4 +151,3 @@ class ProcessData:
             return self._get_parser_from_resource(parser_name, parser)
 
         return None
-

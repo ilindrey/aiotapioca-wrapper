@@ -1,6 +1,7 @@
+from asyncio import to_thread
+
 from aiotapioca.exceptions import ClientError, ServerError
 from aiotapioca.serializers import SimpleSerializer
-from asyncio import to_thread
 
 from ..utils import coro_wrap
 from .mixins import (
@@ -11,11 +12,11 @@ from .mixins import (
 )
 
 __all__ = (
-    'TapiocaAdapter',
-    'TapiocaAdapterForm',
-    'TapiocaAdapterJSON',
-    'TapiocaAdapterPydantic',
-    'TapiocaAdapterXML',
+    "TapiocaAdapter",
+    "TapiocaAdapterForm",
+    "TapiocaAdapterJSON",
+    "TapiocaAdapterPydantic",
+    "TapiocaAdapterXML",
 )
 
 
@@ -34,7 +35,7 @@ class TapiocaAdapter:
             self.serializer = self.get_serializer()
 
     def get_api_root(self, api_params, **kwargs):
-        return self.api_root or ''
+        return self.api_root or ""
 
     def get_resource_mapping(self, api_params, **kwargs):
         return self.resource_mapping or {}
@@ -72,7 +73,9 @@ class TapiocaAdapter:
         request_kwargs = kwargs.get("request_kwargs", {})
         request_params = await coro_wrap(self.get_request_kwargs, *args, **kwargs)
         request_kwargs.update(request_params)
-        request_kwargs['data'] = await self.data_to_request(request_kwargs.get("data"), *args, **kwargs)
+        request_kwargs["data"] = await self.data_to_request(
+            request_kwargs.get("data"), *args, **kwargs
+        )
         return request_kwargs
 
     def get_request_kwargs(self, *args, **kwargs):
@@ -105,7 +108,9 @@ class TapiocaAdapter:
     async def response_to_native(self, non_native_data, response, **kwargs):
         if not non_native_data:
             return None
-        data = await to_thread(self.format_response_data_to_native, non_native_data, response, **kwargs)
+        data = await to_thread(
+            self.format_response_data_to_native, non_native_data, response, **kwargs
+        )
         return data
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):

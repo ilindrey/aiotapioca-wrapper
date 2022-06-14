@@ -6,11 +6,12 @@ import pytest
 import pytest_asyncio
 from aiohttp import ClientSession
 
+from aiotapioca.client import ProcessData, TapiocaClientExecutor, TapiocaClientResponse
 from aiotapioca.exceptions import ClientError, ServerError
-from aiotapioca.client import TapiocaClientResponse, TapiocaClientExecutor, ProcessData
 
 from .callbacks import callback_201, callback_401
 from .clients import (
+    ClassMethodParserClient,
     ClassParserClient,
     DictParserClient,
     FailTokenRefreshClient,
@@ -19,7 +20,6 @@ from .clients import (
     RetryRequestClient,
     SimpleClient,
     StaticMethodParserClient,
-    ClassMethodParserClient,
     TokenRefreshByDefaultClient,
     TokenRefreshClient,
 )
@@ -57,18 +57,12 @@ async def check_pages_responses(
 
 
 class TestTapiocaClient:
-
     def test_available_attributes(self, client):
         dir_var = dir(client)
         resources = client._api.get_resource_mapping(client._api_params)
-        expected_methods = sorted([
-            *resources,
-            'api_params',
-            'close',
-            'closed',
-            'initialize',
-            'session'
-            ])
+        expected_methods = sorted(
+            [*resources, "api_params", "close", "closed", "initialize", "session"]
+        )
         assert len(dir_var) == len(expected_methods)
         for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
@@ -131,10 +125,19 @@ class TestTapiocaClient:
 
 
 class TestTapiocaClientResource:
-
     def test_available_attributes(self, client):
         dir_var = dir(client.test)
-        expected_methods = sorted(['api_params', 'open_docs', 'path', 'resource', 'resource_name', 'session', 'test'])
+        expected_methods = sorted(
+            [
+                "api_params",
+                "open_docs",
+                "path",
+                "resource",
+                "resource_name",
+                "session",
+                "test",
+            ]
+        )
         assert len(dir_var) == len(expected_methods)
         for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
@@ -154,10 +157,10 @@ class TestTapiocaClientResource:
         assert resource.path == expected_url
 
     def test_contains(self, client):
-        assert 'resource' in client.resource
-        assert 'docs' in client.resource
-        assert 'foo' in client.resource
-        assert 'spam' in client.resource
+        assert "resource" in client.resource
+        assert "docs" in client.resource
+        assert "foo" in client.resource
+        assert "spam" in client.resource
 
     def test_docs(self, client):
         expected = (
@@ -170,10 +173,28 @@ class TestTapiocaClientResource:
 
 
 class TestTapiocaClientExecutor:
-
     def test_available_attributes(self, client):
         dir_var = dir(client.test())
-        expected_methods = sorted(['get', 'post', 'options', 'put', 'patch', 'delete', 'post_batch', 'put_batch', 'patch_batch', 'delete_batch', 'pages','api_params', 'path', 'resource', 'resource_name', 'session'])
+        expected_methods = sorted(
+            [
+                "get",
+                "post",
+                "options",
+                "put",
+                "patch",
+                "delete",
+                "post_batch",
+                "put_batch",
+                "patch_batch",
+                "delete_batch",
+                "pages",
+                "api_params",
+                "path",
+                "resource",
+                "resource_name",
+                "session",
+            ]
+        )
         assert len(dir_var) == len(expected_methods)
         for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
@@ -186,7 +207,8 @@ class TestTapiocaClientExecutor:
 
             mocked.get(
                 client.test().path,
-                body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+                body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}'
+                % next_url,
                 status=200,
                 content_type="application/json",
             )
@@ -211,7 +233,6 @@ class TestTapiocaClientExecutor:
         assert response.response is not None
         assert response.status == 200
 
-
     async def test_response_executor_has_a_status_code(self, mocked, client):
         mocked.get(
             client.test().path,
@@ -224,7 +245,6 @@ class TestTapiocaClientExecutor:
 
         assert response.status == 200
 
-
     async def test_access_response_field(self, mocked, client):
         mocked.get(
             client.test().path,
@@ -236,7 +256,6 @@ class TestTapiocaClientExecutor:
         response = await client.test().get()
 
         assert response.data.data() == {"key": "value"}
-
 
     async def test_carries_request_kwargs_over_calls(self, mocked, client):
         mocked.get(
@@ -253,7 +272,6 @@ class TestTapiocaClientExecutor:
         assert "url" in request_kwargs
         assert "data" in request_kwargs
         assert "headers" in request_kwargs
-
 
     async def test_retry_request(self, mocked):
 
@@ -318,7 +336,6 @@ class TestTapiocaClientExecutor:
             with pytest.raises(ClientError):
                 await client.test().get()
 
-
     async def test_requests(self, mocked, client):
 
         semaphores = (3, None)
@@ -353,7 +370,6 @@ class TestTapiocaClientExecutor:
 
             for current_data, expected_data in result_response.items():
                 check_response(current_data, expected_data, response, status)
-
 
     async def test_batch_requests(self, mocked, client):
         response_data = [
@@ -394,7 +410,6 @@ class TestTapiocaClientExecutor:
 
             assert len(results) == len(response_data)
 
-
     async def test_pass_api_params_in_requests(self, mocked):
 
         semaphores = (4, None, False)
@@ -431,7 +446,6 @@ class TestTapiocaClientExecutor:
                 for current_data, expected_data in result_response.items():
                     check_response(current_data, expected_data, response, status)
                     assert response.api_params.get("semaphore") == semaphore
-
 
     async def test_pass_api_params_in_batch_requests(self, mocked):
         response_data = [
@@ -477,7 +491,6 @@ class TestTapiocaClientExecutor:
 
                 assert len(results) == len(response_data)
 
-
     async def test_failed_semaphore(self, mocked):
 
         async with NoneSemaphoreClient() as none_semaphore_client:
@@ -493,7 +506,6 @@ class TestTapiocaClientExecutor:
 
 
 class TestTapiocaClientExecutorIteratorFeatures:
-
     async def test_simple_pages_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
 
@@ -514,7 +526,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
         response = await client.test().get()
 
         await check_pages_responses(response, total_pages=2)
-
 
     async def test_simple_pages_with_max_pages_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
@@ -552,7 +563,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         await check_pages_responses(response, total_pages=7, max_pages=3)
 
-
     async def test_simple_pages_with_max_items_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
 
@@ -589,8 +599,9 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         await check_pages_responses(response, total_pages=3, max_items=3)
 
-
-    async def test_simple_pages_with_max_pages_and_max_items_iterator(self, mocked, client):
+    async def test_simple_pages_with_max_pages_and_max_items_iterator(
+        self, mocked, client
+    ):
         next_url = "http://api.example.org/next_batch"
 
         mocked.get(
@@ -610,7 +621,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
         response = await client.test().get()
 
         await check_pages_responses(response, total_pages=3, max_pages=2, max_items=3)
-
 
     async def test_simple_pages_max_pages_zero_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
@@ -633,7 +643,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         await check_pages_responses(response, total_pages=0, max_pages=0)
 
-
     async def test_simple_pages_max_items_zero_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
 
@@ -655,8 +664,9 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         await check_pages_responses(response, total_pages=0, max_items=0)
 
-
-    async def test_simple_pages_max_pages_ans_max_items_zero_iterator(self, mocked, client):
+    async def test_simple_pages_max_pages_ans_max_items_zero_iterator(
+        self, mocked, client
+    ):
         next_url = "http://api.example.org/next_batch"
 
         mocked.get(
@@ -676,7 +686,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
         response = await client.test().get()
 
         await check_pages_responses(response, total_pages=0, max_pages=0, max_items=0)
-
 
     async def test_pages_iterator_with_client_error(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
@@ -731,7 +740,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
                 iterations_count += 1
         assert iterations_count == 2
 
-
     async def test_pages_iterator_with_server_error(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
 
@@ -784,7 +792,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
                     check_response(current_data, expected_data, response)
                 iterations_count += 1
         assert iterations_count == 2
-
 
     async def test_pages_iterator_with_error_on_single_page(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
@@ -845,7 +852,6 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
 
 class TestTapiocaClientResponse:
-
     async def test_available_attributes(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
         mocked.get(
@@ -856,7 +862,20 @@ class TestTapiocaClientResponse:
         )
         response = await client.test().get()
         dir_var = dir(response)
-        expected_methods = sorted(['api_params', 'path', 'resource', 'resource_name', 'session', 'response', 'status', 'url', 'request_kwargs', 'data'])
+        expected_methods = sorted(
+            [
+                "api_params",
+                "path",
+                "resource",
+                "resource_name",
+                "session",
+                "response",
+                "status",
+                "url",
+                "request_kwargs",
+                "data",
+            ]
+        )
         assert len(dir_var) == len(expected_methods)
         for attr, expected in zip(dir_var, expected_methods):
             assert attr == expected
@@ -872,15 +891,17 @@ class TestTapiocaClientResponse:
         response = await client.test().get()
         assert type(response()) is TapiocaClientExecutor
 
-class TestTokenRefreshing:
 
+class TestTokenRefreshing:
     @pytest.fixture
     def possible_false_values(self):
         yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {
             "key": "value"
-            }
+        }
 
-    async def test_not_token_refresh_client_propagates_client_error(self, mocked, client):
+    async def test_not_token_refresh_client_propagates_client_error(
+        self, mocked, client
+    ):
         no_refresh_client = client
 
         mocked.post(
@@ -891,7 +912,6 @@ class TestTokenRefreshing:
 
         with pytest.raises(ClientError):
             await no_refresh_client.test().post()
-
 
     async def test_disable_token_refreshing(self, mocked, possible_false_values):
 
@@ -906,7 +926,9 @@ class TestTokenRefreshing:
                 await client.test().post()
 
         for refresh_token in possible_false_values:
-            async with TokenRefreshClient(token="token", refresh_token=refresh_token) as client:
+            async with TokenRefreshClient(
+                token="token", refresh_token=refresh_token
+            ) as client:
                 mocked.post(
                     client.test().path,
                     callback=callback_401,
@@ -925,7 +947,6 @@ class TestTokenRefreshing:
 
                 with pytest.raises(ClientError):
                     await client.test().post(refresh_token=refresh_token)
-
 
     async def test_token_expired_automatically_refresh_authentication(self, mocked):
 
@@ -963,9 +984,7 @@ class TestTokenRefreshing:
             with pytest.raises(ClientError):
                 await client.test().post(refresh_token=True)
 
-        async with TokenRefreshClient(
-            token="token", refresh_token=True
-        ) as client:
+        async with TokenRefreshClient(token="token", refresh_token=True) as client:
             mocked.post(
                 client.test().path,
                 callback=callback_401,
@@ -998,8 +1017,9 @@ class TestTokenRefreshing:
             with pytest.raises(ClientError):
                 await client.test().post()
 
-
-    async def test_token_expired_automatically_refresh_authentication_by_default(self, mocked):
+    async def test_token_expired_automatically_refresh_authentication_by_default(
+        self, mocked
+    ):
         async with TokenRefreshByDefaultClient(token="token") as client:
             mocked.post(
                 client.test().path,
@@ -1033,8 +1053,9 @@ class TestTokenRefreshing:
             with pytest.raises(ClientError):
                 await client.test().post()
 
-
-    async def test_raises_error_if_refresh_authentication_method_returns_false_value(self, mocked, possible_false_values):
+    async def test_raises_error_if_refresh_authentication_method_returns_false_value(
+        self, mocked, possible_false_values
+    ):
         async with FailTokenRefreshClient(token="token") as client:
 
             mocked.post(
@@ -1074,14 +1095,13 @@ class TestTokenRefreshing:
 
 
 class TestProcessData:
-
     async def test_in_operator(self, mocked, client):
         mocked.get(
             client.test().path,
             body='{"data": 1, "other": 2}',
             status=200,
             content_type="application/json",
-            )
+        )
 
         response = await client.test().get()
 
@@ -1097,15 +1117,15 @@ class TestProcessData:
                 "key_snake": "value",
                 "camelCase": "data in camel case",
                 "NormalCamelCase": "data in camel case",
-                },
+            },
             "paging": {"next": "%s" % next_url},
-            }
+        }
         mocked.add(
             client.test().path,
             body=orjson.dumps(response_data),
             status=200,
             content_type="application/json",
-            )
+        )
 
         response = await client.test().get()
 
@@ -1123,7 +1143,7 @@ class TestProcessData:
             body=orjson.dumps(response_data),
             status=200,
             content_type="application/json",
-            )
+        )
 
         response = await client.test().get()
 
@@ -1133,14 +1153,16 @@ class TestProcessData:
         assert response.data[1]() == "b"
         assert response.data[2]() == "c"
 
-    async def test_accessing_index_out_of_bounds_should_raise_index_error(self, mocked, client):
+    async def test_accessing_index_out_of_bounds_should_raise_index_error(
+        self, mocked, client
+    ):
         response_data = ["a", "b", "c"]
         mocked.get(
             client.test().path,
             body=orjson.dumps(response_data),
             status=200,
             content_type="application/json",
-            )
+        )
 
         response = await client.test().get()
 
@@ -1150,13 +1172,16 @@ class TestProcessData:
     async def test_accessing_empty_list_should_raise_index_error(self, mocked, client):
         mocked.get(
             client.test().path, body="[]", status=200, content_type="application/json"
-            )
+        )
 
         response = await client.test().get()
 
         with pytest.raises(IndexError):
             response.data[3]
+
+
 7
+
 
 class TestParsers:
     @pytest_asyncio.fixture

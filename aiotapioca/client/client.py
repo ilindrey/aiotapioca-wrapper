@@ -1,10 +1,8 @@
 import re
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
-from functools import partial
-from inspect import isclass, isfunction
 
-from aiotapioca.exceptions import ResponseProcessException, TapiocaException
+from aiotapioca.exceptions import ResponseProcessException
 
 from ..utils import coro_wrap
 from .base import (
@@ -13,19 +11,18 @@ from .base import (
     BaseTapiocaClientResource,
     BaseTapiocaClientResponse,
 )
-from .process_data import ProcessData
 
-__all__ = ('TapiocaClient', 'TapiocaClientResource', 'TapiocaClientExecutor', 'TapiocaClientResponse')
+__all__ = (
+    "TapiocaClient",
+    "TapiocaClientResource",
+    "TapiocaClientExecutor",
+    "TapiocaClientResponse",
+)
+
 
 class TapiocaClient(BaseTapiocaClient):
     def __dir__(self):
-        methods = [
-            'api_params',
-            'close',
-            'closed',
-            'initialize',
-            'session'
-            ]
+        methods = ["api_params", "close", "closed", "initialize", "session"]
         resource_mapping = self._api.get_resource_mapping(self._api_params)
         if resource_mapping:
             methods.extend([key for key in resource_mapping.keys()])
@@ -65,7 +62,7 @@ class TapiocaClient(BaseTapiocaClient):
 
     def _get_context(self, **kwargs):
         context = super()._get_context(**kwargs)
-        context['client'] = self
+        context["client"] = self
         return context
 
     def _get_client_resource_from_name_or_fallback(self, name):
@@ -82,6 +79,7 @@ class TapiocaClient(BaseTapiocaClient):
 
         return None
 
+
 class TapiocaClientResource(BaseTapiocaClientResource):
     def __str__(self):
         return f"<{type(self).__name__} object: {self._resource_name}>"
@@ -90,7 +88,14 @@ class TapiocaClientResource(BaseTapiocaClientResource):
         return key in self._resource
 
     def __dir__(self):
-        methods = ['api_params', 'path', 'resource', 'resource_name', 'session', 'open_docs']
+        methods = [
+            "api_params",
+            "path",
+            "resource",
+            "resource_name",
+            "session",
+            "open_docs",
+        ]
         if self._resource_name is not None:
             methods.extend([self._resource_name])
             return methods
@@ -110,6 +115,7 @@ class TapiocaClientResource(BaseTapiocaClientResource):
 
     def _get_doc(self):
         from copy import copy
+
         resource = copy(self._resource or {})
         docs = (
             "Automatic generated __doc__ from resource_mapping.\n"
@@ -129,15 +135,14 @@ class TapiocaClientResource(BaseTapiocaClientResource):
         new = 2  # open in new tab
         webbrowser.open(self._resource["docs"], new=new)
 
+
 class TapiocaClientExecutor(BaseTapiocaClientExecutor):
     def __str__(self):
         return f"<{type(self).__name__} object: {self._path}>"
 
     def __dir__(self):
-        methods = [
-            m for m in type(self).__dict__.keys() if not m.startswith("_")
-            ]
-        methods.extend(['api_params', 'path', 'resource', 'resource_name', 'session'])
+        methods = [m for m in type(self).__dict__.keys() if not m.startswith("_")]
+        methods.extend(["api_params", "path", "resource", "resource_name", "session"])
         return methods
 
     async def get(self, *args, **kwargs):
@@ -268,8 +273,12 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
         try:
             await self.initialize()
-            self._request_kwargs = await coro_wrap(self._api.prepare_request_kwargs, *args, **context)
-            response = await self._session.request(request_method, **self._request_kwargs)
+            self._request_kwargs = await coro_wrap(
+                self._api.prepare_request_kwargs, *args, **context
+            )
+            response = await self._session.request(
+                request_method, **self._request_kwargs
+            )
             context.update({"response": response, "request_kwargs": request_kwargs})
             data = await coro_wrap(self._api.process_response, **context)
             context["data"] = data
@@ -278,7 +287,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
             repeat_number += 1
 
             self._response = response
-            self._data = getattr(ex, 'data', None)
+            self._data = getattr(ex, "data", None)
             self._request_kwargs = request_kwargs
 
             context.update(
@@ -328,7 +337,9 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         except Exception as ex:
             await coro_wrap(self._api.error_handling, ex, *args, **context)
 
-        return self._wrap_in_tapioca_response(data=data, response=response, request_kwargs=self._request_kwargs)
+        return self._wrap_in_tapioca_response(
+            data=data, response=response, request_kwargs=self._request_kwargs
+        )
 
     @staticmethod
     def _reached_max_limits(page_count, item_count, max_pages, max_items):
@@ -346,7 +357,6 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
 
 class TapiocaClientResponse(BaseTapiocaClientResponse):
-
     def __str__(self):
         return f"<{type(self).__name__} object: {self._response}>"
 
@@ -354,8 +364,19 @@ class TapiocaClientResponse(BaseTapiocaClientResponse):
         return self._wrap_in_tapioca_executor()
 
     def __dir__(self):
-        methods = [
-            m for m in type(self).__dict__.keys() if not m.startswith("_")
+        methods = [m for m in type(self).__dict__.keys() if not m.startswith("_")]
+        methods.extend(
+            [
+                "api_params",
+                "path",
+                "resource",
+                "resource_name",
+                "session",
+                "response",
+                "url",
+                "status",
+                "request_kwargs",
+                "data",
             ]
-        methods.extend(['api_params', 'path', 'resource', 'resource_name', 'session', 'response', 'url', 'status', 'request_kwargs', 'data'])
+        )
         return methods

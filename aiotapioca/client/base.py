@@ -1,11 +1,17 @@
 from aiohttp import ClientSession
-from orjson import dumps
 from asyncio_atexit import register as atexit_register
+from orjson import dumps
+
 from aiotapioca.exceptions import TapiocaException
+
 from .process_data import ProcessData
 
-
-__all__ = ('BaseTapiocaClient', 'BaseTapiocaClientResource', 'BaseTapiocaClientExecutor', 'BaseTapiocaClientResponse')
+__all__ = (
+    "BaseTapiocaClient",
+    "BaseTapiocaClientResource",
+    "BaseTapiocaClientExecutor",
+    "BaseTapiocaClientResponse",
+)
 
 
 class BaseTapiocaClient:
@@ -27,7 +33,11 @@ class BaseTapiocaClient:
 
     @property
     def closed(self):
-        return self._session is None or type(self._session) is ClientSession and self._session.closed
+        return (
+            self._session is None
+            or type(self._session) is ClientSession
+            and self._session.closed
+        )
 
     async def initialize(self):
         if self.closed:
@@ -44,24 +54,24 @@ class BaseTapiocaClient:
         p.text(self.__str__())
 
     def _get_context(self, **kwargs):
-        context = {
-            key[1:]: value
-            for key, value in vars(self).items()
-        }
+        context = {key[1:]: value for key, value in vars(self).items()}
         context.update(kwargs)
         return context
 
     def _wrap_in_tapioca_resource(self, **kwargs) -> "TapiocaClientResource":
         context = self._get_context(**kwargs)
         from .client import TapiocaClientResource
+
         return TapiocaClientResource(**context)
 
 
 class BaseTapiocaClientResource(BaseTapiocaClient):
-    def __init__(self, client, path=None, resource=None, resource_name=None, *args, **kwargs):
+    def __init__(
+        self, client, path=None, resource=None, resource_name=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self._client = client
-        self._path = path or ''
+        self._path = path or ""
         self._resource = resource or {}
         self._resource_name = resource_name
 
@@ -85,6 +95,7 @@ class BaseTapiocaClientResource(BaseTapiocaClient):
     def _wrap_in_tapioca_executor(self, **kwargs) -> "TapiocaClientExecutor":
         context = self._get_context(**kwargs)
         from .client import TapiocaClientExecutor
+
         return TapiocaClientExecutor(**context)
 
 
@@ -98,11 +109,11 @@ class BaseTapiocaClientExecutor(BaseTapiocaClientResource):
     def _wrap_in_tapioca_response(self, **kwargs) -> "TapiocaClientResponse":
         context = self._get_context(**kwargs)
         from .client import TapiocaClientResponse
+
         return TapiocaClientResponse(**context)
 
 
 class BaseTapiocaClientResponse(BaseTapiocaClientExecutor):
-
     @property
     def response(self):
         if self._response is None:

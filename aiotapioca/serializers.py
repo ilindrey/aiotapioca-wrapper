@@ -1,6 +1,7 @@
 from decimal import Decimal
 
-__all__ = ('BaseSerializer', 'SimpleSerializer')
+__all__ = ("BaseSerializer", "SimpleSerializer")
+
 
 class BaseSerializer:
     def deserialize(self, method_name, value, **kwargs):
@@ -34,10 +35,8 @@ class BaseSerializer:
 
 
 class SimpleSerializer(BaseSerializer):
-
     def to_decimal(self, value):
         return Decimal(value)
 
     def serialize_decimal(self, data):
         return str(data)
-

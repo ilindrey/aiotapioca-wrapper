@@ -5,12 +5,11 @@ import xmltodict
 from orjson import JSONDecodeError, dumps, loads
 from pydantic import BaseModel, parse_obj_as
 
-
 __all__ = (
-    'TapiocaAdapterFormMixin',
-    'TapiocaAdapterJSONMixin',
-    'TapiocaAdapterPydanticMixin',
-    'TapiocaAdapterXMLMixin',
+    "TapiocaAdapterFormMixin",
+    "TapiocaAdapterJSONMixin",
+    "TapiocaAdapterPydanticMixin",
+    "TapiocaAdapterXMLMixin",
 )
 
 
@@ -72,7 +71,9 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             return dumps(data)
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
-        data = super().format_response_data_to_native(non_native_data, response, **kwargs)
+        data = super().format_response_data_to_native(
+            non_native_data, response, **kwargs
+        )
         if isinstance(data, str):
             return data
         if self.validate_data_received and response.status == 200:
@@ -133,7 +134,11 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
                     "Pydantic model not found."
                     " Specify the pydantic models in the pydantic_models parameter in resource_mapping"
                 )
-            if type(model) is not type(BaseModel) or is_dataclass(model) and not hasattr(model, "__pydantic_model__"):
+            if (
+                type(model) is not type(BaseModel)
+                or is_dataclass(model)
+                and not hasattr(model, "__pydantic_model__")
+            ):
                 raise TypeError(f"It isn't pydantic model or dataclass: {model}.")
         return model
 

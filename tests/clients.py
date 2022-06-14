@@ -1,18 +1,12 @@
 from aiotapioca import (
+    SimpleSerializer,
     TapiocaAdapterJSON,
     TapiocaAdapterPydantic,
     TapiocaAdapterXML,
-    SimpleSerializer,
     generate_wrapper_from_adapter,
 )
 
-from .models import (
-    NotPydanticDT,
-    CustomModel,
-    CustomModelDT,
-    Detail,
-    RootModel,
-)
+from .models import CustomModel, CustomModelDT, Detail, NotPydanticDT, RootModel
 from .parsers import FooParser, foo_parser
 
 test = {
@@ -63,7 +57,7 @@ class SimpleClientAdapter(TapiocaAdapterJSON):
         url = paging.get("next")
 
         if url:
-            return { **request_kwargs, "url": url}
+            return {**request_kwargs, "url": url}
 
 
 SimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter)
@@ -151,6 +145,7 @@ class FuncParserClientAdapter(SimpleClientAdapter):
 
 FuncParserClient = generate_wrapper_from_adapter(FuncParserClientAdapter)
 
+
 class StaticMethodParserClientAdapter(SimpleClientAdapter):
     def get_resource_mapping(self, api_params, **kwargs):
         resource_mapping = super().get_resource_mapping(api_params, **kwargs)
@@ -162,6 +157,7 @@ StaticMethodParserClient = generate_wrapper_from_adapter(
     StaticMethodParserClientAdapter
 )
 
+
 class ClassMethodParserClientAdapter(SimpleClientAdapter):
     def get_resource_mapping(self, api_params, **kwargs):
         resource_mapping = super().get_resource_mapping(api_params, **kwargs)
@@ -169,9 +165,8 @@ class ClassMethodParserClientAdapter(SimpleClientAdapter):
         return resource_mapping
 
 
-ClassMethodParserClient = generate_wrapper_from_adapter(
-    ClassMethodParserClientAdapter
-)
+ClassMethodParserClient = generate_wrapper_from_adapter(ClassMethodParserClientAdapter)
+
 
 class ClassParserClientAdapter(SimpleClientAdapter):
     def get_resource_mapping(self, api_params, **kwargs):

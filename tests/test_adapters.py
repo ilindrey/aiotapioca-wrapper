@@ -1,28 +1,21 @@
-
-from pydantic import BaseModel, parse_raw_as
-from dataclasses import asdict, is_dataclass
-
-from aiotapioca import generate_wrapper_from_adapter, TapiocaAdapterPydantic
-from .models import (
-    Detail,
-    CustomModel,
-    CustomModelDT,
-    RootModel,
-)
-from .clients import PydanticDefaultClientAdapter, PydanticForcedClient,XMLClient
-
 from collections import OrderedDict
+from dataclasses import asdict, is_dataclass
 from itertools import product
 
 import orjson
 import pytest
 import pytest_asyncio
 import xmltodict
+from pydantic import BaseModel, parse_raw_as
 from yarl import URL
+
+from aiotapioca import TapiocaAdapterPydantic, generate_wrapper_from_adapter
+
+from .clients import PydanticDefaultClientAdapter, PydanticForcedClient, XMLClient
+from .models import CustomModel, CustomModelDT, Detail, RootModel
 
 
 class TestTapiocaAdapterXML:
-
     @pytest_asyncio.fixture
     async def xml_client(self):
         async with XMLClient() as c:
@@ -34,7 +27,7 @@ class TestTapiocaAdapterXML:
             body="Any response",
             status=200,
             content_type="application/json",
-            )
+        )
 
         data = '<tag1 attr1="val1">' "<tag2>text1</tag2>" "<tag3>text2</tag3>" "</tag1>"
 
@@ -52,16 +45,18 @@ class TestTapiocaAdapterXML:
             body="Any response",
             status=200,
             content_type="application/json",
-            )
+        )
 
         data = OrderedDict(
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-                    )
-                ]
-            )
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
+                )
+            ]
+        )
 
         await xml_client.test().post(data=data)
 
@@ -77,16 +72,18 @@ class TestTapiocaAdapterXML:
             body="Any response",
             status=200,
             content_type="application/json",
-            )
+        )
 
         data = OrderedDict(
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-                    )
-                ]
-            )
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
+                )
+            ]
+        )
 
         await xml_client.test().post(data=data, xmltodict_unparse__full_document=False)
 
@@ -94,7 +91,9 @@ class TestTapiocaAdapterXML:
             "data"
         ]
 
-        assert request_body == xmltodict.unparse(data, full_document=False).encode("utf-8")
+        assert request_body == xmltodict.unparse(data, full_document=False).encode(
+            "utf-8"
+        )
 
     async def test_xml_returns_text_if_response_not_xml(self, mocked, xml_client):
         mocked.post(
@@ -102,16 +101,18 @@ class TestTapiocaAdapterXML:
             body="Any response",
             status=200,
             content_type="any content",
-            )
+        )
 
         data = OrderedDict(
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-                    )
-                ]
-            )
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
+                )
+            ]
+        )
 
         response = await xml_client.test().post(data=data)
 
@@ -124,16 +125,18 @@ class TestTapiocaAdapterXML:
             body=xml_body,
             status=200,
             content_type="application/xml",
-            )
+        )
 
         data = OrderedDict(
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
-                    )
-                ]
-            )
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
+                )
+            ]
+        )
 
         response = await xml_client.test().post(data=data)
 
@@ -141,7 +144,6 @@ class TestTapiocaAdapterXML:
 
 
 class TestTapiocaAdapterPydantic:
-
     def test_pydantic_model_get_pydantic_model(self):
 
         resource = {
@@ -174,11 +176,15 @@ class TestTapiocaAdapterPydantic:
         assert model == CustomModel
 
         resource["pydantic_models"] = {"response": {CustomModel: ["POST"]}}
-        model = TapiocaAdapterPydantic().get_pydantic_model("response", resource, "POST")
+        model = TapiocaAdapterPydantic().get_pydantic_model(
+            "response", resource, "POST"
+        )
         assert model == CustomModel
 
         resource["pydantic_models"] = {"response": {CustomModel: ["GET"], Detail: None}}
-        model = TapiocaAdapterPydantic().get_pydantic_model("response", resource, "POST")
+        model = TapiocaAdapterPydantic().get_pydantic_model(
+            "response", resource, "POST"
+        )
         assert model == Detail
 
         resource["pydantic_models"] = {"response": {CustomModel: ["GET"], Detail: None}}
@@ -217,7 +223,6 @@ class TestTapiocaAdapterPydantic:
         model = TapiocaAdapterPydantic().get_pydantic_model("request", resource, "POST")
         assert model is None
 
-
     async def test_pydantic_model_not_found(self, mocked):
         async with PydanticForcedClient() as client:
             mocked.get(
@@ -230,7 +235,6 @@ class TestTapiocaAdapterPydantic:
                 response = await client.test_not_found().get()
                 print(response.data())
 
-
     async def test_bad_pydantic_model(self, mocked):
         async with PydanticForcedClient() as client:
             mocked.get(
@@ -241,7 +245,6 @@ class TestTapiocaAdapterPydantic:
             )
             with pytest.raises(ValueError):
                 await client.test_bad_pydantic_model().get()
-
 
     async def test_bad_dataclass_model(self, mocked):
         async with PydanticForcedClient() as client:
@@ -337,7 +340,6 @@ class TestTapiocaAdapterPydantic:
                 else:
                     assert is_dataclass(response.data())
                     assert asdict(response.data()) == orjson.loads(response_body)
-
 
     async def test_pydantic_mixin_format_data_to_request(self, mocked):
         response_body_root = (
