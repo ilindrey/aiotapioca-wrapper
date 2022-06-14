@@ -95,14 +95,14 @@ class TapiocaClientResource(BaseTapiocaClientResource):
             return methods
         return methods
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, **kwargs):
         path = self._path
 
         url_params = self._api_params.get("default_url_params", {})
         url_params.update(kwargs)
         if self._resource and url_params:
             path = self._api.fill_resource_template_url(
-                template=path, url_params=url_params, *args, **kwargs
+                **self._get_context(url_params=url_params, template=self._path)
             )
 
         return self._wrap_in_tapioca_executor(path=path)
