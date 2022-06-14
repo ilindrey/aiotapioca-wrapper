@@ -56,8 +56,8 @@ async with SomeClient() as client:
     
     response = await client.test(number=...).get(data=..., 
                                                  params=...)
-    print(response().data)
-    print(response().response)
+    print(response.data())
+    print(response.response)
     
     response = await client.test(number=...).post(data=..., 
                                                   params=...)
@@ -72,8 +72,8 @@ For page-by-page traversal, you can use the method of the `pages`:
 async with SomeClient() as client:
     result = await client.test(number=...).get()
     async for page in result().pages():
-        print(page().data)
-        print(page().response)
+        print(page.data())
+        print(page.response)
 ```
 
 You must also implement the `get_iterator_list` and `get_iterator_next_request_kwargs` methods for it.
