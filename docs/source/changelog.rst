@@ -2,6 +2,10 @@
 Changelog
 =========
 
+4.0.1
+=====
+- Fixed release
+
 4.0.0
 =====
 - Added option to specify a session when generating a wrapper.
