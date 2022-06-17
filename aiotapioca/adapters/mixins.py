@@ -57,18 +57,21 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
     validate_data_sending = True
     extract_root = True
     convert_to_dict = False
+    to_dict_by_alias = True
 
     def format_data_to_request(self, data, *args, **kwargs):
         if data:
-            if self.validate_data_sending and (
-                not isinstance(data, BaseModel) or not is_dataclass(data)
-            ):
+            if self.validate_data_sending:
                 data = self.convert_data_to_pydantic_model("request", data, **kwargs)
-            if isinstance(data, BaseModel):
-                return dumps(data.dict())
-            elif is_dataclass(data):
-                return dumps(asdict(data))
+            data = self.convert_pydantic_model_to_dict(data, *args, **kwargs)
             return dumps(data)
+
+    def convert_pydantic_model_to_dict(self, data, *args, **kwargs):
+        if isinstance(data, BaseModel):
+            return data.dict(by_alias=self.to_dict_by_alias)
+        elif is_dataclass(data):
+            return asdict(data)
+        return data
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
         data = super().format_response_data_to_native(
@@ -92,6 +95,8 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
         return data
 
     def convert_data_to_pydantic_model(self, type_convert, data, **kwargs):
+        if isinstance(data, BaseModel) or is_dataclass(data):
+            return data
         model = self.get_pydantic_model(type_convert, **kwargs)
         if model:
             return parse_obj_as(model, data)
