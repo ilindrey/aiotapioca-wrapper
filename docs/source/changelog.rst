@@ -2,6 +2,10 @@
 Changelog
 =========
 
+4.0.2
+=====
+- Added to_dict_by_alias option in TapiocaAdapterPydanticMixin
+
 4.0.1
 =====
 - Fixed release
