@@ -1,4 +1,3 @@
-import re
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
 

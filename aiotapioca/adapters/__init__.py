@@ -15,11 +15,11 @@ from .mixins import (
 __all__ = (
     "TapiocaAdapter",
     "TapiocaAdapterForm",
-    "TapiocaAdapterJSON",
-    "TapiocaAdapterPydantic",
-    "TapiocaAdapterXML",
     "TapiocaAdapterFormMixin",
+    "TapiocaAdapterJSON",
     "TapiocaAdapterJSONMixin",
+    "TapiocaAdapterPydantic",
     "TapiocaAdapterPydanticMixin",
+    "TapiocaAdapterXML",
     "TapiocaAdapterXMLMixin",
 )
