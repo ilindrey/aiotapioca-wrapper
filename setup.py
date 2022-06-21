@@ -72,7 +72,6 @@ setup(
     author_email="andreyilin@fastmail.com",
     url="https://github.com/ilindrey/aiotapioca-wrapper",
     package_dir={package: package},
-    packages=[package, f"{package}.adapters", f"{package}.client"],
     include_package_data=True,
     install_requires=requirements,
     license="MIT",

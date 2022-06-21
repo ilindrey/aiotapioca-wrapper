@@ -2,9 +2,13 @@
 Changelog
 =========
 
+4.1.0
+=====
+- Added a py.typed merker for type hints.
+
 4.0.2
 =====
-- Added to_dict_by_alias option in TapiocaAdapterPydanticMixin
+- Added to_dict_by_alias option in TapiocaAdapterPydanticMixin.
 
 4.0.1
 =====
@@ -15,11 +19,11 @@ Changelog
 - Added option to specify a session when generating a wrapper.
 - Added max_retries_requests flag to limit the number of retries requests.
 - Added ability to specify classmethod in parsers.
-- Rework of the library structure. Splitting Tapioca client structure into classes: TapiocaClient, TapiocaClientResource, TapiocaClientExecutor and TapiocaClientResponse.
-- Reworked exception handling v.2.
-- Implemented multiple use of aiohttp.ClientSession, outside the context manager.
 - Dump and load data in threads. Added more abstract methods to prepare parameters and data for requests or prepare native data.
 - Drop support Python 3.6 and below.
+- Implemented multiple use of aiohttp.ClientSession, outside the context manager.
+- Rework of the library structure. Splitting Tapioca client structure into classes: TapiocaClient, TapiocaClientResource, TapiocaClientExecutor and TapiocaClientResponse.
+- Reworked exception handling v.2.
 - Minor fixes.
 
 3.8.0
