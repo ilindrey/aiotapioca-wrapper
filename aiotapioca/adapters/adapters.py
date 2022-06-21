@@ -25,8 +25,8 @@ class TapiocaAdapter:
     max_retries_requests = 10
     semaphore = 10
     refresh_token = False
-    resource_mapping = None
-    api_root = None
+    resource_mapping = {}
+    api_root = ""
 
     def __init__(self, serializer_class=None, *args, **kwargs):
         if serializer_class:
