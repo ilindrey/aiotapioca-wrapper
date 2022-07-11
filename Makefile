@@ -62,3 +62,6 @@ dist: clean
 	python setup.py sdist
 	python setup.py bdist_wheel
 	ls -l dist
+
+build: clean-build
+	python3 -m build
