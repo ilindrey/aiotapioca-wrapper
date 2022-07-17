@@ -9,7 +9,7 @@ import xmltodict
 from pydantic import BaseModel, parse_raw_as
 from yarl import URL
 
-from aiotapioca import TapiocaAdapterPydantic, generate_wrapper_from_adapter
+from src.aiotapioca import TapiocaAdapterPydantic, generate_wrapper_from_adapter
 
 from .clients import PydanticDefaultClientAdapter, PydanticForcedClient, XMLClient
 from .models import CustomModel, CustomModelDT, Detail, RootModel

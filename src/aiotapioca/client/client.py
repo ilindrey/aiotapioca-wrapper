@@ -1,7 +1,7 @@
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
 
-from aiotapioca.exceptions import ResponseProcessException
+from src.aiotapioca.exceptions import ResponseProcessException
 
 from ..utils import coro_wrap
 from .base import (

@@ -2,7 +2,7 @@ from aiohttp import ClientSession
 from asyncio_atexit import register as atexit_register
 from orjson import dumps
 
-from aiotapioca.exceptions import TapiocaException
+from src.aiotapioca.exceptions import TapiocaException
 
 from .process_data import ProcessData
 

@@ -1,7 +1,7 @@
 from asyncio import to_thread
 
-from aiotapioca.exceptions import ClientError, ServerError
-from aiotapioca.serializers import SimpleSerializer
+from src.aiotapioca.exceptions import ClientError, ServerError
+from src.aiotapioca.serializers import SimpleSerializer
 
 from ..utils import coro_wrap
 from .mixins import (

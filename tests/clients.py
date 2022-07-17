@@ -1,4 +1,4 @@
-from aiotapioca import (
+from src.aiotapioca import (
     SimpleSerializer,
     TapiocaAdapterJSON,
     TapiocaAdapterPydantic,

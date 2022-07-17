@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 import pytest_asyncio
 
-from aiotapioca import BaseSerializer, SimpleSerializer
+from src.aiotapioca import BaseSerializer, SimpleSerializer
 
 from .clients import SerializerClient, SimpleClient
 
