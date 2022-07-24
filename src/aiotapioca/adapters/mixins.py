@@ -74,9 +74,7 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
         return data
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
-        data = super().format_response_data_to_native(
-            non_native_data, response, **kwargs
-        )
+        data = super().format_response_data_to_native(non_native_data, response, **kwargs)
         if isinstance(data, str):
             return data
         if self.validate_data_received and response.status == 200:
@@ -151,9 +149,7 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
 class TapiocaAdapterXMLMixin:
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):
-            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode(
-                "utf-8"
-            )
+            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
         try:
             return data.encode("utf-8")
         except Exception as e:

@@ -128,9 +128,7 @@ class TapiocaAdapter:
     def get_iterator_list(self, data, **kwargs):
         raise NotImplementedError()
 
-    def get_iterator_next_request_kwargs(
-        self, request_kwargs, data, response, **kwargs
-    ):
+    def get_iterator_next_request_kwargs(self, request_kwargs, data, response, **kwargs):
         raise NotImplementedError()
 
     def is_authentication_expired(self, exception, repeat_number=0, **kwargs):

@@ -48,9 +48,7 @@ class SimpleClientAdapter(TapiocaAdapterJSON):
     def get_iterator_list(self, data, **kwargs):
         return data["data"]
 
-    def get_iterator_next_request_kwargs(
-        self, request_kwargs, data, response, **kwargs
-    ):
+    def get_iterator_next_request_kwargs(self, request_kwargs, data, response, **kwargs):
         paging = data.get("paging")
         if not paging:
             return
@@ -120,9 +118,7 @@ class TokenRefreshByDefaultClientAdapter(TokenRefreshClientAdapter):
     refresh_token = True
 
 
-TokenRefreshByDefaultClient = generate_wrapper_from_adapter(
-    TokenRefreshByDefaultClientAdapter
-)
+TokenRefreshByDefaultClient = generate_wrapper_from_adapter(TokenRefreshByDefaultClientAdapter)
 
 
 class FailTokenRefreshClientAdapter(TokenRefreshByDefaultClientAdapter):
@@ -153,9 +149,7 @@ class StaticMethodParserClientAdapter(SimpleClientAdapter):
         return resource_mapping
 
 
-StaticMethodParserClient = generate_wrapper_from_adapter(
-    StaticMethodParserClientAdapter
-)
+StaticMethodParserClient = generate_wrapper_from_adapter(StaticMethodParserClientAdapter)
 
 
 class ClassMethodParserClientAdapter(SimpleClientAdapter):

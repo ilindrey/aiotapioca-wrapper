@@ -46,9 +46,7 @@ class TestSerializer:
         serializer = serializer_client._api.serializer
         assert isinstance(serializer, BaseSerializer)
 
-    async def test_executor_dir_returns_serializer_methods(
-        self, mocked, serializer_client
-    ):
+    async def test_executor_dir_returns_serializer_methods(self, mocked, serializer_client):
         mocked.get(
             serializer_client.test().path,
             body='{"date": "2014-11-13T14:53:18.694072+00:00"}',

@@ -32,9 +32,7 @@ def check_response(current_data, expected_data, response, status=200):
     assert response.status == status
 
 
-async def check_pages_responses(
-    response, total_pages=1, max_pages=None, max_items=None
-):
+async def check_pages_responses(response, total_pages=1, max_pages=None, max_items=None):
     result_response = {
         response.data: {
             "data": [{"key": "value"}],
@@ -207,8 +205,7 @@ class TestTapiocaClientExecutor:
 
             mocked.get(
                 client.test().path,
-                body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}'
-                % next_url,
+                body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
                 status=200,
                 content_type="application/json",
             )
@@ -599,9 +596,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         await check_pages_responses(response, total_pages=3, max_items=3)
 
-    async def test_simple_pages_with_max_pages_and_max_items_iterator(
-        self, mocked, client
-    ):
+    async def test_simple_pages_with_max_pages_and_max_items_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
 
         mocked.get(
@@ -664,9 +659,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         await check_pages_responses(response, total_pages=0, max_items=0)
 
-    async def test_simple_pages_max_pages_ans_max_items_zero_iterator(
-        self, mocked, client
-    ):
+    async def test_simple_pages_max_pages_ans_max_items_zero_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
 
         mocked.get(
@@ -895,13 +888,9 @@ class TestTapiocaClientResponse:
 class TestTokenRefreshing:
     @pytest.fixture
     def possible_false_values(self):
-        yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {
-            "key": "value"
-        }
+        yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {"key": "value"}
 
-    async def test_not_token_refresh_client_propagates_client_error(
-        self, mocked, client
-    ):
+    async def test_not_token_refresh_client_propagates_client_error(self, mocked, client):
         no_refresh_client = client
 
         mocked.post(
@@ -926,9 +915,7 @@ class TestTokenRefreshing:
                 await client.test().post()
 
         for refresh_token in possible_false_values:
-            async with TokenRefreshClient(
-                token="token", refresh_token=refresh_token
-            ) as client:
+            async with TokenRefreshClient(token="token", refresh_token=refresh_token) as client:
                 mocked.post(
                     client.test().path,
                     callback=callback_401,
@@ -1017,9 +1004,7 @@ class TestTokenRefreshing:
             with pytest.raises(ClientError):
                 await client.test().post()
 
-    async def test_token_expired_automatically_refresh_authentication_by_default(
-        self, mocked
-    ):
+    async def test_token_expired_automatically_refresh_authentication_by_default(self, mocked):
         async with TokenRefreshByDefaultClient(token="token") as client:
             mocked.post(
                 client.test().path,
@@ -1069,9 +1054,7 @@ class TestTokenRefreshing:
 
         for refresh_token in (True, *possible_false_values):
 
-            async with FailTokenRefreshClient(
-                token="token", refresh_token=refresh_token
-            ) as client:
+            async with FailTokenRefreshClient(token="token", refresh_token=refresh_token) as client:
 
                 mocked.post(
                     client.test().path,
@@ -1153,9 +1136,7 @@ class TestProcessData:
         assert response.data[1]() == "b"
         assert response.data[2]() == "c"
 
-    async def test_accessing_index_out_of_bounds_should_raise_index_error(
-        self, mocked, client
-    ):
+    async def test_accessing_index_out_of_bounds_should_raise_index_error(self, mocked, client):
         response_data = ["a", "b", "c"]
         mocked.get(
             client.test().path,
@@ -1170,9 +1151,7 @@ class TestProcessData:
             response.data[3]
 
     async def test_accessing_empty_list_should_raise_index_error(self, mocked, client):
-        mocked.get(
-            client.test().path, body="[]", status=200, content_type="application/json"
-        )
+        mocked.get(client.test().path, body="[]", status=200, content_type="application/json")
 
         response = await client.test().get()
 

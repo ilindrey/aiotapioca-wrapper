@@ -72,9 +72,7 @@ class TapiocaClient(BaseTapiocaClient):
             resource = resource_mapping[name]
             api_root = self._api.get_api_root(self._api_params, resource_name=name)
             path = api_root.rstrip("/") + "/" + resource["resource"].lstrip("/")
-            return self._wrap_in_tapioca_resource(
-                path=path, resource=resource, resource_name=name
-            )
+            return self._wrap_in_tapioca_resource(path=path, resource=resource, resource_name=name)
 
         return None
 
@@ -182,18 +180,14 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
         while iterator_list:
             for item in iterator_list:
-                if executor._reached_max_limits(
-                    page_count, item_count, max_pages, max_items
-                ):
+                if executor._reached_max_limits(page_count, item_count, max_pages, max_items):
                     break
                 yield executor._wrap_in_tapioca_response(data=item)
                 item_count += 1
 
             page_count += 1
 
-            if executor._reached_max_limits(
-                page_count, item_count, max_pages, max_items
-            ):
+            if executor._reached_max_limits(page_count, item_count, max_pages, max_items):
                 break
 
             next_request_kwargs = await executor._get_iterator_next_request_kwargs()
@@ -212,10 +206,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         kwargs["semaphore_class"] = Semaphore(self._get_semaphore_value(kwargs))
 
         results = await gather(
-            *[
-                self._send(request_method, *args, **{**kwargs, "data": row})
-                for row in data
-            ]
+            *[self._send(request_method, *args, **{**kwargs, "data": row}) for row in data]
         )
 
         return results
@@ -275,9 +266,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
             self._request_kwargs = await coro_wrap(
                 self._api.prepare_request_kwargs, *args, **context
             )
-            response = await self._session.request(
-                request_method, **self._request_kwargs
-            )
+            response = await self._session.request(request_method, **self._request_kwargs)
             context.update({"response": response, "request_kwargs": request_kwargs})
             data = await coro_wrap(self._api.process_response, **context)
             context["data"] = data
@@ -303,9 +292,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
             propagate_exception = True
 
-            auth_expired = await coro_wrap(
-                self._api.is_authentication_expired, ex, **context
-            )
+            auth_expired = await coro_wrap(self._api.is_authentication_expired, ex, **context)
             if refresh_token and auth_expired:
                 self._refresh_data = await coro_wrap(
                     self._api.refresh_authentication, ex, **context
@@ -350,9 +337,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         return self._api.get_iterator_list(**self._get_context())
 
     async def _get_iterator_next_request_kwargs(self):
-        return await coro_wrap(
-            self._api.get_iterator_next_request_kwargs, **self._get_context()
-        )
+        return await coro_wrap(self._api.get_iterator_next_request_kwargs, **self._get_context())
 
 
 class TapiocaClientResponse(BaseTapiocaClientResponse):
