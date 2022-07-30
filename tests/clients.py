@@ -1,10 +1,13 @@
-from src.aiotapioca import (
+from typing import Any, Dict, Type
+
+from aiotapioca import (
     SimpleSerializer,
     TapiocaAdapterJSON,
     TapiocaAdapterPydantic,
     TapiocaAdapterXML,
     generate_wrapper_from_adapter,
 )
+from aiotapioca.serializers import BaseSerializer
 
 from .models import CustomModel, CustomModelDT, Detail, NotPydanticDT, RootModel
 from .parsers import FooParser, foo_parser
@@ -14,7 +17,7 @@ test = {
     "docs": "http://www.example.org",
 }
 
-RESOURCE_MAPPING = {
+RESOURCE_MAPPING: Dict[str, Any] = {
     "test": test,
     "test_pydantic_serializer": {
         **test,
@@ -35,7 +38,6 @@ RESOURCE_MAPPING = {
 
 
 class SimpleClientAdapter(TapiocaAdapterJSON):
-    serializer_class = None
     api_root = "https://api.example.org"
     resource_mapping = RESOURCE_MAPPING
 
@@ -61,20 +63,13 @@ class SimpleClientAdapter(TapiocaAdapterJSON):
 SimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter)
 
 
-class NoneSemaphoreClientAdapter(SimpleClientAdapter):
-    semaphore = None
-
-
-NoneSemaphoreClient = generate_wrapper_from_adapter(NoneSemaphoreClientAdapter)
-
-
 class CustomSerializer(SimpleSerializer):
     def to_kwargs(self, data, **kwargs):
         return kwargs
 
 
 class SerializerClientAdapter(SimpleClientAdapter):
-    serializer_class = CustomSerializer
+    serializer_class: Type[BaseSerializer] = CustomSerializer
 
 
 SerializerClient = generate_wrapper_from_adapter(SerializerClientAdapter)
@@ -191,7 +186,7 @@ DictParserClient = generate_wrapper_from_adapter(DictParserClientAdapter)
 
 class PydanticDefaultClientAdapter(TapiocaAdapterPydantic):
     api_root = "https://api.example.org"
-    resource_mapping = {
+    resource_mapping: Dict[str, Any] = {
         "test": {
             **test,
             "pydantic_models": {
@@ -221,7 +216,7 @@ PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapt
 
 class PydanticForcedClientAdapter(PydanticDefaultClientAdapter):
     forced_to_have_model = True
-    resource_mapping = {
+    resource_mapping: Dict[str, Any] = {
         "test_not_found": {**test, "pydantic_models": None},
         "test_bad_pydantic_model": {**test, "pydantic_models": 100500},
         "test_bad_dataclass_model": {**test, "pydantic_models": NotPydanticDT},

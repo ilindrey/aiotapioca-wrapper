@@ -1,7 +1,7 @@
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
 
-from src.aiotapioca.exceptions import ResponseProcessException
+from aiotapioca.exceptions import ResponseProcessException
 
 from ..utils import coro_wrap
 from .base import (
@@ -124,7 +124,7 @@ class TapiocaClientResource(BaseTapiocaClientResource):
         docs = docs.strip()
         return docs
 
-    __doc__ = property(_get_doc)
+    __doc__ = property(_get_doc)  # type: ignore
 
     def open_docs(self):
         if not self._resource:

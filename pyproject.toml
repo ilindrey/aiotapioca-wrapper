@@ -21,7 +21,7 @@ license = {text = "MIT"}
 dynamic = ["version"]
 
 [tool.pdm]
-version = { source = "scm" }
+version = { source = "file", path = "src/aiotapioca/__init__.py" }
 classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
@@ -49,14 +49,13 @@ test = [
     "pytest-asyncio>=0.19.0",
     "setuptools>=60.0.0"
 ]
-formatter = [
-    "black>=22.6.0",
-    "isort>=5.10.1",
+type-checker = ["mypy>=0.971"]
+linters = [
+    "flake8>=4.0.1"
 ]
 
 [tool.pdm.scripts]
 test = "pytest"
-formatters = {cmd = ["isort", "black"]}
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -67,3 +66,6 @@ line_length = 100
 [tool.isort]
 profile = "black"
 line_length = 100
+
+[tool.mypy]
+python_version = "3.7"

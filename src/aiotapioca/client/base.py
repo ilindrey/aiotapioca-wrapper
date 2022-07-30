@@ -1,8 +1,8 @@
 from aiohttp import ClientSession
-from asyncio_atexit import register as atexit_register
+from asyncio_atexit import register as atexit_register  # type: ignore
 from orjson import dumps
 
-from src.aiotapioca.exceptions import TapiocaException
+from aiotapioca.exceptions import TapiocaException
 
 from .process_data import ProcessData
 
@@ -56,7 +56,7 @@ class BaseTapiocaClient:
         context.update(kwargs)
         return context
 
-    def _wrap_in_tapioca_resource(self, **kwargs) -> "TapiocaClientResource":
+    def _wrap_in_tapioca_resource(self, **kwargs):
         context = self._get_context(**kwargs)
         from .client import TapiocaClientResource
 
@@ -88,7 +88,7 @@ class BaseTapiocaClientResource(BaseTapiocaClient):
         self._client._session = self._session
         return self._client
 
-    def _wrap_in_tapioca_executor(self, **kwargs) -> "TapiocaClientExecutor":
+    def _wrap_in_tapioca_executor(self, **kwargs):
         context = self._get_context(**kwargs)
         from .client import TapiocaClientExecutor
 
@@ -102,7 +102,7 @@ class BaseTapiocaClientExecutor(BaseTapiocaClientResource):
         self._data = data
         self._request_kwargs = request_kwargs or {}
 
-    def _wrap_in_tapioca_response(self, **kwargs) -> "TapiocaClientResponse":
+    def _wrap_in_tapioca_response(self, **kwargs):
         context = self._get_context(**kwargs)
         from .client import TapiocaClientResponse
 

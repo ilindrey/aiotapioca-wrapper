@@ -6,8 +6,8 @@ import pytest
 import pytest_asyncio
 from aiohttp import ClientSession
 
-from src.aiotapioca.client import ProcessData, TapiocaClientExecutor, TapiocaClientResponse
-from src.aiotapioca.exceptions import ClientError, ServerError
+from aiotapioca.client import ProcessData, TapiocaClientExecutor, TapiocaClientResponse
+from aiotapioca.exceptions import ClientError, ServerError
 
 from .callbacks import callback_201, callback_401
 from .clients import (
@@ -16,7 +16,6 @@ from .clients import (
     DictParserClient,
     FailTokenRefreshClient,
     FuncParserClient,
-    NoneSemaphoreClient,
     RetryRequestClient,
     SimpleClient,
     StaticMethodParserClient,
@@ -487,19 +486,6 @@ class TestTapiocaClientExecutor:
                         assert response.api_params.get("semaphore") == semaphore
 
                 assert len(results) == len(response_data)
-
-    async def test_failed_semaphore(self, mocked):
-
-        async with NoneSemaphoreClient() as none_semaphore_client:
-            mocked.get(
-                none_semaphore_client.test().path,
-                body='{"data": {"key": "value"}}',
-                status=200,
-                content_type="application/json",
-            )
-
-            with pytest.raises(TypeError):
-                await none_semaphore_client.test().get()
 
 
 class TestTapiocaClientExecutorIteratorFeatures:

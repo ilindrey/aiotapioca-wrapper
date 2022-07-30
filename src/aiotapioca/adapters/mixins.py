@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 
-import xmltodict
+import xmltodict  # type: ignore
 from orjson import JSONDecodeError, dumps, loads
 from pydantic import BaseModel, parse_obj_as
 

@@ -21,12 +21,7 @@ from .client import (
     TapiocaClientResource,
     TapiocaClientResponse,
 )
-from .exceptions import (
-    ClientError,
-    ResponseProcessException,
-    ServerError,
-    TapiocaException,
-)
+from .exceptions import ClientError, ResponseProcessException, ServerError, TapiocaException
 from .generate import TapiocaInstantiator, generate_wrapper_from_adapter
 from .serializers import BaseSerializer, SimpleSerializer
 

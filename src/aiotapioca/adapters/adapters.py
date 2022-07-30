@@ -1,7 +1,9 @@
-from asyncio import to_thread
 
-from src.aiotapioca.exceptions import ClientError, ServerError
-from src.aiotapioca.serializers import SimpleSerializer
+from sys import version_info
+from typing import Any, Dict, Type
+
+from aiotapioca.exceptions import ClientError, ServerError
+from aiotapioca.serializers import BaseSerializer, SimpleSerializer
 
 from ..utils import coro_wrap
 from .mixins import (
@@ -10,6 +12,19 @@ from .mixins import (
     TapiocaAdapterPydanticMixin,
     TapiocaAdapterXMLMixin,
 )
+
+if version_info >= (3, 9):
+    from asyncio import to_thread  # type: ignore
+else:
+    from asyncio import get_running_loop
+    from concurrent.futures import ThreadPoolExecutor
+    from functools import partial
+
+    async def to_thread(func, *args, **kwargs):
+        loop = get_running_loop()
+        with ThreadPoolExecutor() as executor:
+            await loop.run_in_executor(executor, partial(func, *args, **kwargs))
+
 
 __all__ = (
     "TapiocaAdapter",
@@ -21,12 +36,12 @@ __all__ = (
 
 
 class TapiocaAdapter:
-    serializer_class = SimpleSerializer
-    max_retries_requests = 10
-    semaphore = 10
-    refresh_token = False
-    resource_mapping = {}
-    api_root = ""
+    serializer_class: Type[BaseSerializer] = SimpleSerializer
+    max_retries_requests: int = 10
+    semaphore: int = 10
+    refresh_token: bool = False
+    resource_mapping: Dict[str, Any] = {}
+    api_root: str = ""
 
     def __init__(self, serializer_class=None, *args, **kwargs):
         if serializer_class:

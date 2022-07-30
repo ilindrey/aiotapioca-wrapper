@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 from pydantic import BaseModel, dataclasses
 
@@ -9,11 +10,11 @@ class Detail(BaseModel):
 
 
 class CustomModel(BaseModel):
-    data: list[Detail]
+    data: List[Detail]
 
 
 class RootModel(BaseModel):
-    __root__: list[Detail]
+    __root__: List[Detail]
 
 
 @dataclasses.dataclass
@@ -24,9 +25,9 @@ class DetailDT:
 
 @dataclasses.dataclass
 class CustomModelDT:
-    data: list[DetailDT]
+    data: List[DetailDT]
 
 
 @dataclass
 class NotPydanticDT:
-    data: list[DetailDT]
+    data: List[DetailDT]
