@@ -6,7 +6,7 @@ import orjson
 import pytest
 import pytest_asyncio
 import xmltodict  # type: ignore
-from pydantic import BaseModel, parse_raw_as
+from pydantic import BaseModel, parse_obj_as
 from yarl import URL
 
 from aiotapioca import TapiocaAdapterPydantic, generate_wrapper_from_adapter
@@ -238,8 +238,8 @@ class TestTapiocaAdapterPydantic:
                 await client.test_bad_dataclass_model().get()
 
     async def test_pydantic_mixin_response_to_native(self, mocked):
-        response_body_root = '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
-        response_body = '{"data": %s}' % response_body_root
+        response_body_root = [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]
+        response_body = {"data": response_body_root}
 
         validate_data_received_list = [True, False]
         validate_data_sending_list = [True, False]
@@ -259,26 +259,26 @@ class TestTapiocaAdapterPydantic:
                 extract_root = extract
                 convert_to_dict = convert
 
-            PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
+            pydantic_client = generate_wrapper_from_adapter(PidanticClientAdapter)
 
-            async with PydanticClient() as client:
+            async with pydantic_client() as client:
                 mocked.get(
                     client.test().path,
-                    body=response_body,
+                    body=orjson.dumps(response_body),
                     status=200,
                     content_type="application/json",
                 )
                 response = await client.test().get()
                 if convert or not validate_received:
                     assert isinstance(response.data(), dict)
-                    assert response.data() == orjson.loads(response_body)
+                    assert response.data() == response_body
                 else:
                     assert isinstance(response.data(), BaseModel)
-                    assert response.data().dict() == orjson.loads(response_body)
+                    assert response.data().dict() == response_body
 
                 mocked.get(
                     client.test_root().path,
-                    body=response_body_root,
+                    body=orjson.dumps(response_body_root),
                     status=200,
                     content_type="application/json",
                 )
@@ -295,7 +295,7 @@ class TestTapiocaAdapterPydantic:
                     else:
                         assert isinstance(data, BaseModel)
                         data = data.__root__
-                for response_data, expected_data in zip(data, orjson.loads(response_body_root)):
+                for response_data, expected_data in zip(data, response_body_root):
                     if convert or not validate_received:
                         assert isinstance(response_data, dict)
                         assert response_data == expected_data
@@ -305,21 +305,21 @@ class TestTapiocaAdapterPydantic:
 
                 mocked.get(
                     client.test_dataclass().path,
-                    body=response_body,
+                    body=orjson.dumps(response_body),
                     status=200,
                     content_type="application/json",
                 )
                 response = await client.test_dataclass().get()
                 if convert or not validate_received:
                     assert isinstance(response.data(), dict)
-                    assert response.data() == orjson.loads(response_body)
+                    assert response.data() == response_body
                 else:
                     assert is_dataclass(response.data())
-                    assert asdict(response.data()) == orjson.loads(response_body)
+                    assert asdict(response.data()) == response_body
 
     async def test_pydantic_mixin_format_data_to_request(self, mocked):
-        response_body_root = '[{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]'
-        response_body = '{"data": %s}' % response_body_root
+        response_body_root = [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]
+        response_body = {"data": response_body_root}
 
         validate_data_received_list = [True, False]
         validate_data_sending_list = [True, False]
@@ -339,9 +339,9 @@ class TestTapiocaAdapterPydantic:
                 extract_root = extract
                 convert_to_dict = convert
 
-            PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
+            pydantic_client = generate_wrapper_from_adapter(PidanticClientAdapter)
 
-            async with PydanticClient() as client:
+            async with pydantic_client() as client:
 
                 mocked.post(
                     client.test().path,
@@ -350,29 +350,27 @@ class TestTapiocaAdapterPydantic:
                     content_type="application/json",
                 )
                 if validate_sending:
-                    data = orjson.loads(response_body)
-                    response = await client.test().post(data=data)
+                    response = await client.test().post(data=response_body)
                     assert response.data() == {"id": 100500}
                 else:
-                    data = CustomModel.parse_raw(response_body)
+                    data = CustomModel.parse_obj(response_body)
                     response = await client.test().post(data=data)
                     assert response.data() == {"id": 100500}
 
                 if validate_sending:
-                    data = orjson.loads(response_body_root)
-                    for _ in range(len(data)):
+                    for _ in range(len(response_body_root)):
                         mocked.post(
                             client.test_root().path,
                             body='{"id": 100500}',
                             status=200,
                             content_type="application/json",
                         )
-                    responses = await client.test_root().post_batch(data=data)
-                    assert len(responses) == len(data)
+                    responses = await client.test_root().post_batch(data=response_body_root)
+                    assert len(responses) == len(response_body_root)
                     for response in responses:
                         assert response.data() == {"id": 100500}
                 else:
-                    data = RootModel.parse_raw(response_body_root)
+                    data = RootModel.parse_obj(response_body_root)
                     for _ in range(len(data.__root__)):
                         mocked.post(
                             client.test_root().path,
@@ -392,11 +390,10 @@ class TestTapiocaAdapterPydantic:
                     content_type="application/json",
                 )
                 if validate_sending:
-                    data = orjson.loads(response_body)
-                    response = await client.test_dataclass().post(data=data)
+                    response = await client.test_dataclass().post(data=response_body)
                     assert response.data() == {"id": 100500}
                 else:
-                    data = parse_raw_as(CustomModelDT, response_body)
+                    data = parse_obj_as(CustomModelDT, response_body)
                     response = await client.test_dataclass().post(data=data)
                     assert response.data() == {"id": 100500}
 
@@ -405,18 +402,17 @@ class TestTapiocaAdapterPydantic:
             validate_data_sending = False
             validate_data_received = False
 
-        PydanticClient = generate_wrapper_from_adapter(PidanticClientAdapter)
+        pydantic_client = generate_wrapper_from_adapter(PidanticClientAdapter)
 
-        async with PydanticClient() as client:
-            data = orjson.loads(response_body_root)
-            for _ in range(len(data)):
+        async with pydantic_client() as client:
+            for _ in range(len(response_body_root)):
                 mocked.post(
                     client.test_root().path,
                     body='{"id": 100500}',
                     status=200,
                     content_type="application/json",
                 )
-            responses = await client.test_root().post_batch(data=data)
-            assert len(responses) == len(data)
+            responses = await client.test_root().post_batch(data=response_body_root)
+            assert len(responses) == len(response_body_root)
             for response in responses:
                 assert response.data() == {"id": 100500}

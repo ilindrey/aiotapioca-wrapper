@@ -35,7 +35,8 @@ class ProcessData:
 
     def __str__(self):
         if type(self._data) == OrderedDict:
-            return f"<{type(self).__name__} object, printing as dict:\n{dumps(self._data).decode('utf-8')}>"
+            data = dumps(self._data).decode("utf-8")
+            return f"<{type(self).__name__} object, printing as dict:\n{data}>"
         else:
             from pprint import PrettyPrinter
 
@@ -134,9 +135,12 @@ class ProcessData:
         parsers = parser or self._resource.get("parsers")
         if parsers is None:
             return None
-        elif isfunction(parsers) and name == parsers.__name__:
-            return partial(parsers, self._data)
-        elif ismethod(parsers) and hasattr(parsers, "__self__"):
+        elif (
+            isfunction(parsers)
+            and name == parsers.__name__
+            or ismethod(parsers)
+            and hasattr(parsers, "__self__")
+        ):
             return partial(parsers, self._data)
         elif isclass(parsers) and name == self._to_snake_case(parsers.__name__):
             parsers.data = self._data

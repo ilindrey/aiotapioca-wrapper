@@ -79,7 +79,7 @@ class TapiocaAdapter:
 
     def fill_resource_template_url(self, template, url_params, **kwargs):
         if isinstance(template, str):
-            return template.format(**url_params)
+            return template.format(**url_params)  # noqa: FS002
         else:
             return template
 

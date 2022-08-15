@@ -1,0 +1,10 @@
+[flake8]
+min_python_version = 3.7.0
+max-line-length = 100
+format-greedy = 1
+inline-quotes = double
+extend-ignore =
+    # E203: Whitespace before ':' (pycqa/pycodestyle#373)
+    E203,
+per-file-ignores =
+    tests/*: S101,S105,S106,S301,S403

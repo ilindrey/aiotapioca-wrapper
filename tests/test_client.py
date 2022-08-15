@@ -96,17 +96,18 @@ class TestTapiocaClient:
 
         # ensure requests keep working after pickle:
         next_url = "http://api.example.org/next_batch"
-
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             pickle_client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
+        data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -201,10 +202,10 @@ class TestTapiocaClientExecutor:
         async with SimpleClient() as client:
 
             next_url = "http://api.example.org/next_batch"
-
+            data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
             mocked.get(
                 client.test().path,
-                body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+                body=orjson.dumps(data),
                 status=200,
                 content_type="application/json",
             )
@@ -216,10 +217,11 @@ class TestTapiocaClientExecutor:
 
     async def test_response_executor_object_has_a_response(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -230,9 +232,10 @@ class TestTapiocaClientExecutor:
         assert response.status == 200
 
     async def test_response_executor_has_a_status_code(self, mocked, client):
+        data = {"data": {"key": "value"}}
         mocked.get(
             client.test().path,
-            body='{"data": {"key": "value"}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -242,9 +245,10 @@ class TestTapiocaClientExecutor:
         assert response.status == 200
 
     async def test_access_response_field(self, mocked, client):
+        data = {"data": {"key": "value"}}
         mocked.get(
             client.test().path,
-            body='{"data": {"key": "value"}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -254,9 +258,10 @@ class TestTapiocaClientExecutor:
         assert response.data.data() == {"key": "value"}
 
     async def test_carries_request_kwargs_over_calls(self, mocked, client):
+        data = {"data": {"key": "value"}}
         mocked.get(
             client.test().path,
-            body='{"data": {"key": "value"}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -271,11 +276,13 @@ class TestTapiocaClientExecutor:
 
     async def test_retry_request(self, mocked):
 
+        error_data = {"error": "bad request test"}
+        success_data = {"data": "success!"}
         async with RetryRequestClient() as client:
             for _ in range(11):
                 mocked.get(
                     client.test().path,
-                    body='{"error": "bad request test"}',
+                    body=orjson.dumps(error_data),
                     status=400,
                     content_type="application/json",
                 )
@@ -286,14 +293,14 @@ class TestTapiocaClientExecutor:
             for _ in range(10):
                 mocked.get(
                     client.test().path,
-                    body='{"error": "bad request test"}',
+                    body=orjson.dumps(error_data),
                     status=400,
                     content_type="application/json",
                 )
 
             mocked.get(
                 client.test().path,
-                body='{"data": "success!"}',
+                body=orjson.dumps(success_data),
                 status=200,
                 content_type="application/json",
             )
@@ -305,14 +312,14 @@ class TestTapiocaClientExecutor:
             for _ in range(3):
                 mocked.get(
                     client.test().path,
-                    body='{"error": "bad request test"}',
+                    body=orjson.dumps(error_data),
                     status=400,
                     content_type="application/json",
                 )
 
             mocked.get(
                 client.test().path,
-                body='{"data": "success!"}',
+                body=orjson.dumps(success_data),
                 status=200,
                 content_type="application/json",
             )
@@ -324,7 +331,7 @@ class TestTapiocaClientExecutor:
             for _ in range(3):
                 mocked.get(
                     client.test().path,
-                    body='{"error": "bad request test"}',
+                    body=orjson.dumps(error_data),
                     status=403,
                     content_type="application/json",
                 )
@@ -381,15 +388,15 @@ class TestTapiocaClientExecutor:
             mocked_method = getattr(mocked, type_request)
             executor_method = getattr(executor, type_request + "_batch")
 
-            for data_row in response_data:
+            for row_data in response_data:
                 mocked_method(
                     executor.path,
-                    body=orjson.dumps(data_row),
+                    body=orjson.dumps(row_data),
                     status=201,
                     content_type="application/json",
                 )
 
-            kwargs = dict(data=response_data)
+            kwargs = {"data": response_data}
             if semaphore:
                 kwargs.update({"semaphore": semaphore})
 
@@ -429,7 +436,7 @@ class TestTapiocaClientExecutor:
                     content_type="application/json",
                 )
 
-                kwargs = dict()
+                kwargs = {}
 
                 response = await executor_method(**kwargs)
 
@@ -461,15 +468,15 @@ class TestTapiocaClientExecutor:
                 mocked_method = getattr(mocked, type_request)
                 executor_method = getattr(executor, type_request + "_batch")
 
-                for data_row in response_data:
+                for row_data in response_data:
                     mocked_method(
                         executor.path,
-                        body=orjson.dumps(data_row),
+                        body=orjson.dumps(row_data),
                         status=201,
                         content_type="application/json",
                     )
 
-                kwargs = dict(data=response_data)
+                kwargs = {"data": response_data}
                 if semaphore:
                     kwargs.update({"semaphore": semaphore})
 
@@ -491,17 +498,19 @@ class TestTapiocaClientExecutor:
 class TestTapiocaClientExecutorIteratorFeatures:
     async def test_simple_pages_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
+        data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -512,32 +521,34 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_simple_pages_with_max_pages_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
-
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
+
+        data["data"].append({"key": "value"})
+        data["data"].append({"key": "value"})
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-            % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-            % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
+        data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -548,32 +559,34 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_simple_pages_with_max_items_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
-
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
+
+        data["data"].append({"key": "value"})
+        data["data"].append({"key": "value"})
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-            % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": "%s"}}'
-            % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
+        data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -584,17 +597,21 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_simple_pages_with_max_pages_and_max_items_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
+        data["data"].append({"key": "value"})
+        data["data"].append({"key": "value"})
+        data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}, {"key": "value"}, {"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -605,17 +622,19 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_simple_pages_max_pages_zero_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
+        data["paging"]["next"] = ""
         mocked.add(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -626,17 +645,19 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_simple_pages_max_items_zero_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
-        mocked.get(
+        data["paging"]["next"] = ""
+        mocked.add(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -647,17 +668,19 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_simple_pages_max_pages_ans_max_items_zero_iterator(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
-        mocked.get(
+        data["paging"]["next"] = ""
+        mocked.add(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -668,31 +691,33 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_pages_iterator_with_client_error(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=408,
             content_type="application/json",
         )
 
+        data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -721,31 +746,32 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_pages_iterator_with_server_error(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
-
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=504,
             content_type="application/json",
         )
 
+        data["paging"]["mext"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -774,31 +800,35 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
     async def test_pages_iterator_with_error_on_single_page(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
 
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
 
+        data["data"] = [{}]
         mocked.get(
             next_url,
-            body='{"data": [{}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=204,
             content_type="application/json",
         )
 
+        data["data"] = [{"key": "value"}]
+        data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body='{"data": [{"key": "value"}], "paging": {"next": ""}}',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -820,7 +850,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         async for item in response().pages():
             if iterations_count == 2:
                 status = 204
-                result_page = {item.data: dict()}
+                result_page = {item.data: {}}
             else:
                 status = 200
                 result_page = {item.data: {"key": "value"}, item.data.key: "value"}
@@ -833,9 +863,11 @@ class TestTapiocaClientExecutorIteratorFeatures:
 class TestTapiocaClientResponse:
     async def test_available_attributes(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
+
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -861,9 +893,10 @@ class TestTapiocaClientResponse:
 
     async def test_callable_executor_from_response(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body='{"data": [{"key": "value"}], "paging": {"next": "%s"}}' % next_url,
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -874,7 +907,7 @@ class TestTapiocaClientResponse:
 class TestTokenRefreshing:
     @pytest.fixture
     def possible_false_values(self):
-        yield False, None, 1, 0, "511", -22, 41, [], tuple(), {}, set(), [41], {"key": "value"}
+        yield False, None, 1, 0, "511", -22, 41, [], (), set(), [41], {"key": "value"}
 
     async def test_not_token_refresh_client_propagates_client_error(self, mocked, client):
         no_refresh_client = client
@@ -1078,7 +1111,7 @@ class TestProcessData:
         assert "other" in response.data
         assert "wat" not in response.data
 
-    async def test_transform_camelCase_in_snake_case(self, mocked, client):
+    async def test_transform_came_case_in_snake_case(self, mocked, client):
         next_url = "http://api.example.org/next_batch"
 
         response_data = {
@@ -1087,7 +1120,7 @@ class TestProcessData:
                 "camelCase": "data in camel case",
                 "NormalCamelCase": "data in camel case",
             },
-            "paging": {"next": "%s" % next_url},
+            "paging": {"next": f"{next_url}"},
         }
         mocked.add(
             client.test().path,
@@ -1145,9 +1178,6 @@ class TestProcessData:
             response.data[3]
 
 
-7
-
-
 class TestParsers:
     @pytest_asyncio.fixture
     async def func_parser_client(self):
@@ -1175,9 +1205,10 @@ class TestParsers:
             yield client
 
     async def test_parsers_not_found(self, mocked, func_parser_client):
+        data = ["a", "b", "c"]
         mocked.get(
             func_parser_client.test().path,
-            body='["a", "b", "c"]',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1187,9 +1218,10 @@ class TestParsers:
             response.data.blablabla()
 
     async def test_func_parser(self, mocked, func_parser_client):
+        data = ["a", "b", "c"]
         mocked.get(
             func_parser_client.test().path,
-            body='["a", "b", "c"]',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1203,9 +1235,10 @@ class TestParsers:
             response.data.foo_parser(3)
 
     async def test_static_method_parser(self, mocked, static_method_parser_client):
+        data = ["a", "b", "c"]
         mocked.get(
             static_method_parser_client.test().path,
-            body='["a", "b", "c"]',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1219,9 +1252,10 @@ class TestParsers:
             response.data.foo(3)
 
     async def test_class_method_parser(self, mocked, class_method_parser_client):
+        data = ["a", "b", "c"]
         mocked.get(
             class_method_parser_client.test().path,
-            body='["a", "b", "c"]',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1235,9 +1269,10 @@ class TestParsers:
             response.data.spam(3)
 
     async def test_class_parser(self, mocked, class_parser_client):
+        data = ["a", "b", "c"]
         mocked.get(
             class_parser_client.test().path,
-            body='["a", "b", "c"]',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1252,9 +1287,10 @@ class TestParsers:
             parser.bar(3)
 
     async def test_dict_parser(self, mocked, dict_parser_client):
+        data = ["a", "b", "c"]
         mocked.get(
             dict_parser_client.test().path,
-            body='["a", "b", "c"]',
+            body=orjson.dumps(data),
             status=200,
             content_type="application/json",
         )

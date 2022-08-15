@@ -117,7 +117,7 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
                         if isinstance(value, str) and value.upper() == method:
                             model = key
                             break
-                        elif isinstance(value, list) or isinstance(value, tuple):
+                        elif isinstance(value, (list, tuple)):
                             for item in value:
                                 if item.upper() == request_method:
                                     model = key
@@ -135,7 +135,7 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             if not model:
                 raise ValueError(
                     "Pydantic model not found."
-                    " Specify the pydantic models in the pydantic_models parameter in resource_mapping"
+                    " Specify the model in the pydantic_models parameter in resource_mapping"
                 )
             if (
                 type(model) is not type(BaseModel)
@@ -155,7 +155,7 @@ class TapiocaAdapterXMLMixin:
         except Exception as e:
             raise type(e)(
                 "Format not recognized, please enter an XML as string or a dictionary"
-                "in xmltodict spec: \n%s" % e.message
+                f"in xmltodict spec: \n{e.message}"
             )
 
     def get_request_kwargs(self, *args, **kwargs):

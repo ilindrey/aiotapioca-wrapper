@@ -1,5 +1,6 @@
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
+from contextlib import suppress
 
 from aiotapioca.exceptions import ResponseProcessException
 
@@ -24,7 +25,7 @@ class TapiocaClient(BaseTapiocaClient):
         methods = ["api_params", "close", "closed", "initialize", "session"]
         resource_mapping = self._api.get_resource_mapping(self._api_params)
         if resource_mapping:
-            methods.extend([key for key in resource_mapping.keys()])
+            methods.extend(list(resource_mapping))
             return methods
         return methods
 
@@ -48,7 +49,7 @@ class TapiocaClient(BaseTapiocaClient):
         return self.initialize().__await__()
 
     def __del__(self):
-        try:
+        with suppress(RuntimeError):
             if not self.closed:
                 loop = get_event_loop()
                 coro = self.close()
@@ -56,8 +57,6 @@ class TapiocaClient(BaseTapiocaClient):
                     loop.create_task(coro)
                 else:
                     loop.run_until_complete(coro)
-        except Exception:
-            pass
 
     def _get_context(self, **kwargs):
         context = super()._get_context(**kwargs)
