@@ -1,9 +1,21 @@
 from collections.abc import Mapping
-from dataclasses import asdict, is_dataclass
 
-import xmltodict  # type: ignore
-from orjson import JSONDecodeError, dumps, loads
-from pydantic import BaseModel, parse_obj_as
+try:
+    import orjson as json  # type: ignore
+except ImportError:
+    import json  # type: ignore
+
+try:
+    import pydantic
+
+    import dataclasses  # isort: skip
+except ImportError:
+    pydantic, dataclasses = None, None  # type: ignore
+
+try:
+    import xmltodict  # type: ignore
+except ImportError:
+    xmltodict = None  # type: ignore
 
 __all__ = (
     "TapiocaAdapterFormMixin",
@@ -31,14 +43,14 @@ class TapiocaAdapterJSONMixin:
 
     def format_data_to_request(self, data, *args, **kwargs):
         if data:
-            return dumps(data)
+            return json.dumps(data)
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
         if not non_native_data:
             return None
         try:
-            return loads(non_native_data)
-        except JSONDecodeError:
+            return json.loads(non_native_data)
+        except json.JSONDecodeError:
             return non_native_data
 
     def get_error_message(self, data, response, **kwargs):
@@ -60,30 +72,33 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
     to_dict_by_alias = True
 
     def format_data_to_request(self, data, *args, **kwargs):
+        assert (  # noqa: S101
+            pydantic is not None
+        ), "pydantic must be installed to use TapiocaAdapterPydanticMixin"
         if data:
             if self.validate_data_sending:
                 data = self.convert_data_to_pydantic_model("request", data, **kwargs)
             data = self.convert_pydantic_model_to_dict(data, *args, **kwargs)
-            return dumps(data)
-
-    def convert_pydantic_model_to_dict(self, data, *args, **kwargs):
-        if isinstance(data, BaseModel):
-            return data.dict(by_alias=self.to_dict_by_alias)
-        elif is_dataclass(data):
-            return asdict(data)
-        return data
+            return json.dumps(data)
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
+        assert (  # noqa: S101
+            pydantic is not None
+        ), "pydantic must be installed to use TapiocaAdapterPydanticMixin"
         data = super().format_response_data_to_native(non_native_data, response, **kwargs)
         if isinstance(data, str):
             return data
         if self.validate_data_received and response.status == 200:
             data = self.convert_data_to_pydantic_model("response", data, **kwargs)
 
-            if isinstance(data, BaseModel) or is_dataclass(data):
+            if isinstance(data, pydantic.BaseModel) or dataclasses.is_dataclass(data):
                 if self.convert_to_dict:
-                    data = data.dict() if isinstance(data, BaseModel) else asdict(data)
-                if self.extract_root and not is_dataclass(data):
+                    data = (
+                        data.dict()
+                        if isinstance(data, pydantic.BaseModel)
+                        else dataclasses.asdict(data)
+                    )
+                if self.extract_root and not dataclasses.is_dataclass(data):
                     if hasattr(data, "__root__"):
                         return data.__root__
                     elif "__root__" in data:
@@ -92,28 +107,35 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             return data
         return data
 
+    def convert_pydantic_model_to_dict(self, data, *args, **kwargs):
+        if isinstance(data, pydantic.BaseModel):
+            return data.dict(by_alias=self.to_dict_by_alias)
+        elif dataclasses.is_dataclass(data):
+            return dataclasses.asdict(data)
+        return data
+
     def convert_data_to_pydantic_model(self, type_convert, data, **kwargs):
-        if isinstance(data, BaseModel) or is_dataclass(data):
+        if isinstance(data, pydantic.BaseModel) or dataclasses.is_dataclass(data):
             return data
         model = self.get_pydantic_model(type_convert, **kwargs)
         if model:
-            return parse_obj_as(model, data)
+            return pydantic.parse_obj_as(model, data)
         return data
 
     def get_pydantic_model(self, type_convert, resource, request_method, **kwargs):
         model = None
         models = resource.get("pydantic_models")
-        if type(models) is type(BaseModel) or is_dataclass(models):
+        if isinstance(models, type(pydantic.BaseModel)) or dataclasses.is_dataclass(models):
             model = models
         elif isinstance(models, dict):
             method = request_method.upper()
             if "request" in models or "response" in models:
                 models = models.get(type_convert)
-            if type(models) is type(BaseModel) or is_dataclass(models):
+            if isinstance(models, type(pydantic.BaseModel)) or dataclasses.is_dataclass(models):
                 model = models
             elif isinstance(models, dict):
                 for key, value in models.items():
-                    if type(key) is type(BaseModel) or is_dataclass(key):
+                    if isinstance(key, type(pydantic.BaseModel)) or dataclasses.is_dataclass(key):
                         if isinstance(value, str) and value.upper() == method:
                             model = key
                             break
@@ -138,8 +160,8 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
                     " Specify the model in the pydantic_models parameter in resource_mapping"
                 )
             if (
-                type(model) is not type(BaseModel)
-                or is_dataclass(model)
+                not isinstance(model, type(pydantic.BaseModel))
+                or dataclasses.is_dataclass(model)
                 and not hasattr(model, "__pydantic_model__")
             ):
                 raise TypeError(f"It isn't pydantic model or dataclass: {model}.")
@@ -182,10 +204,16 @@ class TapiocaAdapterXMLMixin:
         return request_kwargs
 
     def format_data_to_request(self, data, *args, **kwargs):
+        assert (  # noqa: S101
+            xmltodict is not None
+        ), "xmltodict must be installed to use TapiocaAdapterXMLMixin"
         if data:
             return self._input_branches_to_xml_bytestring(data)
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
+        assert (  # noqa: S101
+            xmltodict is not None
+        ), "xmltodict must be installed to use TapiocaAdapterXMLMixin"
         if non_native_data:
             if "xml" in response.headers["content-type"]:
                 return xmltodict.parse(non_native_data, **self._xmltodict_parse_kwargs)

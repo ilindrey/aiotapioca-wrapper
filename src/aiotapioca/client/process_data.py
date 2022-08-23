@@ -4,7 +4,10 @@ from collections import OrderedDict
 from functools import partial
 from inspect import isclass, isfunction, ismethod
 
-from orjson import dumps
+try:
+    import orjson as json  # type: ignore
+except ImportError:
+    import json  # type: ignore
 
 __all__ = ("ProcessData",)
 
@@ -35,8 +38,9 @@ class ProcessData:
 
     def __str__(self):
         if type(self._data) == OrderedDict:
-            data = dumps(self._data).decode("utf-8")
-            return f"<{type(self).__name__} object, printing as dict:\n{data}>"
+            data = json.dumps(self._data)
+            msg_data = data.decode("utf-8") if isinstance(data, bytes) else data
+            return f"<{type(self).__name__} object, printing as dict:\n{msg_data}>"
         else:
             from pprint import PrettyPrinter
 

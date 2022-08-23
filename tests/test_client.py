@@ -1,7 +1,7 @@
+import json
 import pickle
 from itertools import product
 
-import orjson
 import pytest
 import pytest_asyncio
 from aiohttp import ClientSession
@@ -99,7 +99,7 @@ class TestTapiocaClient:
         data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             pickle_client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -107,7 +107,7 @@ class TestTapiocaClient:
         data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -205,7 +205,7 @@ class TestTapiocaClientExecutor:
             data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
             mocked.get(
                 client.test().path,
-                body=orjson.dumps(data),
+                body=json.dumps(data),
                 status=200,
                 content_type="application/json",
             )
@@ -221,7 +221,7 @@ class TestTapiocaClientExecutor:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -235,7 +235,7 @@ class TestTapiocaClientExecutor:
         data = {"data": {"key": "value"}}
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -248,7 +248,7 @@ class TestTapiocaClientExecutor:
         data = {"data": {"key": "value"}}
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -261,7 +261,7 @@ class TestTapiocaClientExecutor:
         data = {"data": {"key": "value"}}
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -282,7 +282,7 @@ class TestTapiocaClientExecutor:
             for _ in range(11):
                 mocked.get(
                     client.test().path,
-                    body=orjson.dumps(error_data),
+                    body=json.dumps(error_data),
                     status=400,
                     content_type="application/json",
                 )
@@ -293,14 +293,14 @@ class TestTapiocaClientExecutor:
             for _ in range(10):
                 mocked.get(
                     client.test().path,
-                    body=orjson.dumps(error_data),
+                    body=json.dumps(error_data),
                     status=400,
                     content_type="application/json",
                 )
 
             mocked.get(
                 client.test().path,
-                body=orjson.dumps(success_data),
+                body=json.dumps(success_data),
                 status=200,
                 content_type="application/json",
             )
@@ -312,14 +312,14 @@ class TestTapiocaClientExecutor:
             for _ in range(3):
                 mocked.get(
                     client.test().path,
-                    body=orjson.dumps(error_data),
+                    body=json.dumps(error_data),
                     status=400,
                     content_type="application/json",
                 )
 
             mocked.get(
                 client.test().path,
-                body=orjson.dumps(success_data),
+                body=json.dumps(success_data),
                 status=200,
                 content_type="application/json",
             )
@@ -331,7 +331,7 @@ class TestTapiocaClientExecutor:
             for _ in range(3):
                 mocked.get(
                     client.test().path,
-                    body=orjson.dumps(error_data),
+                    body=json.dumps(error_data),
                     status=403,
                     content_type="application/json",
                 )
@@ -391,7 +391,7 @@ class TestTapiocaClientExecutor:
             for row_data in response_data:
                 mocked_method(
                     executor.path,
-                    body=orjson.dumps(row_data),
+                    body=json.dumps(row_data),
                     status=201,
                     content_type="application/json",
                 )
@@ -471,7 +471,7 @@ class TestTapiocaClientExecutor:
                 for row_data in response_data:
                     mocked_method(
                         executor.path,
-                        body=orjson.dumps(row_data),
+                        body=json.dumps(row_data),
                         status=201,
                         content_type="application/json",
                     )
@@ -502,7 +502,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -510,7 +510,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -524,7 +524,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -533,14 +533,14 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["data"].append({"key": "value"})
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -548,7 +548,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -562,7 +562,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -571,14 +571,14 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["data"].append({"key": "value"})
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -586,7 +586,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -601,7 +601,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -611,7 +611,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -626,7 +626,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -634,7 +634,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.add(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -649,7 +649,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -657,7 +657,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.add(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -672,7 +672,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -680,7 +680,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.add(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -695,21 +695,21 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=408,
             content_type="application/json",
         )
@@ -717,7 +717,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -749,21 +749,21 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=504,
             content_type="application/json",
         )
@@ -771,7 +771,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["mext"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -804,14 +804,14 @@ class TestTapiocaClientExecutorIteratorFeatures:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
 
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -819,7 +819,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["data"] = [{}]
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=204,
             content_type="application/json",
         )
@@ -828,7 +828,7 @@ class TestTapiocaClientExecutorIteratorFeatures:
         data["paging"]["next"] = ""
         mocked.get(
             next_url,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -867,7 +867,7 @@ class TestTapiocaClientResponse:
 
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -896,7 +896,7 @@ class TestTapiocaClientResponse:
         data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
         mocked.get(
             client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1124,7 +1124,7 @@ class TestProcessData:
         }
         mocked.add(
             client.test().path,
-            body=orjson.dumps(response_data),
+            body=json.dumps(response_data),
             status=200,
             content_type="application/json",
         )
@@ -1142,7 +1142,7 @@ class TestProcessData:
         response_data = ["a", "b", "c"]
         mocked.get(
             client.test().path,
-            body=orjson.dumps(response_data),
+            body=json.dumps(response_data),
             status=200,
             content_type="application/json",
         )
@@ -1159,7 +1159,7 @@ class TestProcessData:
         response_data = ["a", "b", "c"]
         mocked.get(
             client.test().path,
-            body=orjson.dumps(response_data),
+            body=json.dumps(response_data),
             status=200,
             content_type="application/json",
         )
@@ -1208,7 +1208,7 @@ class TestParsers:
         data = ["a", "b", "c"]
         mocked.get(
             func_parser_client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1221,7 +1221,7 @@ class TestParsers:
         data = ["a", "b", "c"]
         mocked.get(
             func_parser_client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1238,7 +1238,7 @@ class TestParsers:
         data = ["a", "b", "c"]
         mocked.get(
             static_method_parser_client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1255,7 +1255,7 @@ class TestParsers:
         data = ["a", "b", "c"]
         mocked.get(
             class_method_parser_client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1272,7 +1272,7 @@ class TestParsers:
         data = ["a", "b", "c"]
         mocked.get(
             class_parser_client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )
@@ -1290,7 +1290,7 @@ class TestParsers:
         data = ["a", "b", "c"]
         mocked.get(
             dict_parser_client.test().path,
-            body=orjson.dumps(data),
+            body=json.dumps(data),
             status=200,
             content_type="application/json",
         )

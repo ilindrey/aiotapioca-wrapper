@@ -1,10 +1,15 @@
 from aiohttp import ClientSession
 from asyncio_atexit import register as atexit_register  # type: ignore
-from orjson import dumps
 
 from aiotapioca.exceptions import TapiocaException
 
 from .process_data import ProcessData
+
+try:
+    import orjson as json  # type: ignore
+except ImportError:
+    import json  # type: ignore
+
 
 __all__ = (
     "BaseTapiocaClient",
@@ -39,7 +44,7 @@ class BaseTapiocaClient:
 
     async def initialize(self):
         if self.closed:
-            self._session = ClientSession(json_serialize=dumps)
+            self._session = ClientSession(json_serialize=json.dumps)
             atexit_register(self.close)
         return self
 

@@ -1,8 +1,8 @@
+import json
 from collections import OrderedDict
 from dataclasses import asdict, is_dataclass
 from itertools import product
 
-import orjson
 import pytest
 import pytest_asyncio
 import xmltodict  # type: ignore
@@ -264,7 +264,7 @@ class TestTapiocaAdapterPydantic:
             async with pydantic_client() as client:
                 mocked.get(
                     client.test().path,
-                    body=orjson.dumps(response_body),
+                    body=json.dumps(response_body),
                     status=200,
                     content_type="application/json",
                 )
@@ -278,7 +278,7 @@ class TestTapiocaAdapterPydantic:
 
                 mocked.get(
                     client.test_root().path,
-                    body=orjson.dumps(response_body_root),
+                    body=json.dumps(response_body_root),
                     status=200,
                     content_type="application/json",
                 )
@@ -305,7 +305,7 @@ class TestTapiocaAdapterPydantic:
 
                 mocked.get(
                     client.test_dataclass().path,
-                    body=orjson.dumps(response_body),
+                    body=json.dumps(response_body),
                     status=200,
                     content_type="application/json",
                 )
