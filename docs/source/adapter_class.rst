@@ -79,7 +79,7 @@ You may also need to set different ``api_root`` to a specific resource. To do th
 This method is called just before any request is made. You should use it to set whatever credentials the request might need. The **api_params** argument is a dictionary and has the parameters passed during the initialization of the aiotapioca client:
 
 .. code-block:: python
-	
+
 	async with Facebook(access_token='blablabla', client_id='thisistheis') as cli:
 		...
 
@@ -119,7 +119,7 @@ This method receives the response of a request and should return a dictionay wit
 Override this method if the service you are using supports pagination. It should return a dictionary that will be used to fetch the next batch of data, e.g.:
 
 .. code-block:: python
-	
+
 	def get_iterator_next_request_kwargs(self,
 			iterator_request_kwargs, response_data, response):
 		paging = response_data.get('paging')
@@ -131,7 +131,7 @@ Override this method if the service you are using supports pagination. It should
 			iterator_request_kwargs['url'] = url
 			return iterator_request_kwargs
 
-In this example, we are updating the URL from the last call made. ``iterator_request_kwargs`` contains the paramenters from the last call made, ``response_data`` contains the response data after it was parsed by ``process_response`` method, and ``response`` is the full response object with all its attributes like headers and status code. 
+In this example, we are updating the URL from the last call made. ``iterator_request_kwargs`` contains the paramenters from the last call made, ``response_data`` contains the response data after it was parsed by ``process_response`` method, and ``response`` is the full response object with all its attributes like headers and status code.
 
 .. method:: get_iterator_list(self, response_data, **kwargs)
 
@@ -152,11 +152,11 @@ method and retry the original request.
 If not implemented, ``is_authentication_expired`` will assume ``False``, ``refresh_token`` also
 defaults to ``False`` in the client initialization.
 
-.. method:: refresh_authentication(self, api_params, *args, **kwargs): 
+.. method:: refresh_authentication(self, api_params, *args, **kwargs):
 
 Should do refresh authentication logic. Make sure you update `api_params` dictionary with the new token. If it successfully refreshs token it should return a truthy value that will be stored for later access in the executor class in the ``refresh_data`` attribute. If the refresh logic fails, return a falsy value. The original request will be retried only if a truthy is returned.
 
-.. method:: retry_request(self, exception, error_message, repeat_number, **kwargs): 
+.. method:: retry_request(self, exception, error_message, repeat_number, **kwargs):
 
 Conditions for repeating a request. If it returns True, the request will be repeated.
 

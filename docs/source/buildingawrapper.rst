@@ -6,7 +6,7 @@ Building a wrapper
 Wrapping an API with AioTapioca
 ===============================
 
-The easiest way to wrap an API using aiotapioca is starting from the `cookiecutter template <https://github.com/vintasoftware/cookiecutter-tapioca>`_. 
+The easiest way to wrap an API using aiotapioca is starting from the `cookiecutter template <https://github.com/vintasoftware/cookiecutter-tapioca>`_.
 
 To use it, install cookiecutter in your machine:
 
@@ -25,7 +25,7 @@ After this process, it's possible that you have a ready to go wrapper. But in mo
 Adapter
 =======
 
-AioTapioca features are mainly implemented in the ``TapiocaClient`` and ``TapiocaClientExecutor`` classes. Those are generic classes common to all wrappers and cannot be customized to specific services. All the code specific to the API wrapper you are creating goes in your adapter class, which should inherit from ``TapiocaAdapter`` and implement specific behaviours to the service you are working with. 
+AioTapioca features are mainly implemented in the ``TapiocaClient`` and ``TapiocaClientExecutor`` classes. Those are generic classes common to all wrappers and cannot be customized to specific services. All the code specific to the API wrapper you are creating goes in your adapter class, which should inherit from ``TapiocaAdapter`` and implement specific behaviours to the service you are working with.
 
 Take a look in the generated code from the cookiecutter or in the `aiotapioca-facebook adapter <https://github.com/ilindrey/aiotapioca-facebook/blob/master/aiotapioca_facebook/aiotapioca_facebook.py>`_ to get a little familiar with it before you continue. Note that at the end of the module you will need to perform the transformation of your adapter into a client:
 
@@ -45,7 +45,7 @@ Resource Mapping
 
 The resource mapping is a very simple dictionary which will tell your aiotapioca client about the available endpoints and how to call them. There's an example in your cookiecutter generated project. You can also take a look at `aiotapioca-facebook's resource mapping <https://github.com/ilindrey/aiotapioca-facebook/blob/master/aiotapioca_facebook/resource_mapping.py>`_.
 
-AioTapioca uses `aiohttp <https://docs.aiohttp.org/en/stable/>`_ to perform HTTP requests. This is important to know because you will be using the method ``get_request_kwargs`` to set authentication details and return a dictionary that will be passed directly to the request method. 
+AioTapioca uses `aiohttp <https://docs.aiohttp.org/en/stable/>`_ to perform HTTP requests. This is important to know because you will be using the method ``get_request_kwargs`` to set authentication details and return a dictionary that will be passed directly to the request method.
 
 
 Formatting data
@@ -55,9 +55,9 @@ Use the methods ``format_data_to_request`` and ``response_to_native`` to correct
 
 **TODO: add examples**
 
-You might want to use one of the following mixins to help you with data format handling in your wrapper: 
+You might want to use one of the following mixins to help you with data format handling in your wrapper:
 
-- ``FormAdapterMixin`` 
+- ``FormAdapterMixin``
 - ``JSONAdapterMixin``
 - ``XMLAdapterMixin``
 - ``PydanticAdapterMixin``
@@ -80,7 +80,7 @@ Pagination (optional)
 Serializers (optional)
 ----------------------
 
-Set a ``serializer_class`` attribute or overwrite the ``get_serializer()`` method in your wrapper for it to have a default serializer. 
+Set a ``serializer_class`` attribute or overwrite the ``get_serializer()`` method in your wrapper for it to have a default serializer.
 
 .. code-block:: python
 
@@ -88,7 +88,7 @@ Set a ``serializer_class`` attribute or overwrite the ``get_serializer()`` metho
 	from aiotapioca.serializers import SimpleSerializer
 
 	class MyAPISerializer(SimpleSerializer):
-		
+
 		def serialize_datetime(self, data):
 			return data.isoformat()
 

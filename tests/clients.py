@@ -12,6 +12,7 @@ from aiotapioca.serializers import BaseSerializer
 from .models import CustomModel, CustomModelDT, Detail, NotPydanticDT, RootModel
 from .parsers import FooParser, foo_parser
 
+
 test = {
     "resource": "test/",
     "docs": "http://www.example.org",
@@ -85,9 +86,7 @@ XMLClient = generate_wrapper_from_adapter(XMLClientAdapter)
 
 class RetryRequestClientAdapter(SimpleClientAdapter):
     def retry_request(self, exception, *args, **kwargs):
-        if kwargs["response"].status == 400:
-            return True
-        return False
+        return kwargs["response"].status == 400
 
 
 RetryRequestClient = generate_wrapper_from_adapter(RetryRequestClientAdapter)

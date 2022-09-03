@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# flake8: noqa
+
 #
 # tapioca-wrapper documentation build configuration file, created by
 # sphinx-quickstart on Mon Jun 29 10:24:45 2015.
@@ -13,6 +14,7 @@
 # serve to show the default.
 
 from typing import Any, Dict
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

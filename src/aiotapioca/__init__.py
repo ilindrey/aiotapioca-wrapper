@@ -25,6 +25,7 @@ from .exceptions import ClientError, ResponseProcessException, ServerError, Tapi
 from .generate import TapiocaInstantiator, generate_wrapper_from_adapter
 from .serializers import BaseSerializer, SimpleSerializer
 
+
 __all__ = (
     "TapiocaAdapter",
     "TapiocaAdapterForm",

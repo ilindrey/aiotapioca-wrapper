@@ -32,4 +32,3 @@ To create new flavours, refer to [Building a wrapper](http://aiotapioca-wrapper.
 - [Contributors](https://github.com/ilindrey/aiotapioca-wrapper/graphs/contributors)
 - [Changelog](http://aiotapioca-wrapper.readthedocs.org/en/stable/changelog.html)
 - [Blog post explaining the basics about Tapioca](http://www.vinta.com.br/blog/2016/python-api-clients-with-tapioca/)
-

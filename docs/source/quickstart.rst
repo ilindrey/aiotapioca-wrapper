@@ -12,7 +12,7 @@ There is a good chance you found this page because you clicked a link from some 
 What's aiotapioca?
 ==================
 
-**aiotapioca** is an *API wrapper maker*. It helps Python developers creating packages for APIs (like the :ref:`Facebook Graph API <flavour-aiofacebook>` or the :ref:`Twitter REST API <flavour-twitter>`. You can find a full list of available API packages made with aiotapioca :doc:`here <flavours>`.  
+**aiotapioca** is an *API wrapper maker*. It helps Python developers creating packages for APIs (like the :ref:`Facebook Graph API <flavour-aiofacebook>` or the :ref:`Twitter REST API <flavour-twitter>`. You can find a full list of available API packages made with aiotapioca :doc:`here <flavours>`.
 
 All wrappers made with aiotapioca follow a simple interaction pattern that works uniformly, so once you learn how aiotapioca works, you will be able to work with any aiotapioca package available.
 
@@ -31,7 +31,7 @@ To better experience aiotapioca, we will also use IPython:
 
 	$ pip install ipython
 
-Let's explore!  
+Let's explore!
 
 Go to  `https://developers.facebook.com/tools/explorer/ <https://developers.facebook.com/tools/explorer/>`_, click "Get Access Token", select all "User Data Permissions" and "Extended Permissions", and click "Get Access Token". This will give you a temporary access token to play with Facebook API. In case it expires, just generate a new one.
 
@@ -133,7 +133,7 @@ Items passed to the ``for`` loop will be wrapped in aiotapioca so you still have
 TapiocaClientExecutor object
 ============================
 
-Whenever you make a "call" on a ``TapiocaClient``, it will return an ``TapiocaClientExecutor`` object. You will use the executor every time you want to perform an action over data you possess. 
+Whenever you make a "call" on a ``TapiocaClient``, it will return an ``TapiocaClientExecutor`` object. You will use the executor every time you want to perform an action over data you possess.
 
 We did this already when we filled the URL parameters for the ``user_like`` resource (calling it and passing the argument ``id='me'``). In this new object, you will find many methods to help you play with the data available.
 
@@ -170,7 +170,7 @@ If you need to pass data in the body of your request, you can use the ```data```
 	await api.user_feed(id='me').post(
 		data={'message': 'I love tapiocas!! S2'})
 
-Please read `aiohttp <https://docs.aiohttp.org/en/stable/>`_ for more detailed information about how to use HTTP methods. 
+Please read `aiohttp <https://docs.aiohttp.org/en/stable/>`_ for more detailed information about how to use HTTP methods.
 
 **Multiple requests**
 
@@ -199,7 +199,7 @@ Use ``data`` to return data contained in the Tapioca object.
 		'data': [...],
 		'paging': {...}
 	}
-	>>> # this will print only the array contained 
+	>>> # this will print only the array contained
 	>>> # in the 'data' field of the response
 	>>> likes.data().data
 	>>> [...]
@@ -224,7 +224,7 @@ This method also accepts ``max_pages`` and ``max_items`` parameters. If both par
 
 	async for item in resp().pages(max_pages=2, max_items=40):
 		print(item)
-	# in this example, the for loop will stop after two pages are fetched or 40 items are yielded, 
+	# in this example, the for loop will stop after two pages are fetched or 40 items are yielded,
 	# whichever comes first.
 
 Accessing wrapped data attributes
@@ -237,7 +237,7 @@ It's possible to access wrapped data attributes on executor. For example, it's p
 	likes = await api.user_likes(id='me').get()
 
 	likes_list = likes.data
-	likes_list().reverse() 
+	likes_list().reverse()
 	# items in the likes_list are now in reverse order
 	# but still wrapped in a aiotapioca object
 

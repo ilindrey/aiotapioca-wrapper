@@ -12,6 +12,7 @@ from .mixins import (
     TapiocaAdapterXMLMixin,
 )
 
+
 __all__ = (
     "TapiocaAdapter",
     "TapiocaAdapterForm",

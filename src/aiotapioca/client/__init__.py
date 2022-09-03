@@ -6,6 +6,7 @@ from .client import (
 )
 from .process_data import ProcessData
 
+
 __all__ = (
     "ProcessData",
     "TapiocaClient",

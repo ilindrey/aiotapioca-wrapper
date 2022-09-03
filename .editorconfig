@@ -1,11 +1,14 @@
-# editorconfig.org
+# Check http://editorconfig.org for more information
+# This is the main config file for this project:
 
 root = true
 
 [*]
+charset = utf-8
+max_line_length = 100
 indent_style = space
 indent_size = 4
-charset = utf-8
+end_of_line = lf
 trim_trailing_whitespace = true
 insert_final_newline = true
 

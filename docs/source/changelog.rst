@@ -109,7 +109,7 @@ Changelog
 3.1.0
 =====
 - Added PydanticSerializer.
-  
+
 3.0.0
 =====
 - Implementing an asynchronous fork.

@@ -12,6 +12,7 @@ from .mixins import (
     TapiocaAdapterXMLMixin,
 )
 
+
 if version_info >= (3, 9):
     from asyncio import to_thread  # type: ignore
 else:
@@ -79,7 +80,7 @@ class TapiocaAdapter:
 
     def fill_resource_template_url(self, template, url_params, **kwargs):
         if isinstance(template, str):
-            return template.format(**url_params)  # noqa: FS002
+            return template.format(**url_params)
         else:
             return template
 
@@ -98,8 +99,7 @@ class TapiocaAdapter:
     async def data_to_request(self, data, *args, **kwargs):
         if not data:
             return None
-        data = await to_thread(self.prepare_request_data, data, *args, **kwargs)
-        return data
+        return await to_thread(self.prepare_request_data, data, *args, **kwargs)
 
     def prepare_request_data(self, data, *args, **kwargs):
         serialized = self.serialize_data(data, *args, **kwargs)
@@ -122,10 +122,9 @@ class TapiocaAdapter:
     async def response_to_native(self, non_native_data, response, **kwargs):
         if not non_native_data:
             return None
-        data = await to_thread(
+        return await to_thread(
             self.format_response_data_to_native, non_native_data, response, **kwargs
         )
-        return data
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
         raise NotImplementedError()

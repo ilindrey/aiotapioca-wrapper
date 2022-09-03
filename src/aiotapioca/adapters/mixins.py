@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 
+
 try:
     import orjson as json  # type: ignore
 except ImportError:

@@ -212,8 +212,7 @@ class TestTapiocaAdapterPydantic:
                 content_type="application/json",
             )
             with pytest.raises(ValueError):
-                response = await client.test_not_found().get()
-                print(response.data())
+                await client.test_not_found().get()
 
     async def test_bad_pydantic_model(self, mocked):
         async with PydanticForcedClient() as client:

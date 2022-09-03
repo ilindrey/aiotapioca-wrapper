@@ -12,6 +12,7 @@ from .base import (
     BaseTapiocaClientResponse,
 )
 
+
 __all__ = (
     "TapiocaClient",
     "TapiocaClientResource",
@@ -120,8 +121,7 @@ class TapiocaClientResource(BaseTapiocaClientResource):
         )
         for key, value in sorted(resource.items()):
             docs += f"{key.title()}: {value}\n"
-        docs = docs.strip()
-        return docs
+        return docs.strip()
 
     __doc__ = property(_get_doc)  # type: ignore
 
@@ -204,11 +204,9 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
 
         kwargs["semaphore_class"] = Semaphore(self._get_semaphore_value(kwargs))
 
-        results = await gather(
+        return await gather(
             *[self._send(request_method, *args, **{**kwargs, "data": row}) for row in data]
         )
-
-        return results
 
     async def _send(self, request_method, *args, **kwargs):
 
@@ -233,12 +231,11 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
         return response
 
     def _get_semaphore_value(self, kwargs):
-        semaphore = (
+        return (
             kwargs.pop("semaphore", None)
             or self._api_params.get("semaphore")
             or self._api.semaphore
         )
-        return semaphore
 
     async def _make_request(
         self, request_method, refresh_token=False, repeat_number=0, *args, **kwargs
@@ -319,7 +316,7 @@ class TapiocaClientExecutor(BaseTapiocaClientExecutor):
             if propagate_exception:
                 await coro_wrap(self._api.error_handling, ex, **context)
 
-        except Exception as ex:
+        except Exception as ex:  # noqa: PIE786
             await coro_wrap(self._api.error_handling, ex, *args, **context)
 
         return self._wrap_in_tapioca_response(

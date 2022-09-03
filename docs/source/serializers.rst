@@ -47,7 +47,7 @@ Swapping the default serializer
 Clients might have the default ``SimpleSerializer``, some custom serializer designed by the wrapper creator, or even no serializer. Either way, you can swap it for one of your own even if you were not the developer of the library. For this, you only need to pass the desired serializer class during the client initialization:
 
 .. code-block:: python
-	
+
 	from my_serializers import MyCustomSerializer
 
 	cli = MyServiceClient(
@@ -63,7 +63,7 @@ Built-ins
 ``SimpleSerializer`` is a very basic and generic serializer. It is included by default in adapters unless explicitly removed. It supports serialization from `Decimal` and `datetime` and deserialization methods to those two types as well. Here is its full code:
 
 .. code-block:: python
-	
+
 	class SimpleSerializer(BaseSerializer):
 
 	def to_datetime(self, value):
@@ -106,18 +106,18 @@ Deserializing
 Any method starting with ``to_`` in your custom serializer class will be available for data deserialization. It also accepts key word arguments.
 
 .. code-block:: python
-	
+
 	from aiotapioca.serializers import BaseSerializer
 
 	class MyCustomSerializer(BaseSerializer):
 
-		def to_striped(self, value, **kwargs): 
+		def to_striped(self, value, **kwargs):
 			return value.strip()
 
 Here's a usage example for it:
 
 .. code-block:: python
-	
+
 	from my_serializers import MyCustomSerializer
 
 	cli = MyServiceClient(
@@ -127,5 +127,3 @@ Here's a usage example for it:
 	response = cli.the_resource().get()
 
 	striped_data = response.the_data().to_striped()
-
-

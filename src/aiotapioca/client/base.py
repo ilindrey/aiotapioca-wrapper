@@ -5,6 +5,7 @@ from aiotapioca.exceptions import TapiocaException
 
 from .process_data import ProcessData
 
+
 try:
     import orjson as json  # type: ignore
 except ImportError:

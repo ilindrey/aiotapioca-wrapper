@@ -77,7 +77,7 @@ To access the raw data contained in the executor, use the ``data`` **attribute**
 .. code-block:: python
 
     async with MyWrapper(access_token='some_token') as cli:
-        
+
         response = await cli.some_resource().get()
 
         data = response().data
@@ -111,8 +111,8 @@ For perform multiple requests asynchronously, you can use batch methods as like 
 Auth refreshing (\*)
 --------------------
 
-Some clients need to update its token once they have expired. If the client supports this feature, you might 
-specify ``refresh_token=True`` in the adapter class, instantiate it passing ``refresh_token=True`` 
+Some clients need to update its token once they have expired. If the client supports this feature, you might
+specify ``refresh_token=True`` in the adapter class, instantiate it passing ``refresh_token=True``
 or make any HTTP call passing ``refresh_auth=True`` (both default to ``False``).
 Note that if your adapter claass or client instance has ``refresh_token=True``, then you don't need to explicitly set it on HTTP calls.
 
@@ -122,7 +122,7 @@ Note that if your adapter claass or client instance has ``refresh_token=True``, 
     class MyAPIAdapter(TapiocaAdapter):
         refresh_token=True
         ...
-    
+
     MyWrapper = generate_wrapper_from_adapter(MyAPIAdapter)
 
     # or
@@ -154,17 +154,17 @@ Use ``pages()`` method to call an endpoint that returns a collection of objects 
             ...
 
         # or
-        
+
         async for page in response().pages(max_pages=2):
             ...
 
         # or
-        
+
         async for page in response().pages(max_items=10):
             ...
 
         # or
-        
+
         async for page in response().pages(max_pages=2, max_items=10):
             ...
 
@@ -193,7 +193,7 @@ Whenever the data contained in the executor is a URL, you can directly open it i
 
     cli = MyWrapper()
     cli.some_resource().open_in_browser()
-    
+
 *the wrapper you are current using may not support this feature
 
 Exceptions
