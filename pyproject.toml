@@ -54,6 +54,9 @@ typing = ["mypy>=0.971"]
 
 [tool.pdm.scripts]
 test = "pytest"
+typing = "mypy ."
+lint = "pre-commit run --all-files"
+all = {composite = ["typing", "lint", "test"]}
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
