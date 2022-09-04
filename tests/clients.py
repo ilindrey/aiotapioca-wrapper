@@ -1,15 +1,8 @@
 from typing import Any, Dict, Type
 
-from aiotapioca import (
-    SimpleSerializer,
-    TapiocaAdapterJSON,
-    TapiocaAdapterPydantic,
-    TapiocaAdapterXML,
-    generate_wrapper_from_adapter,
-)
+from aiotapioca import SimpleSerializer, TapiocaAdapterJSON, generate_wrapper_from_adapter
 from aiotapioca.serializers import BaseSerializer
 
-from .models import CustomModel, CustomModelDT, Detail, NotPydanticDT, RootModel
 from .parsers import FooParser, foo_parser
 
 
@@ -20,10 +13,6 @@ test = {
 
 RESOURCE_MAPPING: Dict[str, Any] = {
     "test": test,
-    "test_pydantic_serializer": {
-        **test,
-        "to_pydantic": {"params": {"model": CustomModel}},
-    },
     "user": {"resource": "user/{id}/", "docs": "http://www.example.org/user"},
     "resource": {
         "resource": "resource/{number}/",
@@ -74,14 +63,6 @@ class SerializerClientAdapter(SimpleClientAdapter):
 
 
 SerializerClient = generate_wrapper_from_adapter(SerializerClientAdapter)
-
-
-class XMLClientAdapter(TapiocaAdapterXML):
-    api_root = "https://api.example.org"
-    resource_mapping = RESOURCE_MAPPING
-
-
-XMLClient = generate_wrapper_from_adapter(XMLClientAdapter)
 
 
 class RetryRequestClientAdapter(SimpleClientAdapter):
@@ -178,48 +159,3 @@ class DictParserClientAdapter(SimpleClientAdapter):
 
 
 DictParserClient = generate_wrapper_from_adapter(DictParserClientAdapter)
-
-
-# pydantic
-
-
-class PydanticDefaultClientAdapter(TapiocaAdapterPydantic):
-    api_root = "https://api.example.org"
-    resource_mapping: Dict[str, Any] = {
-        "test": {
-            **test,
-            "pydantic_models": {
-                "request": CustomModel,
-                "response": {CustomModel: "GET"},
-            },
-        },
-        "test_root": {
-            **test,
-            "pydantic_models": {
-                "request": {Detail: ["POST"]},
-                "response": {RootModel: "GET"},
-            },
-        },
-        "test_dataclass": {
-            **test,
-            "pydantic_models": {
-                "request": CustomModelDT,
-                "response": {CustomModelDT: ["GET"]},
-            },
-        },
-    }
-
-
-PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapter)
-
-
-class PydanticForcedClientAdapter(PydanticDefaultClientAdapter):
-    forced_to_have_model = True
-    resource_mapping: Dict[str, Any] = {
-        "test_not_found": {**test, "pydantic_models": None},
-        "test_bad_pydantic_model": {**test, "pydantic_models": 100500},
-        "test_bad_dataclass_model": {**test, "pydantic_models": NotPydanticDT},
-    }
-
-
-PydanticForcedClient = generate_wrapper_from_adapter(PydanticForcedClientAdapter)

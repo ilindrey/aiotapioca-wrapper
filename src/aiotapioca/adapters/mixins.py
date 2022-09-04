@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 
 try:
@@ -6,17 +7,15 @@ try:
 except ImportError:
     import json  # type: ignore
 
-try:
+
+if TYPE_CHECKING:
+    import dataclasses
+
     import pydantic
-
-    import dataclasses  # isort: skip
-except ImportError:
-    pydantic, dataclasses = None, None  # type: ignore
-
-try:
     import xmltodict  # type: ignore
-except ImportError:
-    xmltodict = None  # type: ignore
+else:
+    dataclasses, pydantic, xmltodict = None, None, None
+
 
 __all__ = (
     "TapiocaAdapterFormMixin",
@@ -24,6 +23,26 @@ __all__ = (
     "TapiocaAdapterPydanticMixin",
     "TapiocaAdapterXMLMixin",
 )
+
+
+def import_pydantic() -> None:
+    global pydantic, dataclasses
+    try:
+        import pydantic
+
+        import dataclasses  # isort: skip
+    except ImportError as exc:
+        raise ImportError(
+            "pydantic is not installed, run `pip install aiotapioca[pydantic]`"
+        ) from exc
+
+
+def import_xmltodict() -> None:
+    global xmltodict
+    try:
+        import xmltodict
+    except ImportError as exc:
+        raise ImportError("xmltodict is not installed, run `pip install aiotapioca[xml]`") from exc
 
 
 class TapiocaAdapterFormMixin:
@@ -73,9 +92,8 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
     to_dict_by_alias = True
 
     def format_data_to_request(self, data, *args, **kwargs):
-        assert (  # noqa: S101
-            pydantic is not None
-        ), "pydantic must be installed to use TapiocaAdapterPydanticMixin"
+        if pydantic is None:
+            import_pydantic()
         if data:
             if self.validate_data_sending:
                 data = self.convert_data_to_pydantic_model("request", data, **kwargs)
@@ -83,9 +101,8 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             return json.dumps(data)
 
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
-        assert (  # noqa: S101
-            pydantic is not None
-        ), "pydantic must be installed to use TapiocaAdapterPydanticMixin"
+        if pydantic is None:
+            import_pydantic()
         data = super().format_response_data_to_native(non_native_data, response, **kwargs)
         if isinstance(data, str):
             return data
@@ -170,16 +187,19 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
 
 
 class TapiocaAdapterXMLMixin:
-    def _input_branches_to_xml_bytestring(self, data):
-        if isinstance(data, Mapping):
-            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
-        try:
-            return data.encode("utf-8")
-        except Exception as e:
-            raise type(e)(
-                "Format not recognized, please enter an XML as string or a dictionary"
-                f"in xmltodict spec: \n{e.message}"
-            )
+    def format_data_to_request(self, data, *args, **kwargs):
+        if xmltodict is None:
+            import_xmltodict()
+        if data:
+            return self._input_branches_to_xml_bytestring(data)
+
+    def format_response_data_to_native(self, non_native_data, response, **kwargs):
+        if xmltodict is None:
+            import_xmltodict()
+        if non_native_data:
+            if "xml" in response.headers["content-type"]:
+                return xmltodict.parse(non_native_data, **self._xmltodict_parse_kwargs)
+            return non_native_data
 
     def get_request_kwargs(self, *args, **kwargs):
         request_kwargs = kwargs.get("request_kwargs", {})
@@ -204,18 +224,13 @@ class TapiocaAdapterXMLMixin:
 
         return request_kwargs
 
-    def format_data_to_request(self, data, *args, **kwargs):
-        assert (  # noqa: S101
-            xmltodict is not None
-        ), "xmltodict must be installed to use TapiocaAdapterXMLMixin"
-        if data:
-            return self._input_branches_to_xml_bytestring(data)
-
-    def format_response_data_to_native(self, non_native_data, response, **kwargs):
-        assert (  # noqa: S101
-            xmltodict is not None
-        ), "xmltodict must be installed to use TapiocaAdapterXMLMixin"
-        if non_native_data:
-            if "xml" in response.headers["content-type"]:
-                return xmltodict.parse(non_native_data, **self._xmltodict_parse_kwargs)
-            return non_native_data
+    def _input_branches_to_xml_bytestring(self, data):
+        if isinstance(data, Mapping):
+            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
+        try:
+            return data.encode("utf-8")
+        except Exception as e:
+            raise type(e)(
+                "Format not recognized, please enter an XML as string or a dictionary"
+                f"in xmltodict spec: \n{e.message}"
+            )

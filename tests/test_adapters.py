@@ -2,19 +2,39 @@ import json
 from collections import OrderedDict
 from dataclasses import asdict, is_dataclass
 from itertools import product
+from typing import Any, Dict, List
 
 import pytest
 import pytest_asyncio
-import xmltodict  # type: ignore
-from pydantic import BaseModel, parse_obj_as
 from yarl import URL
 
-from aiotapioca import TapiocaAdapterPydantic, generate_wrapper_from_adapter
-
-from .clients import PydanticDefaultClientAdapter, PydanticForcedClient, XMLClient
-from .models import CustomModel, CustomModelDT, Detail, RootModel
+from aiotapioca import generate_wrapper_from_adapter
 
 
+try:
+    import xmltodict  # type: ignore
+except ImportError:
+    xmltodict = None
+
+try:
+    import pydantic
+except ImportError:
+    pydantic = None  # type: ignore
+
+
+if xmltodict:
+    from aiotapioca import TapiocaAdapterXML
+
+    from .clients import RESOURCE_MAPPING
+
+    class XMLClientAdapter(TapiocaAdapterXML):
+        api_root = "https://api.example.org"
+        resource_mapping = RESOURCE_MAPPING
+
+    XMLClient = generate_wrapper_from_adapter(XMLClientAdapter)
+
+
+@pytest.mark.skipif(not xmltodict, reason="xmltodict not installed")
 class TestTapiocaAdapterXML:
     @pytest_asyncio.fixture
     async def xml_client(self):
@@ -127,8 +147,96 @@ class TestTapiocaAdapterXML:
         assert response.data() == xmltodict.parse(xml_body)
 
 
+if pydantic:
+
+    from dataclasses import dataclass
+
+    from aiotapioca import TapiocaAdapterPydantic
+
+    class Detail(pydantic.BaseModel):
+        key1: str
+        key2: int
+
+    class CustomModel(pydantic.BaseModel):
+        data: List[Detail]
+
+    class RootModel(pydantic.BaseModel):
+        __root__: List[Detail]
+
+    @pydantic.dataclasses.dataclass
+    class DetailDT:
+        key1: str
+        key2: int
+
+    @pydantic.dataclasses.dataclass
+    class CustomModelDT:
+        data: List[DetailDT]
+
+    @dataclass
+    class NotPydanticDT:
+        data: List[DetailDT]
+
+    class PydanticDefaultClientAdapter(TapiocaAdapterPydantic):
+        api_root = "https://api.example.org"
+        resource_mapping: Dict[str, Any] = {
+            "test": {
+                "resource": "test/",
+                "docs": "http://www.example.org",
+                "pydantic_models": {
+                    "request": CustomModel,
+                    "response": {CustomModel: "GET"},
+                },
+            },
+            "test_root": {
+                "resource": "test/",
+                "docs": "http://www.example.org",
+                "pydantic_models": {
+                    "request": {Detail: ["POST"]},
+                    "response": {RootModel: "GET"},
+                },
+            },
+            "test_dataclass": {
+                "resource": "test/",
+                "docs": "http://www.example.org",
+                "pydantic_models": {
+                    "request": CustomModelDT,
+                    "response": {CustomModelDT: ["GET"]},
+                },
+            },
+        }
+
+    PydanticDefaultClient = generate_wrapper_from_adapter(PydanticDefaultClientAdapter)
+
+    class PydanticForcedClientAdapter(PydanticDefaultClientAdapter):
+        forced_to_have_model = True
+        resource_mapping: Dict[str, Any] = {
+            "test_not_found": {
+                "resource": "test/",
+                "docs": "http://www.example.org",
+                "pydantic_models": None,
+            },
+            "test_bad_pydantic_model": {
+                "resource": "test/",
+                "docs": "http://www.example.org",
+                "pydantic_models": 100500,
+            },
+            "test_bad_dataclass_model": {
+                "resource": "test/",
+                "docs": "http://www.example.org",
+                "pydantic_models": NotPydanticDT,
+            },
+        }
+
+    PydanticForcedClient = generate_wrapper_from_adapter(PydanticForcedClientAdapter)
+
+
+@pytest.mark.skipif(not pydantic, reason="pydantic not installed")
 class TestTapiocaAdapterPydantic:
     def test_pydantic_model_get_pydantic_model(self):
+
+        from aiotapioca.adapters.mixins import import_pydantic
+
+        import_pydantic()
 
         resource = {
             "resource": "test/",
@@ -272,7 +380,7 @@ class TestTapiocaAdapterPydantic:
                     assert isinstance(response.data(), dict)
                     assert response.data() == response_body
                 else:
-                    assert isinstance(response.data(), BaseModel)
+                    assert isinstance(response.data(), pydantic.BaseModel)
                     assert response.data().dict() == response_body
 
                 mocked.get(
@@ -292,14 +400,14 @@ class TestTapiocaAdapterPydantic:
                         assert isinstance(data, dict)
                         data = data["__root__"]
                     else:
-                        assert isinstance(data, BaseModel)
+                        assert isinstance(data, pydantic.BaseModel)
                         data = data.__root__
                 for response_data, expected_data in zip(data, response_body_root):
                     if convert or not validate_received:
                         assert isinstance(response_data, dict)
                         assert response_data == expected_data
                     else:
-                        assert isinstance(response_data, BaseModel)
+                        assert isinstance(response_data, pydantic.BaseModel)
                         assert response_data.dict() == expected_data
 
                 mocked.get(
@@ -392,7 +500,7 @@ class TestTapiocaAdapterPydantic:
                     response = await client.test_dataclass().post(data=response_body)
                     assert response.data() == {"id": 100500}
                 else:
-                    data = parse_obj_as(CustomModelDT, response_body)
+                    data = pydantic.parse_obj_as(CustomModelDT, response_body)
                     response = await client.test_dataclass().post(data=data)
                     assert response.data() == {"id": 100500}
 
