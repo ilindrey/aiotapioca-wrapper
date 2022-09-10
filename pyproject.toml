@@ -50,7 +50,8 @@ tests = [
     "aioresponses>=0.7.3",
     "pytest>=7.1.2",
     "pytest-asyncio>=0.19.0",
-    "setuptools>=60.0.0"
+    "pytest-cov>=1.7.0",
+    "setuptools>=60.0.0",
 ]
 typing = ["mypy>=0.971"]
 
@@ -62,6 +63,9 @@ all = {composite = ["test", "typing", "lint"]}
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["project"]
 
 [tool.black]
 line_length = 100
