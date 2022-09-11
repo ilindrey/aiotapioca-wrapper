@@ -56,18 +56,18 @@ tests = [
 typing = ["mypy>=0.971"]
 
 [tool.pdm.scripts]
-test = "pytest"
-typing = "mypy ."
+tests = "pytest"
+hints = "mypy ."
 lint = "pre-commit run --all-files"
-all = {composite = ["test", "typing", "lint"]}
+all = {composite = ["tests", "hints", "lint"]}
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true
-source = ["aiotapioca/"]
-omit = [ "aiotapioca/__version__.py" ]
+source = ["src/aiotapioca/"]
+omit = [ "src/aiotapioca/__version__.py" ]
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
