@@ -23,7 +23,7 @@ else:
     async def to_thread(func, *args, **kwargs):
         loop = get_running_loop()
         with ThreadPoolExecutor() as executor:
-            await loop.run_in_executor(executor, partial(func, *args, **kwargs))
+            return await loop.run_in_executor(executor, partial(func, *args, **kwargs))
 
 
 __all__ = (

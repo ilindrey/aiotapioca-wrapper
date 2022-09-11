@@ -63,7 +63,7 @@ class ProcessData:
             method = self._resource.get(name)
             kwargs = method.get("params", {}) if method else {}
             return self._api.get_to_native_method(name, self._data, **kwargs)
-        if name in self._data:
+        if self._data and name in self._data:
             return self._create(self._api, self._data, self._resource, name)
         raise AttributeError(name)
 
