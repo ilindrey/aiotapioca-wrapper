@@ -1,4 +1,11 @@
 codecov:
-  notify:
-    after_n_builds: 12
-    wait_for_ci: false
+  status:
+    patch: off
+    changes: off
+    project:
+      default:
+        target: 100%
+        threshold:
+    notify:
+      after_n_builds: 12
+      wait_for_ci: false
