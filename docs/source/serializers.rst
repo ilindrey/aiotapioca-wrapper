@@ -20,7 +20,7 @@ Data serialization is done in the background when aiotapioca is executing the re
 
 .. code-block:: python
 
-	>>> reponse = await cli.the_resource().post(data={'date': datetime.today()})
+	>>> response = await cli.the_resource().post(data={'date': datetime.today()})
 
 In this example, ``datetime.today()`` will be converted into a string formatted date just before the request is executed.
 
@@ -31,13 +31,13 @@ To deserialize data, you need to transform your client into an executor and then
 
 .. code-block:: python
 
-	>>> reponse = await cli.the_resource().get()
-	>>> print(response.created_at())
+	>>> response = await cli.the_resource().get()
+	>>> print(response.data.created_at)
 	<TapiocaClientExecutor object
 	2015-10-25T22:34:51+00:00>
-	>>> print(respose.created_at().to_datetime())
+	>>> print(response.data.created_at.to_datetime())
 	2015-10-25 22:34:51+00:00
-	>>> print(type(respose.created_at().to_datetime()))
+	>>> print(type(response.data.created_at.to_datetime()))
 	datetime.datetime
 
 
@@ -66,17 +66,11 @@ Built-ins
 
 	class SimpleSerializer(BaseSerializer):
 
-	def to_datetime(self, value):
-		return arrow.get(value).datetime
-
 	def to_decimal(self, value):
 		return Decimal(value)
 
 	def serialize_decimal(self, data):
 		return str(data)
-
-	def serialize_datetime(self, data):
-		return arrow.get(data).isoformat()
 
 
 As you can see, ``datetime`` values will be formatted to iso format.
@@ -124,6 +118,6 @@ Here's a usage example for it:
 		access_token='blablabla',
 		serializer_class=MyCustomSerializer)
 
-	response = cli.the_resource().get()
+	response = await cli.the_resource().get()
 
 	striped_data = response.the_data().to_striped()

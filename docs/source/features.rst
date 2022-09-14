@@ -28,8 +28,8 @@ In this cases you can instantiate the wrapper passing a ``default_url_params`` p
 
 .. code-block:: python
 
-	async with MyWrapper(access_token='some_token', default_url_params={'user_id': 123456}) as cli:
-	    cli.resources() # http://www.someapi.com/123456/resources/
+	cli = MyWrapper(access_token='some_token', default_url_params={'user_id': 123456}):
+	cli.resources() # http://www.someapi.com/123456/resources/
 
 Using an existing requests.Session
 ----------------------------------
@@ -41,8 +41,8 @@ To use these features you can create a ``TapiocaClient`` with an existing sessio
 .. code-block:: python
 
     session = aiohttp.ClientSession()
-    cli = MyWrapper(access_token='some_token', session=session)
-	cli.resources() # http://www.someapi.com/123456/resources/
+    async with MyWrapper(access_token='some_token', session=session) as cli:
+		cli.resources() # http://www.someapi.com/123456/resources/
 
 This allows us to perform some interesting operations without having to support them directly in ``TapiocaClient`` and instantiate it using the ``async with`` construct.
 For example caching for github requests using `cachecontrol`_:
@@ -72,18 +72,17 @@ Every time you ``call`` in ``TapiocaClient`` you will get a ``TapiocaClientExecu
 Accessing raw response data
 ---------------------------
 
-To access the raw data contained in the executor, use the ``data`` **attribute**. To access the raw response, use the ``response`` **attribute**. To access the status code of the response, use the ``status`` **attribute**. If during the request the ``Auth refreshing`` process was executed, the returned value from it will be accessible in the ``refresh_data`` **attribute**.
+To access the raw data contained in the executor, use the ``data`` **attribute**. To access the raw response, use the ``response`` **attribute**. To access the status code of the response, use the ``status`` **attribute**.
 
 .. code-block:: python
 
-    async with MyWrapper(access_token='some_token') as cli:
+    cli = MyWrapper(access_token='some_token')
 
-        response = await cli.some_resource().get()
+	response = await cli.some_resource().get()
 
-        data = response().data
-        response = response().response
-        status = response().status
-        refresh_data = response().refresh_data
+	data = response.data()
+	response = response.response  # return aiohttp.ClientResponse
+	status = response.status
 
 
 HTTP calls
@@ -93,20 +92,20 @@ Executors have access to make HTTP calls using the current data it possesses as 
 
 .. code-block:: python
 
-    async with MyWrapper() as cli:
-        response = await cli.some_resource().get(params={'myparam': 'paramvalue'})
-        response = await cli.some_resource().post(data={'datakey': 'keyvalue'})
-        response = await cli.some_resource().delete(data={'id': 123})
+    cli = MyWrapper()
+	response = await cli.some_resource().get(params={'myparam': 'paramvalue'})
+	response = await cli.some_resource().post(data={'datakey': 'keyvalue'})
+	response = await cli.some_resource().delete(data={'id': 123})
 
 For perform multiple requests asynchronously, you can use batch methods as like a ``post_batch()``, ``patch_batch()``, ``put_batch()``, ``delete_batch()``. The data in the list must be passed to the data parameter in order to execute requests.
 
 .. code-block:: python
 
-    async with MyWrapper() as cli:
-        response = await cli.some_resource().post_batch(data=[
-                {'datakey': 'keyvalue1'},
-                {'datakey': 'keyvalue2'},
-            ])
+    cli = MyWrapper()
+	response = await cli.some_resource().post_batch(data=[
+			{'datakey': 'keyvalue1'},
+			{'datakey': 'keyvalue2'},
+		])
 
 Auth refreshing (\*)
 --------------------
@@ -127,14 +126,14 @@ Note that if your adapter claass or client instance has ``refresh_token=True``, 
 
     # or
 
-    async with MyWrapper(refresh_token=True) as cli:
+    cli = MyWrapper(refresh_token=True)
 	    ...
 
     # or
 
-    async with MyWrapper() as cli:
-        response = await cli.some_resource().post(refresh_token=True)
-        ...
+    cli = MyWrapper()
+    response = await cli.some_resource().post(refresh_token=True)
+    ...
 
 *the wrapper you are current using may not support this feature
 
@@ -145,28 +144,29 @@ Use ``pages()`` method to call an endpoint that returns a collection of objects 
 
 .. code-block:: python
 
-    async with MyWrapper() as cli:
+    cli = MyWrapper():
 
-        response = await cli.some_resource().get(params=...)
-        async for page in response().pages():
-            print(page().data)
-            print(page().response)
-            ...
+    response = await cli.some_resource().get(params=...)
 
-        # or
+    async for page in response().pages():
+    	print(page.data())
+    	print(page.response)
+    	...
 
-        async for page in response().pages(max_pages=2):
-            ...
+	# or
 
-        # or
+	async for page in response().pages(max_pages=2):
+		...
 
-        async for page in response().pages(max_items=10):
-            ...
+	# or
 
-        # or
+	async for page in response().pages(max_items=10):
+		...
 
-        async for page in response().pages(max_pages=2, max_items=10):
-            ...
+	# or
+
+	async for page in response().pages(max_pages=2, max_items=10):
+		...
 
 
 *the wrapper you are current using may not support this feature
@@ -180,7 +180,7 @@ When accessing an endpoint, you may want to read it's documentation in the inter
 .. code-block:: python
 
     cli = MyWrapper()
-    cli.some_resource().open_docs()
+    cli.some_resource.open_docs()
 
 *the wrapper you are current using may not support this feature
 
@@ -192,7 +192,8 @@ Whenever the data contained in the executor is a URL, you can directly open it i
 .. code-block:: python
 
     cli = MyWrapper()
-    cli.some_resource().open_in_browser()
+    response = await cli.some_resource().get()
+    response.data.url.open_in_browser()
 
 *the wrapper you are current using may not support this feature
 

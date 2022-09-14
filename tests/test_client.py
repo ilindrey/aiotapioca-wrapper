@@ -1151,6 +1151,9 @@ class TestProcessData:
 
         assert response.data() == response_data
 
+        for row_1, row_2 in zip(response.data, response_data):
+            assert row_1() == row_2
+
         assert response.data[0]() == "a"
         assert response.data[1]() == "b"
         assert response.data[2]() == "c"

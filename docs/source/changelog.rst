@@ -2,19 +2,15 @@
 Changelog
 =========
 
-4.1.0
+4.1.1
 =====
-- Added a py.typed merker for type hints.
+- Added a py.typed marker for type hints.
 
 4.0.2
 =====
 - Added to_dict_by_alias option in TapiocaAdapterPydanticMixin.
 
 4.0.1
-=====
-- Fixed release
-
-4.0.0
 =====
 - Added option to specify a session when generating a wrapper.
 - Added max_retries_requests flag to limit the number of retries requests.

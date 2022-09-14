@@ -80,8 +80,8 @@ This method is called just before any request is made. You should use it to set 
 
 .. code-block:: python
 
-	async with Facebook(access_token='blablabla', client_id='thisistheis') as cli:
-		...
+	cli = Facebook(access_token='blablabla', client_id='thisistheis')
+	...
 
 For this example, api_params will be a dictionary with the keys ``access_token`` and ``client_id``.
 

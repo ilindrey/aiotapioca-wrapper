@@ -42,10 +42,14 @@ This is how you initialize your aiotapioca client:
 
 .. code-block:: python
 
-	from tapioca_facebook import Facebook
+	from aiotapioca_facebook import Facebook
 
 	async with Facebook(access_token='{your_genereated_access_token}') as api:
 		...
+	# or
+
+	api = Facebook(access_token='{your_genereated_access_token}')
+	...
 
 
 If you are using IPython, you can now list available endpoints by typing ``api.`` and pressing ``tab``.
@@ -98,7 +102,7 @@ To print the returned data:
 
 .. code-block:: python
 
-	In [9]: likes().data
+	In [9]: likes.data()
 	OUT [9]: {
 		'data': [...],
 		'paging': {...}
@@ -126,7 +130,7 @@ You can iterate over returned data:
 	likes = await api.user_likes(id='me').get()
 
 	for like in likes.data:
-		print(like.id().data)
+		print(like.id())
 
 Items passed to the ``for`` loop will be wrapped in aiotapioca so you still have access to all features.
 
@@ -189,19 +193,19 @@ To perform multiple requests asynchronously, you can use batch methods (post_bat
 Accessing raw data
 ------------------
 
-Use ``data`` to return data contained in the Tapioca object.
+Use ``data()`` to return data contained in the ProcessData object.
 
 .. code-block:: python
 
 	>>> likes = await api.user_likes(id='me').get()
-	>>> likes().data
+	>>> likes.data()
 	{
 		'data': [...],
 		'paging': {...}
 	}
 	>>> # this will print only the array contained
 	>>> # in the 'data' field of the response
-	>>> likes.data().data
+	>>> likes.data.data()
 	>>> [...]
 
 Dynamically fetching pages
@@ -214,7 +218,7 @@ Many APIs use a paging concept to provide large amounts of data. This way, data 
 	likes = await api.user_likes(id='me').get()
 
 	async for like in likes().pages():
-		print(like.name().data)
+		print(like.data.name())
 
 This will keep fetching user likes until there are none left. Items passed to the ``for`` loop will be wrapped in aiotapioca so you still have access to all features.
 
@@ -248,7 +252,7 @@ If you are accessing a resource, you can call ``open_docs`` to open the resource
 
 .. code-block:: python
 
-	api.user_likes().open_docs()
+	api.user_likes.open_docs()
 
 Opening any link in the browser
 -------------------------------
