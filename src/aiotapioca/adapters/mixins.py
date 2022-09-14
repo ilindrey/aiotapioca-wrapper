@@ -2,18 +2,17 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 
-try:
-    import orjson as json  # type: ignore
-except ImportError:
-    import json  # type: ignore
-
-
 if TYPE_CHECKING:
     import dataclasses
+    import json
 
     import pydantic
     import xmltodict  # type: ignore
 else:
+    from aiotapioca.utils import get_json_lib
+
+    json = get_json_lib()
+
     dataclasses, pydantic, xmltodict = None, None, None
 
 

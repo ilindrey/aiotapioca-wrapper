@@ -3,12 +3,15 @@ import webbrowser
 from collections import OrderedDict
 from functools import partial
 from inspect import isclass, isfunction, ismethod
+from typing import TYPE_CHECKING
 
 
-try:
-    import orjson as json  # type: ignore
-except ImportError:
-    import json  # type: ignore
+if TYPE_CHECKING:
+    import json
+else:
+    from aiotapioca.utils import get_json_lib
+
+    json = get_json_lib()
 
 __all__ = ("ProcessData",)
 

@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from aiohttp import ClientSession
 from asyncio_atexit import register as atexit_register  # type: ignore
 
@@ -6,10 +8,12 @@ from aiotapioca.exceptions import TapiocaException
 from .process_data import ProcessData
 
 
-try:
-    import orjson as json  # type: ignore
-except ImportError:
-    import json  # type: ignore
+if TYPE_CHECKING:
+    import json
+else:
+    from aiotapioca.utils import get_json_lib
+
+    json = get_json_lib()
 
 
 __all__ = (
