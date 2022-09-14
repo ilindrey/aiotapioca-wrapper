@@ -14,14 +14,15 @@ async def coro_wrap(func, *args, **kwargs):
 
 
 def get_json_lib():
+    json = None
     with suppress(ImportError):
         import orjson as json  # type: ignore
 
-    if not json:
+    if json is None:
         with suppress(ImportError):
             import ujson as json  # type: ignore
 
-    if not json:
+    if json is None:
         import json
 
     return json
