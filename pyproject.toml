@@ -13,7 +13,7 @@ authors = [
 license = {text = "MIT"}
 keywords = ["async", "asyncio", "tapioca", "wrapper", "api"]
 classifiers = [
-        "Development Status :: 5a - Production/Stable",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
@@ -25,7 +25,6 @@ classifiers = [
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
-        "Framework :: aiohttp",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",

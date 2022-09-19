@@ -1,3 +1,12 @@
+Release v4.2.0 (2022-10-19)
+--------------------------
+- Added linters, mypy and pre-commit hooks.
+- Added CI for tests, pre-commit and release.
+- Migrate to PDM.
+- Optional support orjson and ujson when available.
+- Optional dependencies xml and pydantic mixins.
+- Replaced setup.py to pyproject.toml.
+
 Release v4.1.1 (2022-06-21)
 --------------------------
 - Added a py.typed marker for type hints.
