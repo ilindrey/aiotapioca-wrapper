@@ -53,7 +53,9 @@ class TestTapiocaAdapterXML:
 
         await xml_client.test().post(data=data)
 
-        request_body = mocked.requests[("POST", URL(xml_client.test().path))][0].kwargs["data"]
+        request_body = mocked.requests[("POST", URL(xml_client.test().path))][0].kwargs[
+            "data"
+        ]
 
         assert request_body == data.encode("utf-8")
 
@@ -69,14 +71,18 @@ class TestTapiocaAdapterXML:
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
                 )
             ]
         )
 
         await xml_client.test().post(data=data)
 
-        request_body = mocked.requests[("POST", URL(xml_client.test().path))][0].kwargs["data"]
+        request_body = mocked.requests[("POST", URL(xml_client.test().path))][0].kwargs[
+            "data"
+        ]
 
         assert request_body == xmltodict.unparse(data).encode("utf-8")
 
@@ -92,16 +98,22 @@ class TestTapiocaAdapterXML:
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
                 )
             ]
         )
 
         await xml_client.test().post(data=data, xmltodict_unparse__full_document=False)
 
-        request_body = mocked.requests[("POST", URL(xml_client.test().path))][0].kwargs["data"]
+        request_body = mocked.requests[("POST", URL(xml_client.test().path))][0].kwargs[
+            "data"
+        ]
 
-        assert request_body == xmltodict.unparse(data, full_document=False).encode("utf-8")
+        assert request_body == xmltodict.unparse(data, full_document=False).encode(
+            "utf-8"
+        )
 
     async def test_xml_returns_text_if_response_not_xml(self, mocked, xml_client):
         mocked.post(
@@ -115,7 +127,9 @@ class TestTapiocaAdapterXML:
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
                 )
             ]
         )
@@ -137,7 +151,9 @@ class TestTapiocaAdapterXML:
             [
                 (
                     "tag1",
-                    OrderedDict([("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]),
+                    OrderedDict(
+                        [("@attr1", "val1"), ("tag2", "text1"), ("tag3", "text2")]
+                    ),
                 )
             ]
         )
@@ -148,7 +164,6 @@ class TestTapiocaAdapterXML:
 
 
 if pydantic:
-
     from dataclasses import dataclass
 
     from aiotapioca import TapiocaAdapterPydantic
@@ -233,7 +248,6 @@ if pydantic:
 @pytest.mark.skipif(not pydantic, reason="pydantic not installed")
 class TestTapiocaAdapterPydantic:
     def test_pydantic_model_get_pydantic_model(self):
-
         from aiotapioca.adapters.mixins import import_pydantic
 
         import_pydantic()
@@ -268,11 +282,15 @@ class TestTapiocaAdapterPydantic:
         assert model == CustomModel
 
         resource["pydantic_models"] = {"response": {CustomModel: ["POST"]}}
-        model = TapiocaAdapterPydantic().get_pydantic_model("response", resource, "POST")
+        model = TapiocaAdapterPydantic().get_pydantic_model(
+            "response", resource, "POST"
+        )
         assert model == CustomModel
 
         resource["pydantic_models"] = {"response": {CustomModel: ["GET"], Detail: None}}
-        model = TapiocaAdapterPydantic().get_pydantic_model("response", resource, "POST")
+        model = TapiocaAdapterPydantic().get_pydantic_model(
+            "response", resource, "POST"
+        )
         assert model == Detail
 
         resource["pydantic_models"] = {"response": {CustomModel: ["GET"], Detail: None}}
@@ -345,7 +363,10 @@ class TestTapiocaAdapterPydantic:
                 await client.test_bad_dataclass_model().get()
 
     async def test_pydantic_mixin_response_to_native(self, mocked):
-        response_body_root = [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]
+        response_body_root = [
+            {"key1": "value1", "key2": 123},
+            {"key1": "value2", "key2": 321},
+        ]
         response_body = {"data": response_body_root}
 
         validate_data_received_list = [True, False]
@@ -425,7 +446,10 @@ class TestTapiocaAdapterPydantic:
                     assert asdict(response.data()) == response_body
 
     async def test_pydantic_mixin_format_data_to_request(self, mocked):
-        response_body_root = [{"key1": "value1", "key2": 123}, {"key1": "value2", "key2": 321}]
+        response_body_root = [
+            {"key1": "value1", "key2": 123},
+            {"key1": "value2", "key2": 321},
+        ]
         response_body = {"data": response_body_root}
 
         validate_data_received_list = [True, False]
@@ -449,7 +473,6 @@ class TestTapiocaAdapterPydantic:
             pydantic_client = generate_wrapper_from_adapter(PidanticClientAdapter)
 
             async with pydantic_client() as client:
-
                 mocked.post(
                     client.test().path,
                     body='{"id": 100500}',
@@ -472,7 +495,9 @@ class TestTapiocaAdapterPydantic:
                             status=200,
                             content_type="application/json",
                         )
-                    responses = await client.test_root().post_batch(data=response_body_root)
+                    responses = await client.test_root().post_batch(
+                        data=response_body_root
+                    )
                     assert len(responses) == len(response_body_root)
                     for response in responses:
                         assert response.data() == {"id": 100500}

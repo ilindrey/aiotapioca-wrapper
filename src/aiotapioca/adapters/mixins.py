@@ -41,7 +41,9 @@ def import_xmltodict() -> None:
     try:
         import xmltodict
     except ImportError as exc:
-        raise ImportError("xmltodict is not installed, run `pip install aiotapioca[xml]`") from exc
+        raise ImportError(
+            "xmltodict is not installed, run `pip install aiotapioca[xml]`"
+        ) from exc
 
 
 class TapiocaAdapterFormMixin:
@@ -102,7 +104,9 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
     def format_response_data_to_native(self, non_native_data, response, **kwargs):
         if pydantic is None:
             import_pydantic()
-        data = super().format_response_data_to_native(non_native_data, response, **kwargs)
+        data = super().format_response_data_to_native(
+            non_native_data, response, **kwargs
+        )
         if isinstance(data, str):
             return data
         if self.validate_data_received and response.status == 200:
@@ -142,17 +146,23 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
     def get_pydantic_model(self, type_convert, resource, request_method, **kwargs):
         model = None
         models = resource.get("pydantic_models")
-        if isinstance(models, type(pydantic.BaseModel)) or dataclasses.is_dataclass(models):
+        if isinstance(models, type(pydantic.BaseModel)) or dataclasses.is_dataclass(
+            models
+        ):
             model = models
         elif isinstance(models, dict):
             method = request_method.upper()
             if "request" in models or "response" in models:
                 models = models.get(type_convert)
-            if isinstance(models, type(pydantic.BaseModel)) or dataclasses.is_dataclass(models):
+            if isinstance(models, type(pydantic.BaseModel)) or dataclasses.is_dataclass(
+                models
+            ):
                 model = models
             elif isinstance(models, dict):
                 for key, value in models.items():
-                    if isinstance(key, type(pydantic.BaseModel)) or dataclasses.is_dataclass(key):
+                    if isinstance(
+                        key, type(pydantic.BaseModel)
+                    ) or dataclasses.is_dataclass(key):
                         if isinstance(value, str) and value.upper() == method:
                             model = key
                             break
@@ -174,7 +184,8 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             if not model:
                 raise ValueError(
                     "Pydantic model not found."
-                    " Specify the model in the pydantic_models parameter in resource_mapping"
+                    " Specify the model in the pydantic_models parameter"
+                    " in resource_mapping"
                 )
             if (
                 not isinstance(model, type(pydantic.BaseModel))
@@ -225,7 +236,9 @@ class TapiocaAdapterXMLMixin:
 
     def _input_branches_to_xml_bytestring(self, data):
         if isinstance(data, Mapping):
-            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode("utf-8")
+            return xmltodict.unparse(data, **self._xmltodict_unparse_kwargs).encode(
+                "utf-8"
+            )
         try:
             return data.encode("utf-8")
         except Exception as e:

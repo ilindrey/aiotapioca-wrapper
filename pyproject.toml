@@ -1,98 +1,102 @@
 [build-system]
-requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
+requires = ["pdm-pep517>=1.0.0"]
 
 [project]
-name = "aiotapioca-wrapper"
-description = "Python asynchronous I/O API client generator"
-readme = "README.md"
 authors = [
-    {name = "Filipe Ximenes", email = "filipeximenes@gmail.com"},
-    {name = "Andrey Ilin", email = "andreyilin@fastmail.com"},
+  {name = "Filipe Ximenes", email = "filipeximenes@gmail.com"},
+  {name = "Andrey Ilin", email = "andreyilin@fastmail.com"}
 ]
-license = {text = "MIT"}
-keywords = ["async", "asyncio", "tapioca", "wrapper", "api"]
 classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Topic :: Internet :: WWW/HTTP",
-        "Topic :: Software Development :: Libraries :: Application Frameworks",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-    ]
-requires-python = ">=3.7"
-dependencies = [
-    "aiohttp>=3.0.0,<4.0.0",
-    "asyncio_atexit>=1.0.0,<2.0.0",
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Topic :: Software Development :: Libraries :: Python Modules"
 ]
+dependencies = [
+  "aiohttp>=3.0.0,<4.0.0",
+  "asyncio_atexit>=1.0.0,<2.0.0"
+]
+description = "Python asynchronous I/O API client generator"
 dynamic = ["version"]
+keywords = ["async", "asyncio", "tapioca", "wrapper", "api"]
+license = {text = "MIT"}
+name = "aiotapioca-wrapper"
+readme = "README.md"
+requires-python = ">=3.7"
 
 [project.optional-dependencies]
-xml = ["xmltodict>=0.9.2,<1.0.0"]
 pydantic = ["pydantic>=1.0.0,<.2.0.0"]
+xml = ["xmltodict>=0.9.2,<1.0.0"]
+
+[tool.black]
+line_length = 88
+target-version = ['py37']
+
+[tool.coverage.report]
+# Regexes for lines to exclude from consideration
+exclude_lines = [
+  "pragma: no cover",
+  # Don't complain about missing debug-only code:
+  "def __repr__",
+  "if self.debug",
+  # Don't complain if tests don't hit defensive assertion code:
+  # "raise AssertionError",
+  "raise NotImplementedError",
+  # Don't complain if non-runnable code isn't run:
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:"
+]
+ignore_errors = true
+
+[tool.coverage.run]
+branch = true
+omit = ["src/aiotapioca/__version__.py"]
+source = ["src/aiotapioca/"]
+
+[tool.isort]
+line_length = 88
+lines_after_imports = 2
+profile = "black"
+py_version = 37
+
+[tool.mypy]
+python_version = "3.7"
 
 [tool.pdm]
 version = {source = "scm"}
 
 [tool.pdm.dev-dependencies]
 tests = [
-    "yarl>=1.7.2",
-    "aioresponses>=0.7.3",
-    "pytest>=7.1.2",
-    "pytest-asyncio>=0.19.0",
-    "pytest-cov>=1.7.0",
-    "setuptools>=60.0.0",
+  "yarl>=1.7.2",
+  "aioresponses>=0.7.3",
+  "pytest>=7.1.2",
+  "pytest-asyncio>=0.19.0",
+  "pytest-cov>=1.7.0",
+  "setuptools>=60.0.0"
 ]
 typing = ["mypy>=0.971"]
 
 [tool.pdm.scripts]
-tests = "pytest"
+all = {composite = ["tests", "hints", "lint"]}
 hints = "mypy ."
 lint = "pre-commit run --all-files"
-all = {composite = ["tests", "hints", "lint"]}
+tests = "pytest"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
-[tool.coverage.run]
-branch = true
-source = ["src/aiotapioca/"]
-omit = [ "src/aiotapioca/__version__.py" ]
-
-[tool.coverage.report]
-# Regexes for lines to exclude from consideration
-exclude_lines = [
-    "pragma: no cover",
-    # Don't complain about missing debug-only code:
-    "def __repr__",
-    "if self.debug",
-    # Don't complain if tests don't hit defensive assertion code:
-#    "raise AssertionError",
-    "raise NotImplementedError",
-    # Don't complain if non-runnable code isn't run:
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    ]
-ignore_errors = true
-
-[tool.black]
-line_length = 100
-target-version = ['py37']
-
-[tool.isort]
-profile = "black"
-py_version = 37
-line_length = 100
-lines_after_imports = 2
-
-[tool.mypy]
-python_version = "3.7"
+[tool.ruff]
+line-length = 88
+src = ["src"]

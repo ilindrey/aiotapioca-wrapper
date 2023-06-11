@@ -1,0 +1,57 @@
+ci:
+  autofix_prs: false
+  autoupdate_branch: dev
+
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.4.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+    exclude: ^.*\.egg-info/
+  - id: check-merge-conflict
+  - id: check-case-conflict
+  - id: check-json
+  - id: check-toml
+  - id: check-yaml
+  - id: pretty-format-json
+    args: [--autofix, --no-ensure-ascii, --no-sort-keys]
+  - id: check-ast
+  - id: debug-statements
+  - id: check-docstring-first
+
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: v0.0.272
+  hooks:
+  - id: ruff
+    args:
+    - --fix
+
+- repo: https://github.com/hadialqattan/pycln
+  rev: v2.1.5
+  hooks:
+  - id: pycln
+    args: [--all]
+
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.9.0
+  hooks:
+  - id: pretty-format-toml
+    args: [--autofix]
+  - id: pretty-format-yaml
+    args: [--autofix, --indent, '2']
+
+- repo: https://github.com/psf/black
+  rev: 23.3.0
+  hooks:
+  - id: black
+
+- repo: https://github.com/pycqa/isort
+  rev: 5.12.0
+  hooks:
+  - id: isort
+
+- repo: https://github.com/pre-commit/pre-commit
+  rev: v3.3.2
+  hooks:
+  - id: validate_manifest

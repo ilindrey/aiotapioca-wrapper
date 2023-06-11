@@ -156,7 +156,9 @@ class ProcessData:
         elif isinstance(parsers, dict) and name in parsers:
             parser = parsers[name]
             parser_name = (
-                self._to_snake_case(parser.__name__) if isclass(parser) else parser.__name__
+                self._to_snake_case(parser.__name__)
+                if isclass(parser)
+                else parser.__name__
             )
             return self._get_parser_from_resource(parser_name, parser)
 
