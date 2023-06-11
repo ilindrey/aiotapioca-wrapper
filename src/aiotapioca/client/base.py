@@ -44,7 +44,9 @@ class BaseTapiocaClient:
     @property
     def closed(self):
         return (
-            self._session is None or type(self._session) is ClientSession and self._session.closed
+            self._session is None
+            or type(self._session) is ClientSession
+            and self._session.closed
         )
 
     async def initialize(self):
@@ -74,7 +76,9 @@ class BaseTapiocaClient:
 
 
 class BaseTapiocaClientResource(BaseTapiocaClient):
-    def __init__(self, client, path=None, resource=None, resource_name=None, *args, **kwargs):
+    def __init__(
+        self, client, path=None, resource=None, resource_name=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self._client = client
         self._path = path or ""

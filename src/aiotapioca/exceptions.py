@@ -12,7 +12,9 @@ class ResponseProcessException(TapiocaException):
         self.response = response
         if not self.message and self.response:
             method = self.response.method.upper()
-            self.message = f"Response: {method} [{self.response.status}] { self.response.url}"
+            self.message = (
+                f"Response: {method} [{self.response.status}] { self.response.url}"
+            )
         super().__init__(*args)
 
 
