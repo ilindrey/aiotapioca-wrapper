@@ -1,11 +1,24 @@
 from decimal import Decimal
+from typing import Type
 
 import pytest
 import pytest_asyncio
 
-from aiotapioca import BaseSerializer, SimpleSerializer
+from aiotapioca import BaseSerializer, SimpleSerializer, generate_wrapper_from_adapter
 
-from .clients import SerializerClient, SimpleClient
+from .client import SimpleClient, SimpleClientAdapter
+
+
+class CustomSerializer(SimpleSerializer):
+    def to_kwargs(self, data, **kwargs):
+        return kwargs
+
+
+class SerializerClientAdapter(SimpleClientAdapter):
+    serializer_class: Type[BaseSerializer] = CustomSerializer
+
+
+SerializerClient = generate_wrapper_from_adapter(SerializerClientAdapter)
 
 
 @pytest.fixture

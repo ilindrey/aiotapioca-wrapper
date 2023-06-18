@@ -3,7 +3,7 @@ import pytest
 
 from aiotapioca.exceptions import ClientError, ResponseProcessException, ServerError
 
-from .clients import SimpleClientAdapter
+from .client import SimpleClientAdapter
 
 
 async def test_exception_contain_data(mocked, client):

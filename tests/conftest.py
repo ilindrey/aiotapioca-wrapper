@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 from aioresponses import aioresponses
 
-from .clients import SimpleClient
+from .client import SimpleClient
 
 
 @pytest.fixture
