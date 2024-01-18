@@ -1,3 +1,7 @@
+Release v4.2.1 (2024-01-18)
+--------------------------
+- Fixed check of success statuses.
+
 Release v4.2.0 (2022-10-19)
 --------------------------
 - Added linters, mypy and pre-commit hooks.
