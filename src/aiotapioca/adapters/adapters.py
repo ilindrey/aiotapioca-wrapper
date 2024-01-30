@@ -42,12 +42,14 @@ class TapiocaAdapter:
     refresh_token: bool = False
     resource_mapping: Dict[str, Any] = {}
     api_root: str = ""
+    sync_mode: bool = False
 
-    def __init__(self, serializer_class=None, *args, **kwargs):
+    def __init__(self, serializer_class=None, sync_mode=False, *args, **kwargs):
         if serializer_class:
             self.serializer = serializer_class()
         else:
             self.serializer = self.get_serializer()
+        self.sync_mode = sync_mode
 
     def get_api_root(self, api_params, **kwargs):
         return self.api_root or ""

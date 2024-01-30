@@ -57,6 +57,7 @@ class SimpleClientAdapter(TapiocaAdapterJSON):
 
 
 SimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter)
+SyncSimpleClient = generate_wrapper_from_adapter(SimpleClientAdapter, sync_mode=True)
 
 
 class CustomSerializer(SimpleSerializer):
@@ -77,6 +78,9 @@ class RetryRequestClientAdapter(SimpleClientAdapter):
 
 
 RetryRequestClient = generate_wrapper_from_adapter(RetryRequestClientAdapter)
+SyncRetryRequestClient = generate_wrapper_from_adapter(
+    RetryRequestClientAdapter, sync_mode=True
+)
 
 
 # refresh token

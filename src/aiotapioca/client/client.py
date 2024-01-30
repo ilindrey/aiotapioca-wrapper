@@ -1,3 +1,5 @@
+import asyncio
+import inspect
 import webbrowser
 from asyncio import Semaphore, gather, get_event_loop
 from contextlib import suppress
@@ -45,6 +47,14 @@ class TapiocaClient(BaseTapiocaClient):
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         await self.close()
+
+    def __enter__(self):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.__aenter__())
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.__aexit__(exc_type, exc_value, traceback))
 
     def __await__(self):
         return self.initialize().__await__()
@@ -134,6 +144,51 @@ class TapiocaClientResource(BaseTapiocaClientResource):
 
 
 class TapiocaClientExecutor(BaseTapiocaClientExecutor):
+    def __getattribute__(self, name):
+        attr = super().__getattribute__(name)
+
+        api = super().__getattribute__("_api")
+        if not api.sync_mode:
+            return attr
+
+        sync_wrapped_attr = (
+            "get",
+            "post",
+            "options",
+            "put",
+            "patch",
+            "delete",
+            "post_batch",
+            "put_batch",
+            "patch_batch",
+            "delete_batch",
+            "pages",
+        )
+
+        if name not in sync_wrapped_attr:
+            return attr
+
+        if inspect.iscoroutinefunction(attr):
+
+            def sync_wrapper(*args, **kwargs):
+                loop = asyncio.get_event_loop()
+                return loop.run_until_complete(attr(*args, **kwargs))
+
+            return sync_wrapper
+        if inspect.isasyncgenfunction(attr):
+
+            def sync_wrapper_async_generator(*args, **kwargs):
+                async_gen = attr(*args, **kwargs)
+                loop = asyncio.get_event_loop()
+                while True:
+                    try:
+                        yield loop.run_until_complete(async_gen.__anext__())
+                    except StopAsyncIteration:
+                        break
+
+            return sync_wrapper_async_generator
+        return attr
+
     def __str__(self):
         return f"<{type(self).__name__} object: {self._path}>"
 

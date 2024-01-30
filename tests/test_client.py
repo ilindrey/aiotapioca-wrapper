@@ -19,6 +19,8 @@ from .clients import (
     RetryRequestClient,
     SimpleClient,
     StaticMethodParserClient,
+    SyncRetryRequestClient,
+    SyncSimpleClient,
     TokenRefreshByDefaultClient,
     TokenRefreshClient,
 )
@@ -472,6 +474,294 @@ class TestTapiocaClientExecutor:
                     kwargs.update({"semaphore": semaphore})
 
                 results = await executor_method(**kwargs)
+
+                for i, response in enumerate(results):
+                    result_response = {
+                        response.data: response_data[i],
+                        response.data.data: response_data[i]["data"],
+                        response.data.data.key: response_data[i]["data"]["key"],
+                    }
+                    for current_data, expected_data in result_response.items():
+                        check_response(current_data, expected_data, response, 201)
+                        assert response.api_params.get("semaphore") == semaphore
+
+                assert len(results) == len(response_data)
+
+
+class TestTapiocaClientExecutorSyncMode:
+    def test_request_with_context_manager(self, mocked):
+        with SyncSimpleClient() as sync_client:
+            next_url = "http://api.example.org/next_batch"
+            data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
+            mocked.get(
+                sync_client.test().path,
+                body=json.dumps(data),
+                status=200,
+                content_type="application/json",
+            )
+
+            response = sync_client.test().get()
+
+            assert response.response is not None
+            assert response.status == 200
+
+    def test_response_executor_object_has_a_response(self, mocked, sync_client):
+        next_url = "http://api.example.org/next_batch"
+        data = {"data": [{"key": "value"}], "paging": {"next": next_url}}
+
+        mocked.get(
+            sync_client.test().path,
+            body=json.dumps(data),
+            status=200,
+            content_type="application/json",
+        )
+
+        response = sync_client.test().get()
+
+        assert response.response is not None
+        assert response.status == 200
+
+    def test_response_executor_has_a_status_code(self, mocked, sync_client):
+        data = {"data": {"key": "value"}}
+        mocked.get(
+            sync_client.test().path,
+            body=json.dumps(data),
+            status=200,
+            content_type="application/json",
+        )
+
+        response = sync_client.test().get()
+
+        assert response.status == 200
+
+    def test_access_response_field(self, mocked, sync_client):
+        data = {"data": {"key": "value"}}
+        mocked.get(
+            sync_client.test().path,
+            body=json.dumps(data),
+            status=200,
+            content_type="application/json",
+        )
+
+        response = sync_client.test().get()
+
+        assert response.data.data() == {"key": "value"}
+
+    def test_carries_request_kwargs_over_calls(self, mocked, sync_client):
+        data = {"data": {"key": "value"}}
+        mocked.get(
+            sync_client.test().path,
+            body=json.dumps(data),
+            status=200,
+            content_type="application/json",
+        )
+
+        response = sync_client.test().get()
+
+        request_kwargs = response.request_kwargs
+
+        assert "url" in request_kwargs
+        assert "data" in request_kwargs
+        assert "headers" in request_kwargs
+
+    def test_retry_request(self, mocked):
+        error_data = {"error": "bad request test"}
+        success_data = {"data": "success!"}
+        with SyncRetryRequestClient() as sync_client:
+            for _ in range(11):
+                mocked.get(
+                    sync_client.test().path,
+                    body=json.dumps(error_data),
+                    status=400,
+                    content_type="application/json",
+                )
+
+            with pytest.raises(ClientError):
+                sync_client.test().get()
+
+            for _ in range(10):
+                mocked.get(
+                    sync_client.test().path,
+                    body=json.dumps(error_data),
+                    status=400,
+                    content_type="application/json",
+                )
+
+            mocked.get(
+                sync_client.test().path,
+                body=json.dumps(success_data),
+                status=200,
+                content_type="application/json",
+            )
+
+            response = sync_client.test().get()
+
+            assert response.data.data() == "success!"
+
+            for _ in range(3):
+                mocked.get(
+                    sync_client.test().path,
+                    body=json.dumps(error_data),
+                    status=400,
+                    content_type="application/json",
+                )
+
+            mocked.get(
+                sync_client.test().path,
+                body=json.dumps(success_data),
+                status=200,
+                content_type="application/json",
+            )
+
+            response = sync_client.test().get()
+
+            assert response.data.data() == "success!"
+
+            for _ in range(3):
+                mocked.get(
+                    sync_client.test().path,
+                    body=json.dumps(error_data),
+                    status=403,
+                    content_type="application/json",
+                )
+
+            with pytest.raises(ClientError):
+                sync_client.test().get()
+
+    def test_requests(self, mocked, sync_client):
+        semaphores = (3, None)
+        types_request = ("get", "post", "put", "patch", "delete")
+        for semaphore, type_request in product(semaphores, types_request):
+            executor = sync_client.test()
+
+            status = 200 if type_request == "get" else 201
+
+            mocked_method = getattr(mocked, type_request)
+            executor_method = getattr(executor, type_request)
+
+            mocked_method(
+                executor.path,
+                body='{"data": {"key": "value"}}',
+                status=status,
+                content_type="application/json",
+            )
+
+            kwargs = {}
+            if semaphore:
+                kwargs.update({"semaphore": semaphore})
+
+            response = executor_method(**kwargs)
+
+            result_response = {
+                response.data: {"data": {"key": "value"}},
+                response.data.data: {"key": "value"},
+                response.data.data.key: "value",
+            }
+
+            for current_data, expected_data in result_response.items():
+                check_response(current_data, expected_data, response, status)
+
+    def test_batch_requests(self, mocked, sync_client):
+        response_data = [
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+        ]
+        semaphores = (3, None)
+        types_request = ("post", "put", "patch", "delete")
+        for semaphore, type_request in product(semaphores, types_request):
+            executor = sync_client.test()
+            mocked_method = getattr(mocked, type_request)
+            executor_method = getattr(executor, type_request + "_batch")
+
+            for row_data in response_data:
+                mocked_method(
+                    executor.path,
+                    body=json.dumps(row_data),
+                    status=201,
+                    content_type="application/json",
+                )
+
+            kwargs = {"data": response_data}
+            if semaphore:
+                kwargs.update({"semaphore": semaphore})
+
+            results = executor_method(**kwargs)
+
+            for i, response in enumerate(results):
+                result_response = {
+                    response.data: response_data[i],
+                    response.data.data: response_data[i]["data"],
+                    response.data.data.key: response_data[i]["data"]["key"],
+                }
+                for current_data, expected_data in result_response.items():
+                    check_response(current_data, expected_data, response, 201)
+
+            assert len(results) == len(response_data)
+
+    def test_pass_api_params_in_requests(self, mocked):
+        semaphores = (4, None, False)
+        types_request = ("get", "post", "put", "patch", "delete")
+
+        for semaphore, type_request in product(semaphores, types_request):
+            with SyncSimpleClient(semaphore=semaphore) as simple_client:
+                executor = simple_client.test()
+
+                status = 200 if type_request == "get" else 201
+
+                mocked_method = getattr(mocked, type_request)
+                executor_method = getattr(executor, type_request)
+
+                mocked_method(
+                    executor.path,
+                    body='{"data": {"key": "value"}}',
+                    status=status,
+                    content_type="application/json",
+                )
+
+                kwargs = {}
+
+                response = executor_method(**kwargs)
+
+                result_response = {
+                    response.data: {"data": {"key": "value"}},
+                    response.data.data: {"key": "value"},
+                    response.data.data.key: "value",
+                }
+
+                for current_data, expected_data in result_response.items():
+                    check_response(current_data, expected_data, response, status)
+                    assert response.api_params.get("semaphore") == semaphore
+
+    def test_pass_api_params_in_batch_requests(self, mocked):
+        response_data = [
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+            {"data": {"key": "value"}},
+        ]
+
+        semaphores = (4, None, False)
+        types_request = ("post", "put", "patch", "delete")
+
+        for semaphore, type_request in product(semaphores, types_request):
+            with SyncSimpleClient(semaphore=semaphore) as simple_client:
+                executor = simple_client.test()
+                mocked_method = getattr(mocked, type_request)
+                executor_method = getattr(executor, type_request + "_batch")
+
+                for row_data in response_data:
+                    mocked_method(
+                        executor.path,
+                        body=json.dumps(row_data),
+                        status=201,
+                        content_type="application/json",
+                    )
+
+                kwargs = {"data": response_data}
+                if semaphore:
+                    kwargs.update({"semaphore": semaphore})
+
+                results = executor_method(**kwargs)
 
                 for i, response in enumerate(results):
                     result_response = {
