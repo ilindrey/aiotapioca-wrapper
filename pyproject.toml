@@ -34,7 +34,7 @@ keywords = ["async", "asyncio", "tapioca", "wrapper", "api"]
 license = {text = "MIT"}
 name = "aiotapioca-wrapper"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 
 [project.optional-dependencies]
 pydantic = ["pydantic>=1.0.0,<2.0.0"]
