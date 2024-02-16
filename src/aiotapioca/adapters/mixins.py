@@ -109,7 +109,7 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
         )
         if isinstance(data, str):
             return data
-        if self.validate_data_received and response.status == 200:
+        if self.validate_data_received and 200 <= response.status < 300:
             data = self.convert_data_to_pydantic_model("response", data, **kwargs)
 
             if isinstance(data, pydantic.BaseModel) or dataclasses.is_dataclass(data):
