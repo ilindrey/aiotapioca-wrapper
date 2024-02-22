@@ -23,8 +23,8 @@ class CustomModel(pydantic.BaseModel):
     data: List[Detail]
 
 
-class RootModel(pydantic.BaseModel):
-    __root__: List[Detail]
+class RootModel(pydantic.RootModel):
+    root: List[Detail]
 
 
 @pydantic.dataclasses.dataclass
@@ -255,7 +255,7 @@ async def test_pydantic_mixin_response_to_native(mocked):
                 assert response.data() == response_body
             else:
                 assert isinstance(response.data(), pydantic.BaseModel)
-                assert response.data().dict() == response_body
+                assert response.data().model_dump() == response_body
 
             mocked.get(
                 client.test_root().path,
@@ -268,21 +268,18 @@ async def test_pydantic_mixin_response_to_native(mocked):
             if extract:
                 assert isinstance(data, list)
             else:
-                if not validate_received:
+                if not validate_received or convert:
                     assert isinstance(data, list)
-                elif convert:
-                    assert isinstance(data, dict)
-                    data = data["__root__"]
                 else:
                     assert isinstance(data, pydantic.BaseModel)
-                    data = data.__root__
+                    data = data.root
             for response_data, expected_data in zip(data, response_body_root):
                 if convert or not validate_received:
                     assert isinstance(response_data, dict)
                     assert response_data == expected_data
                 else:
                     assert isinstance(response_data, pydantic.BaseModel)
-                    assert response_data.dict() == expected_data
+                    assert response_data.model_dump() == expected_data
 
             mocked.get(
                 client.test_dataclass().path,
@@ -337,7 +334,7 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 response = await client.test().post(data=response_body)
                 assert response.data() == {"id": 100500}
             else:
-                data = CustomModel.parse_obj(response_body)
+                data = CustomModel.model_validate(response_body)
                 response = await client.test().post(data=data)
                 assert response.data() == {"id": 100500}
 
@@ -354,16 +351,16 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 for response in responses:
                     assert response.data() == {"id": 100500}
             else:
-                data = RootModel.parse_obj(response_body_root)
-                for _ in range(len(data.__root__)):
+                data = RootModel.model_validate(response_body_root)
+                for _ in range(len(data.root)):
                     mocked.post(
                         client.test_root().path,
                         body='{"id": 100500}',
                         status=200,
                         content_type="application/json",
                     )
-                responses = await client.test_root().post_batch(data=data.__root__)
-                assert len(responses) == len(data.__root__)
+                responses = await client.test_root().post_batch(data=data.root)
+                assert len(responses) == len(data.root)
                 for response in responses:
                     assert response.data() == {"id": 100500}
 
@@ -377,7 +374,9 @@ async def test_pydantic_mixin_format_data_to_request(mocked):
                 response = await client.test_dataclass().post(data=response_body)
                 assert response.data() == {"id": 100500}
             else:
-                data = pydantic.parse_obj_as(CustomModelDT, response_body)
+                data = pydantic.TypeAdapter(CustomModelDT).validate_python(
+                    response_body
+                )
                 response = await client.test_dataclass().post(data=data)
                 assert response.data() == {"id": 100500}
 

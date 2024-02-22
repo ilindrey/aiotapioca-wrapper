@@ -1,3 +1,5 @@
+from typing import Any, Tuple
+
 import pytest
 from aioresponses import CallbackResult
 
@@ -45,7 +47,7 @@ class FailTokenRefreshClientAdapter(TokenRefreshByDefaultClientAdapter):
 FailTokenRefreshClient = generate_wrapper_from_adapter(FailTokenRefreshClientAdapter)
 
 
-possible_false_values = (
+possible_false_values: Tuple[Any, ...] = (
     False,
     None,
     1,
