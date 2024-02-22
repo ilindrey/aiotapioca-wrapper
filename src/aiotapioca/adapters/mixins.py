@@ -115,22 +115,20 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             if isinstance(data, pydantic.BaseModel) or dataclasses.is_dataclass(data):
                 if self.convert_to_dict:
                     data = (
-                        data.dict()
+                        data.model_dump()
                         if isinstance(data, pydantic.BaseModel)
                         else dataclasses.asdict(data)
                     )
                 if self.extract_root and not dataclasses.is_dataclass(data):
-                    if hasattr(data, "__root__"):
-                        return data.__root__
-                    elif "__root__" in data:
-                        return data["__root__"]
+                    if isinstance(data, pydantic.RootModel):
+                        return data.root
                 return data
             return data
         return data
 
     def convert_pydantic_model_to_dict(self, data, *args, **kwargs):
         if isinstance(data, pydantic.BaseModel):
-            return data.dict(by_alias=self.to_dict_by_alias)
+            return data.model_dump(by_alias=self.to_dict_by_alias)
         elif dataclasses.is_dataclass(data):
             return dataclasses.asdict(data)
         return data
@@ -140,7 +138,7 @@ class TapiocaAdapterPydanticMixin(TapiocaAdapterJSONMixin):
             return data
         model = self.get_pydantic_model(type_convert, **kwargs)
         if model:
-            return pydantic.parse_obj_as(model, data)
+            return pydantic.TypeAdapter(model).validate_python(data)
         return data
 
     def get_pydantic_model(self, type_convert, resource, request_method, **kwargs):
