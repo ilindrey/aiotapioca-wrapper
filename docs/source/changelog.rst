@@ -1,3 +1,9 @@
+Release v4.3.0 (2024-02-22)
+--------------------------
+- Added support pydantic v2. If you need pydantic v1 you need to use an older version of the library.
+- Drop support Python 3.7 and below.
+- Minor fixes.
+
 Release v4.2.1 (2024-01-18)
 --------------------------
 - Fixed check of success statuses.
