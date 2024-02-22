@@ -5,7 +5,7 @@
 groups = ["default", "tests", "xml", "pydantic", "typing"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:d46a666b375c69ab4ad805c8b513a18fb68e1fb523826e72d2de8bbb502d9b4c"
+content_hash = "sha256:218819972fa767919e1f7659b8a704f4da38aefaf43ad7db3208c2631a5522ab"
 
 [[package]]
 name = "aiohttp"
@@ -720,16 +720,6 @@ dependencies = [
 files = [
     {file = "pytest-cov-4.1.0.tar.gz", hash = "sha256:3904b13dfbfec47f003b8e77fd5b589cd11904a21ddf1ab38a64f204d6a10ef6"},
     {file = "pytest_cov-4.1.0-py3-none-any.whl", hash = "sha256:6ba70b9e97e69fcc3fb45bfeab2d0a138fb65c4d0d6a41ef33983ad114be8c3a"},
-]
-
-[[package]]
-name = "setuptools"
-version = "69.1.0"
-requires_python = ">=3.8"
-summary = "Easily download, build, install, upgrade, and uninstall Python packages"
-files = [
-    {file = "setuptools-69.1.0-py3-none-any.whl", hash = "sha256:c054629b81b946d63a9c6e732bc8b2513a7c3ea645f11d0139a2191d735c60c6"},
-    {file = "setuptools-69.1.0.tar.gz", hash = "sha256:850894c4195f09c4ed30dba56213bf7c3f21d86ed6bdaafb5df5972593bfc401"},
 ]
 
 [[package]]
