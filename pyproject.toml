@@ -26,7 +26,8 @@ classifiers = [
 ]
 dependencies = [
   "aiohttp>=3.0.0,<4.0.0",
-  "asyncio_atexit>=1.0.0,<2.0.0"
+  "asyncio_atexit>=1.0.0,<2.0.0",
+  "yarl>=1.0.0"
 ]
 description = "Python asynchronous I/O API client generator"
 dynamic = ["version"]
